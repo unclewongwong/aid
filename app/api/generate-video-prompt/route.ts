@@ -8,61 +8,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'storyboard and apiKey are required' }, { status: 400 });
     }
 
-    const prompt = `You are a professional cinematographer and film director writing AI video generation prompts. Your prompts must produce CINEMATIC shots — not just "images that move", but real film language with intentional camera work, blocking, and staging.
+    const prompt = `You are a professional cinematographer and film director writing AI video generation prompts. Your prompts must produce CINEMATIC motion — not just "images that move", but real film language with intentional camera work, blocking, and staging.
 
 ## Shot Information
 Scene ${storyboard.sceneNumber}: ${storyboard.description}
 Image prompt context: ${storyboard.prompt}
 
 ## Your Task
-Write a professional cinematic video prompt following this EXACT structure (3-5 sentences):
+Write a professional cinematic video prompt using a TIMELINE structure. The video should feel like a real film shot with a complete action arc.
 
-**1. Shot Size + Lens**
-Start with: [ECU / CU / MCU / MS / MLS / WS / EWS / OTS], [lens: 24mm / 35mm / 50mm / 85mm / telephoto]
+Follow this EXACT structure (no section labels in output):
 
-**2. Camera Movement** (choose one, be specific)
-- Static: "locked-off tripod shot"
-- Dolly: "slow dolly in" / "camera pushes in over 4 seconds"
-- Track: "lateral tracking shot following subject left to right"
-- Crane: "camera cranes up revealing the environment below"
-- Steadicam: "smooth Steadicam follow shot"
-- Handheld: "handheld, slight natural shake, documentary intimacy"
-- Arc: "camera slowly orbits 90 degrees around subject"
-- Pull back reveal: "camera pulls back slowly to reveal wider context"
+[00-02s] Establish shot
+- Shot size + lens: [ECU / CU / MCU / MS / MLS / WS / EWS / OTS], [24mm / 35mm / 50mm / 85mm / telephoto]
+- Camera movement: locked-off / dolly in / track / crane / Steadicam / handheld / arc / pull back reveal
+- Subject enters frame or position, establishing context
 
-**3. Subject Blocking & Action**
-Describe EXACTLY what the subject does with specific body language:
-- Entry/exit: "enters frame from screen left", "walks toward camera"
-- Timing: "slowly", "abruptly", "hesitates then", "in one fluid motion"
-- Body: "shoulders tense", "hands trembling", "leans into the light"
-- Eye line: "looks directly into camera", "gazes off-screen right at 30 degrees"
-- Complete arc: action must have a clear beginning, middle, and natural resolution
+[02-04s] Core action
+- The main action unfolds with specific body language: timing, body tension, eye line, hand gestures
+- Environment interaction: light, objects, weather, surface contact
+- Camera continues or transitions
 
-**4. Lighting & Environment**
-- Motivated lighting: where does light come from?
-- Quality: "golden hour", "overcast diffused", "neon-lit", "candlelit", "chiaroscuro"
-- Depth of field: "shallow DOF, background bokeh" / "deep focus, everything sharp"
+[04-05s] Resolution
+- Action completes naturally, no abrupt cut
+- Final body position, emotional state, environment state
+- End with seamless transition or hold
 
-**5. Technical & Mood**
-End with: mood tone + "24fps, film grain" or "cinematic 4K" + aspect ratio if relevant
+CAMERA / LIGHTING / AUDIO / CONSISTENCY
+- Motivated lighting source and quality
+- Depth of field: shallow DOF / deep focus
+- Mood tone
+- 24fps, film grain or cinematic 4K
 
 ## Critical Rules
-- Lead with shot type and camera movement — these are the most important
+- Each time segment focuses on ONE core action — never stack multiple events in a single segment
 - Every camera movement must be MOTIVATED by the scene's emotion and narrative
-- Blocking must feel like a real actor's performance, not random movement
+- Blocking must feel like real actor performance, not random movement
 - Do NOT describe character appearance (reference image handles that)
 - Do NOT mention art style, animation, or rendering style
-- The shot must feel COMPLETE — action resolves naturally, no abrupt cuts
-- No background music, no sound effects, no subtitles
+- Do NOT add background music, sound effects, or subtitles
+- Do NOT change character face, clothing, hair, or object details from the input image
+- No extra characters that do not appear in the reference image
+- The shot must feel COMPLETE — clear beginning, middle, natural end
 - Output ONLY the prompt text, no labels or section headers
 
-## Examples of CINEMATIC vs NON-CINEMATIC
+## Examples of TIMELINE vs NON-TIMELINE
 
-❌ Non-cinematic: "The character walks forward and looks around."
-✅ Cinematic: "Medium shot, 50mm. Slow push in. Subject enters frame from screen left, pauses at center, weight shifting to one foot — a moment of hesitation. Eyes scan the space, then settle on something off-screen right. Motivated window light from left creates soft shadow across face. Shallow depth of field. Quiet dread. 24fps, film grain."
-
-❌ Non-cinematic: "Camera shows the scene with the character doing the action."
-✅ Cinematic: "Low angle medium wide shot, 35mm. Locked-off static. Subject crosses frame right to left in foreground, sharp. Background figure (soft, out of focus) watches without moving. Practical overhead fluorescent light, cold and institutional. Neither figure acknowledges the other. Tension held in stillness. 24fps."
+❌ Non-timeline: "The character walks forward and looks around."
+✅ Timeline: "[00-02s] Medium shot, 50mm. Locked-off. Subject enters from screen left, pauses at center, weight shifting to one foot — a moment of hesitation. Eyes scan the space. [02-04s] Slow dolly in. Subject leans toward off-screen right, hand reaching out tentatively. Motivated window light from left creates soft shadow across face. [04-05s] Subject's fingers make contact with surface, breath held. Camera holds. Shallow DOF. Quiet dread. 24fps, film grain."
 
 Now write the cinematic video prompt for Scene ${storyboard.sceneNumber}:`;
 

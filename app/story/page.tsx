@@ -120,7 +120,12 @@ export default function StoryPage() {
         // Build grid prompt from group's prompts
         const sceneStyle = group[0]?.sceneStyle || '';
         const charDescs = characters.map(c => `${c.name}: ${c.description}`).join('\n');
-        const shotDescs = group.map(sb => sb.prompt.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\[([^\]]+)\]/g, '$1'));
+        const shotDescs = group.map(sb => {
+          const cleanPrompt = sb.prompt.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\[([^\]]+)\]/g, '$1');
+          const panelChars = sb.characters?.length ? `Characters: ${sb.characters.join(', ')}.` : '';
+          const panelObjs = sb.objects?.length ? `Objects: ${sb.objects.join(', ')}.` : '';
+          return `${cleanPrompt} ${panelChars} ${panelObjs}`.trim();
+        });
         // Build reference image labels in order: costume images first, then scene image
         const refLabels: string[] = [
           ...characters.map(c => `${c.name} — ${c.description}`),

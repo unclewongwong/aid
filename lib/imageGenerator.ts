@@ -95,7 +95,9 @@ export async function generateStoryboardImage(
 
   const enhancedPrompt = `${cleanedScenePrompt}
 
-Character references provided: ${sceneCharacters.map(c => c.name).join(', ')}. Maintain exact appearance from reference images.${globalSceneImage ? ' Scene environment reference provided.' : ''}${sceneObjects.length > 0 ? ` Object references: ${sceneObjects.map(o => o.name).join(', ')}.` : ''}`;
+${referenceDescriptions.join('\n')}
+
+Strict rules: maintain exact face, hairstyle, clothing and visual style for every character. Keep object shape, color, material, texture, text/logo and all details identical. Do not add subtitles, background music, or extra characters not shown in the references. Maintain exact lighting and atmosphere from the scene reference.`;
 
 
   // 创建图像生成任务

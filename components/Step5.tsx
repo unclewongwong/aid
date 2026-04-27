@@ -148,15 +148,22 @@ export default function Step5({ storyboards, characters, onBack, onNext, onGener
 
                 {/* Continuity toggle - only show for shots after the first */}
                 {sbIndex > 0 && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={sb.continuousFromPrev ?? false}
-                      onChange={(e) => onUpdate?.({ ...sb, continuousFromPrev: e.target.checked })}
-                      className="w-3 h-3"
-                    />
-                    <span className="text-xs font-mono text-[var(--text-secondary)]">连贯上一镜头</span>
-                  </label>
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sb.continuousFromPrev ?? false}
+                        onChange={(e) => onUpdate?.({ ...sb, continuousFromPrev: e.target.checked })}
+                        className="w-3 h-3"
+                      />
+                      <span className="text-xs font-mono text-[var(--text-secondary)]">连贯上一镜头</span>
+                    </label>
+                    {sb.continuousFromPrev && hasDialogue && (
+                      <p className="text-[10px] font-mono text-[var(--accent-yellow)] leading-tight">
+                        提示：连续模式下视频不会传入配音音频。如需台词同步，建议关闭此选项。
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 {/* Generate Audio */}

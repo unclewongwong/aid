@@ -51,7 +51,7 @@ export function buildGridPrompt(
     ? `\nReference image mapping:\n${referenceImageLabels.map((label, i) => `- Reference image ${i + 1}: ${label}`).join('\n')}\n`
     : '';
 
-  return `Generate a 3x3 cinematic storyboard grid. Each of the 9 panels must be ${orientation} (${aspectRatio} aspect ratio). The entire grid image is also ${orientation}.
+  return `Generate a 3x3 cinematic storyboard contact sheet. Each of the 9 panels is ${orientation} (${aspectRatio}). The overall canvas is a uniform 3x3 mosaic with no borders, no gaps, and no separator lines between panels.
 
 Scene environment: ${sceneStyle}
 ${refSection}
@@ -69,5 +69,5 @@ Panel 7: ${shots[6]}
 Panel 8: ${shots[7]}
 Panel 9: ${shots[8]}
 
-CRITICAL: Every panel must show the EXACT same character appearance as the reference images — identical face shape, facial features, eye color, hair style, hair color, skin tone, and costume. Do NOT alter any character's appearance between panels. Maintain exact same lighting and environment across all 9 panels. Panels must be seamlessly adjacent with NO borders, NO separators, NO white lines, NO black lines, NO gaps between panels. The grid must be a pure 3x3 image mosaic with zero padding.`;
+CRITICAL: Every panel must show the EXACT same character appearance as the reference images — identical face shape, facial features, eye color, hair style, hair color, skin tone, and costume. Do NOT alter any character's appearance between panels. Maintain exact same lighting and environment across all 9 panels. Panels must be seamlessly adjacent with NO borders, NO separators, NO white lines, NO black lines, NO gaps between panels. The grid must be a pure 3x3 image mosaic with zero padding. Each panel must be a complete standalone ${orientation} composition, not a cropped fragment.`;
 }

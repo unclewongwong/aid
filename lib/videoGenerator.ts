@@ -31,11 +31,19 @@ export async function generateStoryboardVideo(
     ? '\n' + characterAudios.map(a => `@[${a.character}] 使用@[${a.audioUrl}]`).join('\n')
     : '';
 
-  const videoPrompt = `${basePrompt}${audioMapping}
+  const continuityRules = firstFrameUrl
+    ? `\n\nCONTINUITY — this shot continues from the previous one:\n- The action must start exactly from the state shown in the first frame. Character position, pose, clothing, and environment must match seamlessly.\n- The motion must flow naturally from the first frame into the rest of the shot, with no abrupt jumps, freezes, or stutters.\n- Character orientation and spatial relationship must remain consistent throughout the transition.\n- Avoid any visual glitch, flicker, or sudden change in lighting, color, or background between the first frame and the generated motion.\n- The camera movement style should match the previous shot (e.g., if previous was handheld, continue handheld; if locked-off, stay locked-off).`
+    : '';
 
-Visual consistency: Keep all characters, objects, and scene elements exactly as shown in the image. No changes to appearance, clothing, or environment throughout the video.
-Shot completeness: The shot must have a complete action arc — a clear beginning, middle, and natural end. Do not cut off mid-action.
-AUDIO: No background music. Natural sound effects only (footsteps, wind, water, fabric, impacts, ambient). No dialogue subtitles. Maintain the voice timbre and tone of each character's reference audio exactly as provided.`;
+  const videoPrompt = `${basePrompt}${audioMapping}${continuityRules}
+
+STRICT RULES — follow exactly:
+- Keep the EXACT same face, hairstyle, clothing, object shape, color, text/logo and all scene elements as shown in the reference image. Zero morphing or appearance drift.
+- One complete action arc only: clear beginning, middle, and natural end. Do not cut off mid-action. Never stack multiple unrelated events.
+- No extra characters not shown in the reference image.
+- No subtitles, no text overlays, no background music.
+- Natural sound effects only (footsteps, wind, water, fabric, impacts, ambient).
+${characterAudios.length > 0 ? '- Mouth and body motion must naturally synchronize with the provided character audio.' : ''}`;
 
 
   console.log(`Creating video task for storyboard scene ${storyboard.sceneNumber}`);

@@ -71,13 +71,18 @@ export async function exportVideo(
     console.log('Concat content:', concatContent);
     await ffmpegInstance.writeFile('concat.txt', concatContent);
 
-  // 合并视频
+  // 合并视频（统一重编码，避免不同片段编码参数不一致导致音画问题）
   console.log('Starting concat...');
   await ffmpegInstance.exec([
     '-f', 'concat',
     '-safe', '0',
     '-i', 'concat.txt',
-    '-c', 'copy',
+    '-c:v', 'libx264',
+    '-preset', 'ultrafast',
+    '-crf', '23',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    '-movflags', '+faststart',
     'output.mp4'
   ]);
   console.log('Concat complete');
