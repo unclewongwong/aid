@@ -9,13 +9,33 @@ import { Home } from 'lucide-react';
 function EditorContent() {
   const searchParams = useSearchParams();
   const [videos, setVideos] = useState<string[]>([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const videoParam = searchParams.get('videos');
-    if (videoParam) {
-      setVideos(JSON.parse(decodeURIComponent(videoParam)));
+    setError('');
+    setVideos([]);
+
+    if (!videoParam) return;
+
+    try {
+      const parsed = JSON.parse(decodeURIComponent(videoParam));
+      if (!Array.isArray(parsed) || parsed.some(item => typeof item !== 'string' || item.length === 0)) {
+        throw new Error('Invalid videos parameter');
+      }
+      setVideos(parsed);
+    } catch {
+      setError('视频参数无效，请重新选择视频进入编辑器。');
     }
   }, [searchParams]);
+
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-[var(--accent-red)] font-mono text-sm">
+        {error}
+      </div>
+    );
+  }
 
   return videos.length > 0 ? (
     <VideoEditor initialVideos={videos} />

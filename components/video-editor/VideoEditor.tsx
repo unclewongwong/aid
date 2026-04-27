@@ -12,75 +12,107 @@ interface VideoEditorProps {
   initialVideos: string[];
 }
 
+type ExportStatus = { progress: number; stage: string };
+
+function recalculateStartTimes(clipList: VideoClip[]): VideoClip[] {
+  let startTime = 0;
+  return clipList.map(clip => {
+    const next = { ...clip, startTime };
+    startTime += Math.max(0, clip.duration - clip.trimStart - clip.trimEnd);
+    return next;
+  });
+}
+
 export default function VideoEditor({ initialVideos }: VideoEditorProps) {
   const [clips, setClips] = useState<VideoClip[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState<ExportStatus>({ progress: 0, stage: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadVideos = async () => {
-      const loadedClips: VideoClip[] = [];
-      let startTime = 0;
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const loadedClips: VideoClip[] = [];
+        let startTime = 0;
 
-      for (let i = 0; i < initialVideos.length; i++) {
-        const video = document.createElement('video');
-        video.src = initialVideos[i];
+        for (let i = 0; i < initialVideos.length; i++) {
+          const url = initialVideos[i];
+          const duration = await new Promise<number>((resolve, reject) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.src = url;
+            video.onloadedmetadata = () => resolve(video.duration);
+            video.onerror = () => reject(new Error(`Scene ${i + 1} metadata 加载失败`));
+          });
 
-        await new Promise((resolve) => {
-          video.onloadedmetadata = () => {
-            loadedClips.push({
-              id: `clip-${i}`,
-              url: initialVideos[i],
-              name: `Scene ${i + 1}`,
-              duration: video.duration,
-              startTime,
-              trimStart: 0,
-              trimEnd: 0,
-            });
-            startTime += video.duration;
-            resolve(null);
-          };
-        });
+          loadedClips.push({
+            id: `clip-${i}`,
+            url,
+            name: `Scene ${i + 1}`,
+            duration,
+            startTime,
+            trimStart: 0,
+            trimEnd: 0,
+          });
+          startTime += duration;
+        }
+
+        if (!cancelled) {
+          setClips(loadedClips);
+          setSelectedClipId(loadedClips[0]?.id ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : '视频加载失败');
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-
-      setClips(loadedClips);
     };
 
-    if (initialVideos.length > 0) {
-      loadVideos();
-    }
+    if (initialVideos.length > 0) loadVideos();
+
+    return () => { cancelled = true; };
   }, [initialVideos]);
 
   const totalDuration = clips.reduce((sum, clip) =>
-    sum + (clip.duration - clip.trimStart - clip.trimEnd), 0
+    sum + Math.max(0, clip.duration - clip.trimStart - clip.trimEnd), 0
   );
 
+  const updateClips = (nextClips: VideoClip[]) => {
+    const recalculated = recalculateStartTimes(nextClips);
+    setClips(recalculated);
+    setCurrentTime(prev => Math.min(prev, recalculated.reduce((sum, clip) => sum + Math.max(0, clip.duration - clip.trimStart - clip.trimEnd), 0)));
+  };
+
   const handleTrimChange = (clipId: string, trimStart: number, trimEnd: number) => {
-    const newClips = clips.map(clip =>
+    updateClips(clips.map(clip =>
       clip.id === clipId ? { ...clip, trimStart, trimEnd } : clip
-    );
+    ));
+  };
 
-    // 重新计算所有片段的 startTime
-    let startTime = 0;
-    newClips.forEach(clip => {
-      clip.startTime = startTime;
-      startTime += clip.duration - clip.trimStart - clip.trimEnd;
-    });
-
-    setClips(newClips);
+  const seekToClipTime = (clipId: string, clipTime: number) => {
+    const clip = clips.find(c => c.id === clipId);
+    if (!clip) return;
+    setCurrentTime(Math.max(0, Math.min(totalDuration, clip.startTime + clipTime - clip.trimStart)));
   };
 
   const handleExport = async () => {
     if (clips.length === 0) return;
 
     setIsExporting(true);
-    setExportProgress(0);
+    setExportStatus({ progress: 0, stage: '准备导出' });
 
     try {
-      const blob = await exportVideo(clips, setExportProgress);
+      const blob = await exportVideo(clips, (progress, stage = '') => {
+        setExportStatus({ progress, stage });
+      });
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -93,38 +125,38 @@ export default function VideoEditor({ initialVideos }: VideoEditorProps) {
       alert(`导出失败: ${error instanceof Error ? error.message : '未知错误'}`);
     } finally {
       setIsExporting(false);
-      setExportProgress(0);
+      setExportStatus({ progress: 0, stage: '' });
     }
   };
 
-  useEffect(() => {
-    if (!isPlaying) return;
+  if (isLoading) {
+    return <div className="flex-1 flex items-center justify-center text-[var(--text-secondary)] font-mono text-sm">Loading videos...</div>;
+  }
 
-    const interval = setInterval(() => {
-      setCurrentTime(prev => {
-        if (prev >= totalDuration) {
-          setIsPlaying(false);
-          return 0;
-        }
-        return prev + 0.1;
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, totalDuration]);
+  if (loadError) {
+    return <div className="flex-1 flex items-center justify-center text-[var(--accent-red)] font-mono text-sm">{loadError}</div>;
+  }
 
   return (
     <div className="h-full flex flex-col bg-[var(--bg-primary)]">
-      {/* 上方：视频预览 + 剪辑面板 */}
       <div className="flex gap-4 p-4 border-b border-[var(--border-color)]">
-        {/* 左侧：视频预览 */}
         <div className="flex-1">
-          <VideoPreview clips={clips} currentTime={currentTime} isPlaying={isPlaying} />
+          <VideoPreview
+            clips={clips}
+            currentTime={currentTime}
+            isPlaying={isPlaying}
+            onTimeUpdate={setCurrentTime}
+            onEnded={() => setIsPlaying(false)}
+          />
 
           <div className="flex items-center gap-2 mt-4">
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded"
+              onClick={() => {
+                if (currentTime >= totalDuration) setCurrentTime(0);
+                setIsPlaying(!isPlaying);
+              }}
+              disabled={clips.length === 0}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded disabled:opacity-50"
             >
               {isPlaying ? <Pause size={16} /> : <Play size={16} />}
               {isPlaying ? 'Pause' : 'Play'}
@@ -135,28 +167,30 @@ export default function VideoEditor({ initialVideos }: VideoEditorProps) {
               className="flex items-center gap-2 px-4 py-2 text-xs font-mono bg-[var(--accent-green)] hover:bg-[#5dd18d] text-white rounded disabled:opacity-50"
             >
               <Download size={16} />
-              {isExporting ? `Exporting... ${Math.round(exportProgress)}%` : 'Export Video'}
+              {isExporting ? `Exporting... ${Math.round(exportStatus.progress)}%` : 'Export Video'}
             </button>
+            {isExporting && exportStatus.stage && (
+              <span className="text-xs font-mono text-[var(--text-secondary)]">{exportStatus.stage}</span>
+            )}
           </div>
         </div>
 
-        {/* 右侧：剪辑面板 */}
-        {selectedClipId && (
+        {selectedClipId && clips.find(c => c.id === selectedClipId) && (
           <div className="w-80">
             <TrimPanel
               clip={clips.find(c => c.id === selectedClipId)!}
               onTrimChange={handleTrimChange}
+              onSeek={seekToClipTime}
             />
           </div>
         )}
       </div>
 
-      {/* 下方：Timeline 轨道 */}
       <Timeline
         clips={clips}
-        onClipsChange={setClips}
+        onClipsChange={updateClips}
         currentTime={currentTime}
-        onTimeChange={setCurrentTime}
+        onTimeChange={(time) => setCurrentTime(Math.max(0, Math.min(time, totalDuration)))}
         onClipSelect={setSelectedClipId}
       />
     </div>

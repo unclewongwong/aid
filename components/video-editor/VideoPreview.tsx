@@ -1,29 +1,43 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { VideoClip } from './types';
 
 interface VideoPreviewProps {
   clips: VideoClip[];
   currentTime: number;
   isPlaying: boolean;
+  onTimeUpdate: (time: number) => void;
+  onEnded: () => void;
 }
 
-export default function VideoPreview({ clips, currentTime, isPlaying }: VideoPreviewProps) {
+export default function VideoPreview({ clips, currentTime, isPlaying, onTimeUpdate, onEnded }: VideoPreviewProps) {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
-  const [currentClipId, setCurrentClipId] = useState<string | null>(null);
-  const lastClipIdRef = useRef<string | null>(null);
+  const currentClipRef = useRef<string | null>(null);
+  const lastReportedTimeRef = useRef(0);
+
+  const timeline = useMemo(() => {
+    let accumulatedTime = 0;
+    return clips.map(clip => {
+      const duration = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd);
+      const item = { clip, start: accumulatedTime, end: accumulatedTime + duration, duration };
+      accumulatedTime += duration;
+      return item;
+    });
+  }, [clips]);
+
+  const totalDuration = timeline.at(-1)?.end ?? 0;
 
   const getCurrentClip = () => {
-    let accumulatedTime = 0;
-    for (const clip of clips) {
-      const clipDuration = clip.duration - clip.trimStart - clip.trimEnd;
-      if (currentTime >= accumulatedTime && currentTime < accumulatedTime + clipDuration) {
-        return { clip, relativeTime: currentTime - accumulatedTime + clip.trimStart };
-      }
-      accumulatedTime += clipDuration;
-    }
-    return null;
+    if (timeline.length === 0) return null;
+
+    const clampedTime = Math.max(0, Math.min(currentTime, totalDuration));
+    const found = timeline.find(item => clampedTime >= item.start && clampedTime < item.end) ?? timeline[timeline.length - 1];
+    return {
+      clip: found.clip,
+      timelineStart: found.start,
+      relativeTime: Math.min(found.clip.duration - found.clip.trimEnd, clampedTime - found.start + found.clip.trimStart),
+    };
   };
 
   useEffect(() => {
@@ -34,42 +48,63 @@ export default function VideoPreview({ clips, currentTime, isPlaying }: VideoPre
     const video = videoRefs.current.get(clip.id);
     if (!video) return;
 
-    const clipChanged = lastClipIdRef.current !== clip.id;
+    videoRefs.current.forEach((v, id) => {
+      const active = id === clip.id;
+      v.style.opacity = active ? '1' : '0';
+      if (!active) v.pause();
+    });
 
-    if (clipChanged) {
-      // 先显示新视频，再隐藏旧视频，避免黑帧
-      videoRefs.current.forEach((v, id) => {
-        v.style.opacity = id === clip.id ? '1' : '0';
-      });
-      lastClipIdRef.current = clip.id;
-      setCurrentClipId(clip.id);
+    const clipChanged = currentClipRef.current !== clip.id;
+    currentClipRef.current = clip.id;
+
+    if (clipChanged || Math.abs(video.currentTime - relativeTime) > 0.15) {
       video.currentTime = relativeTime;
     }
 
     if (isPlaying) {
       video.play().catch(() => {});
-      // 暂停其他视频
-      videoRefs.current.forEach((v, id) => {
-        if (id !== clip.id) v.pause();
-      });
     } else {
       video.pause();
     }
-  }, [currentTime, clips, isPlaying]);
+  }, [currentTime, clips, isPlaying, totalDuration]);
 
   return (
-    <div className="relative bg-black rounded aspect-video">
-      {clips.map((clip) => (
+    <div className="relative bg-black rounded aspect-video overflow-hidden">
+      {clips.map((clip, index) => (
         <video
           key={clip.id}
           ref={(el) => {
             if (el) videoRefs.current.set(clip.id, el);
+            else videoRefs.current.delete(clip.id);
           }}
           src={clip.url}
           className="absolute inset-0 w-full h-full object-contain transition-opacity duration-150"
-          style={{ opacity: 0 }}
+          style={{ opacity: index === 0 ? 1 : 0 }}
           muted
           preload="auto"
+          onTimeUpdate={(e) => {
+            const current = getCurrentClip();
+            if (!current || current.clip.id !== clip.id) return;
+
+            const videoTime = e.currentTarget.currentTime;
+            const clipEnd = clip.duration - clip.trimEnd;
+            const globalTime = current.timelineStart + Math.max(0, videoTime - clip.trimStart);
+
+            if (videoTime >= clipEnd - 0.05) {
+              if (globalTime >= totalDuration - 0.05) {
+                onTimeUpdate(totalDuration);
+                onEnded();
+              } else {
+                onTimeUpdate(Math.min(totalDuration, current.timelineStart + current.clip.duration - current.clip.trimStart - current.clip.trimEnd));
+              }
+              return;
+            }
+
+            if (Math.abs(globalTime - lastReportedTimeRef.current) > 0.05) {
+              lastReportedTimeRef.current = globalTime;
+              onTimeUpdate(Math.min(globalTime, totalDuration));
+            }
+          }}
         />
       ))}
     </div>

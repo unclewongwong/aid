@@ -170,8 +170,10 @@ export async function createVideoTask(
       duration: options?.duration ?? (model.includes('sora-2') ? 10 : 5),
     };
 
-    // wan2.7 使用 size + resolution 参数
-    if (model.includes('wan2')) {
+    const isHappyHorse = model.includes('happyhorse');
+
+    // wan2.7 / HappyHorse 使用 size + resolution 参数
+    if (model.includes('wan2') || isHappyHorse) {
       requestBody.size = aspectRatio;
       requestBody.resolution = options?.resolution ?? '1080P';
     } else if (model.includes('doubao') || model.includes('seedance')) {
@@ -182,7 +184,18 @@ export async function createVideoTask(
     }
 
     // 根据模型类型应用参考图
-    if (options?.imageRoles && options.imageRoles.length > 0) {
+    if (isHappyHorse) {
+      if (options?.imageRoles && options.imageRoles.length > 0) {
+        const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
+        const lastFrame = options.imageRoles.find(img => img.role === 'last_frame');
+        if (firstFrame) requestBody.first_frame_image = firstFrame.url;
+        if (lastFrame) requestBody.last_frame_image = lastFrame.url;
+      } else if (referenceImageUrls.length === 1) {
+        requestBody.first_frame_image = referenceImageUrls[0];
+      } else if (referenceImageUrls.length > 1) {
+        requestBody.image_urls = referenceImageUrls;
+      }
+    } else if (options?.imageRoles && options.imageRoles.length > 0) {
       // 使用自定义角色（首帧/尾帧）
       requestBody.image_with_roles = options.imageRoles;
     } else if (referenceImageUrls.length > 0) {
@@ -190,11 +203,15 @@ export async function createVideoTask(
       requestBody.image_urls = referenceImageUrls;
     }
 
-    // Seedance 2.0 增强功能
+    // Seedance 2.0 / HappyHorse 增强功能
     if (options?.videoUrls && options.videoUrls.length > 0) {
-      requestBody.video_urls = options.videoUrls;
+      if (isHappyHorse && options.videoUrls.length === 1) {
+        requestBody.video_url = options.videoUrls[0];
+      } else {
+        requestBody.video_urls = options.videoUrls;
+      }
     }
-    if (options?.audioUrls && options.audioUrls.length > 0) {
+    if (options?.audioUrls && options.audioUrls.length > 0 && !isHappyHorse) {
       requestBody.audio_urls = options.audioUrls;
     }
 
