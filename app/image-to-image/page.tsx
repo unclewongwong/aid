@@ -10,7 +10,7 @@ import { useSettings } from '@/hooks/useSettings';
 export default function ImageToImagePage() {
   const { settings, saveSettings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
-  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [userIntent, setUserIntent] = useState('');
   const [scaleNotes, setScaleNotes] = useState('');
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('1:1');
@@ -19,19 +19,24 @@ export default function ImageToImagePage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [statusText, setStatusText] = useState('');
 
-  const handleImageUpload = (file: File) => {
-    if (file.size > 8 * 1024 * 1024) {
-      alert('Image size should be less than 8MB');
+  const handleImageUpload = (files: FileList | File[]) => {
+    const selectedFiles = Array.from(files).slice(0, 4 - referenceImages.length);
+    if (selectedFiles.length === 0) return;
+
+    if (selectedFiles.some(file => file.size > 8 * 1024 * 1024)) {
+      alert('Each image size should be less than 8MB');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setReferenceImage(reader.result as string);
+    Promise.all(selectedFiles.map(file => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    }))).then((images) => {
+      setReferenceImages(prev => [...prev, ...images].slice(0, 4));
       setImageUrl(null);
       setGeneratedPrompt('');
-    };
-    reader.readAsDataURL(file);
+    });
   };
 
   const pollImageStatus = async (taskId: string) => {
@@ -63,8 +68,8 @@ export default function ImageToImagePage() {
   };
 
   const handleGenerate = async () => {
-    if (!referenceImage) {
-      alert('Please upload a reference image first');
+    if (referenceImages.length === 0) {
+      alert('Please upload at least one reference image first');
       return;
     }
 
@@ -83,7 +88,7 @@ export default function ImageToImagePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          referenceImage,
+          referenceImages,
           userIntent,
           scaleNotes,
           aspectRatio,
@@ -159,41 +164,39 @@ export default function ImageToImagePage() {
               </div>
 
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-4 space-y-4">
-                <label className="block text-sm font-mono text-[var(--text-secondary)]">Reference Image</label>
-                <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-primary)]">
-                  {referenceImage ? (
-                    <img src={referenceImage} alt="Reference" className="w-full max-h-[420px] object-contain" />
-                  ) : (
-                    <label className="h-64 flex flex-col items-center justify-center cursor-pointer hover:bg-[var(--bg-hover)] transition-colors">
-                      <Upload size={40} className="text-[var(--text-secondary)] mb-3" />
-                      <span className="text-sm font-mono text-[var(--text-secondary)]">Upload reference image</span>
-                      <span className="text-xs font-mono text-[var(--text-secondary)] mt-1">PNG/JPG/WebP, max 8MB</span>
+                <label className="block text-sm font-mono text-[var(--text-secondary)]">Reference Images</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {referenceImages.map((image, index) => (
+                    <div key={`${image.slice(0, 32)}-${index}`} className="relative border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-primary)]">
+                      <img src={image} alt={`Reference ${index + 1}`} className="w-full h-40 object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => setReferenceImages(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute top-2 right-2 px-2 py-1 text-xs font-mono bg-black/70 hover:bg-black text-white rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  {referenceImages.length < 4 && (
+                    <label className="h-40 border-2 border-dashed border-[var(--border-color)] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[var(--bg-hover)] transition-colors bg-[var(--bg-primary)]">
+                      <Upload size={32} className="text-[var(--text-secondary)] mb-3" />
+                      <span className="text-sm font-mono text-[var(--text-secondary)]">Upload reference images</span>
+                      <span className="text-xs font-mono text-[var(--text-secondary)] mt-1">{referenceImages.length}/4 uploaded, max 8MB each</span>
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         className="hidden"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file);
+                          if (e.target.files) handleImageUpload(e.target.files);
+                          e.target.value = '';
                         }}
                       />
                     </label>
                   )}
                 </div>
-                {referenceImage && (
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] rounded cursor-pointer">
-                    <Upload size={14} /> Replace Image
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file);
-                      }}
-                    />
-                  </label>
-                )}
               </div>
 
               <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-4 space-y-4">
@@ -235,7 +238,7 @@ export default function ImageToImagePage() {
 
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || !referenceImage}
+                  disabled={isGenerating || referenceImages.length === 0}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
