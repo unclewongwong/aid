@@ -1,19 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createImageTask } from '@/lib/apimart';
 
-function buildStudioPrompt(userIntent?: string) {
+function buildStudioPrompt(userIntent?: string, scaleNotes?: string) {
   const intent = userIntent?.trim();
+  const scale = scaleNotes?.trim();
 
   return `Use the provided reference image as the primary visual source.
 
 GOAL:
-Create an ultra-realistic professional studio photograph with high-end commercial photography quality.${intent ? `\n\nSCENE / CREATIVE DIRECTION FROM USER:\n${intent}` : ''}
+Create an ultra-realistic professional studio photograph with high-end commercial photography quality.${intent ? `\n\nSCENE / CREATIVE DIRECTION FROM USER:\n${intent}` : ''}${scale ? `\n\nREFERENCE SCALE / DIMENSION NOTES FROM USER:\n${scale}` : ''}
 
-REFERENCE IMAGE RULES:
-- Preserve the main subject identity, structure, proportions, materials, colors, texture, and all key details from the reference image.
-- Keep the subject recognizable and faithful to the reference.
-- If the reference contains a product, preserve its shape, packaging, material, color, logo/text details, and design language.
-- If the reference contains a person, preserve facial identity, hairstyle, body proportions, clothing identity, and natural skin texture.
+REFERENCE IMAGE RECOGNITION AND CONSISTENCY RULES:
+- Treat the reference image as a strict identity, geometry, proportion, material, color, and scale guide.
+- Preserve the main subject identity, structure, proportions, silhouette, materials, colors, texture, and all key details from the reference image.
+- Keep every recognizable person, object, product, logo/text detail, outfit, accessory, and surface material faithful to the reference.
+- If the reference contains a product, preserve its exact shape, packaging, material, color, logo/text details, size impression, and design language.
+- If the reference contains a person, preserve facial identity, hairstyle, body proportions, clothing identity, accessories, pose logic, and natural skin texture.
+- Preserve the relative scale relationship between people and objects: hand-to-object size, body-to-product size, object height/width/depth impression, distance, placement, contact points, and perspective.
+- Do not enlarge, shrink, stretch, flatten, or redesign referenced objects unless the user explicitly asks.
+- If user scale or dimension notes are provided, follow them as hard constraints for object proportions and person-object scale relationships.
 
 STUDIO PHOTOGRAPHY QUALITY:
 - Professional studio photo shoot, ultra realistic, premium commercial photography.
@@ -31,7 +36,7 @@ NEGATIVE RULES:
 
 export async function POST(request: NextRequest) {
   try {
-    const { referenceImage, userIntent, aspectRatio, imageModel, apiKey } = await request.json();
+    const { referenceImage, userIntent, scaleNotes, aspectRatio, imageModel, apiKey } = await request.json();
 
     if (!referenceImage) {
       return NextResponse.json({ error: 'Reference image is required' }, { status: 400 });
@@ -41,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API Key is required' }, { status: 400 });
     }
 
-    const prompt = buildStudioPrompt(userIntent);
+    const prompt = buildStudioPrompt(userIntent, scaleNotes);
     const taskId = await createImageTask(
       prompt,
       [referenceImage],

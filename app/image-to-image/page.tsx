@@ -12,6 +12,7 @@ export default function ImageToImagePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [userIntent, setUserIntent] = useState('');
+  const [scaleNotes, setScaleNotes] = useState('');
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('1:1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
@@ -84,6 +85,7 @@ export default function ImageToImagePage() {
         body: JSON.stringify({
           referenceImage,
           userIntent,
+          scaleNotes,
           aspectRatio,
           imageModel: settings.imageModel,
           apiKey: settings.apiKey,
@@ -119,7 +121,7 @@ export default function ImageToImagePage() {
   };
 
   const toolbar = (
-    <div className="h-12 flex items-center justify-between px-4 bg-[var(--bg-secondary)] border-b border-[var(--border-color)]">
+    <div className="w-full h-12 flex items-center justify-between bg-[var(--bg-secondary)]">
       <div className="flex items-center gap-3">
         <Link href="/">
           <img src="/logo.png" alt="AI Video Studio" className="h-7 cursor-pointer" />
@@ -203,6 +205,19 @@ export default function ImageToImagePage() {
                     placeholder="例如：高级香水广告图，黑色亚克力台面，柔和轮廓光，奢华商业摄影；或：电商主图，纯净白底，产品清晰居中。"
                     className="w-full h-32 p-3 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm font-mono text-[var(--text-primary)] resize-none focus:outline-none focus:border-[var(--accent-blue)]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-mono text-[var(--text-secondary)] mb-2">Reference Scale / Dimensions (Optional)</label>
+                  <textarea
+                    value={scaleNotes}
+                    onChange={(e) => setScaleNotes(e.target.value)}
+                    placeholder="例如：人物身高约 170cm，手持香水瓶高约 12cm；产品在人物手中约占手掌高度的 2/3；瓶身为细长圆柱，宽高比约 1:4。"
+                    className="w-full h-24 p-3 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm font-mono text-[var(--text-primary)] resize-none focus:outline-none focus:border-[var(--accent-blue)]"
+                  />
+                  <p className="text-xs font-mono text-[var(--text-secondary)] mt-1">
+                    Optional: helps preserve person/object identity, object proportions, and realistic scale relationships.
+                  </p>
                 </div>
 
                 <div>
