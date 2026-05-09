@@ -126,17 +126,19 @@ export default function StoryPage() {
           const panelObjs = sb.objects?.length ? `Objects: ${sb.objects.join(', ')}.` : '';
           return `${cleanPrompt} ${panelChars} ${panelObjs}`.trim();
         });
-        // Build reference image labels in order: costume images first, then scene image
+        // Build reference image labels in order: costume images first, then scene image, then objects
         const refLabels: string[] = [
           ...characters.map(c => `${c.name} — ${c.description}`),
-          ...(sceneImages[0] ? ['Scene/environment reference'] : [])
+          ...(sceneImages[0] ? ['Scene/environment reference'] : []),
+          ...objects.map(o => `${o.name} — ${o.description}`)
         ];
         const gridPrompt = buildGridPrompt(sceneStyle, charDescs, shotDescs, aspectRatio, refLabels);
 
         // Collect reference images — prefer costume image, fallback to original imageUrl
         const refImages = [
           ...characters.map(c => costumeImages[c.name] || c.imageUrl).filter(Boolean),
-          ...(sceneImages[0] ? [sceneImages[0]] : [])
+          ...(sceneImages[0] ? [sceneImages[0]] : []),
+          ...objects.map(o => o.imageUrl || o.imageBase64).filter(Boolean)
         ];
 
         // Generate grid image
