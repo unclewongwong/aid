@@ -63,14 +63,25 @@ export async function createImageTask(
       : [referenceImageUrls];
 
     // 将 base64 图片上传到 APIMart 获取公网 URL
-    const imageUrls = await Promise.all(
-      rawUrls.map(async (img) => {
-        if (img && img.startsWith('data:')) {
-          return await uploadImageToPublic(img, apiKey);
+    const imageUrls: string[] = [];
+    for (let i = 0; i < rawUrls.length; i++) {
+      const img = rawUrls[i];
+      if (!img) continue;
+
+      try {
+        if (img.startsWith('data:')) {
+          const url = await uploadImageToPublic(img, apiKey);
+          imageUrls.push(url);
+          console.log(`Image ${i + 1}/${rawUrls.length} uploaded successfully: ${url}`);
+        } else {
+          imageUrls.push(img);
+          console.log(`Image ${i + 1}/${rawUrls.length} is already a URL: ${img}`);
         }
-        return img;
-      })
-    );
+      } catch (error) {
+        console.error(`Failed to upload image ${i + 1}/${rawUrls.length}:`, error);
+        // 继续处理其他图片，不中断整个流程
+      }
+    }
 
     const requestBody: any = {
       model,
@@ -93,7 +104,13 @@ export async function createImageTask(
 
     console.log('=== Image Generation Request ===');
     console.log('Model:', model);
-    console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+    console.log('Prompt length:', prompt.length);
+    console.log('Reference images:', imageUrls.length);
+    console.log('Request Body:', JSON.stringify({
+      ...requestBody,
+      prompt: prompt.length > 500 ? prompt.substring(0, 500) + '...' : prompt,
+      image_urls: imageUrls.map(url => url.substring(0, 50) + '...')
+    }, null, 2));
     console.log('================================');
 
     const response = await axios.post(
@@ -110,8 +127,12 @@ export async function createImageTask(
     return response.data.data[0].task_id;
   } catch (error: any) {
     console.error('Image generation API error:', error);
-    console.error('Error details:', error.response?.data);
-    throw new Error(`Failed to create image generation task: ${error.response?.data?.error?.message || error.message}`);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    console.error('Error headers:', error.response?.headers);
+
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    throw new Error(`Failed to create image generation task: ${errorMsg}`);
   }
 }
 

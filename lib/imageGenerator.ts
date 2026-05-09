@@ -120,23 +120,34 @@ ${referenceDescriptions.join('\n')}
 
 Strict rules: maintain exact face, hairstyle, clothing and visual style for every character. Keep object shape, color, material, texture, text/logo and all details identical. Do not add subtitles, background music, or extra characters not shown in the references. Maintain exact lighting and atmosphere from the scene reference.`;
 
+  // 清理 prompt 中可能导致 API 错误的特殊字符
+  const cleanEnhancedPrompt = enhancedPrompt
+    .replace(/[\x00-\x1F\x7F]/g, '') // 移除控制字符
+    .replace(/[\u200B-\u200D\uFEFF]/g, ''); // 移除零宽字符
 
   // 创建图像生成任务
   console.log(`Creating image task for storyboard scene ${storyboard.sceneNumber}`);
   console.log(`Characters: ${sceneCharacters.map(c => c.name).join(', ')}`);
+  console.log(`Objects: ${sceneObjects.map(o => o.name).join(', ')}`);
   console.log(`Reference images count: ${referenceImages.length}`);
-  console.log(`Enhanced prompt length: ${enhancedPrompt.length} characters`);
+  console.log(`Prompt length: ${cleanEnhancedPrompt.length} characters`);
 
-  // 检查Prompt长度并警告
-  if (enhancedPrompt.length > 3000) {
-    console.warn(`⚠️ WARNING: Prompt is very long (${enhancedPrompt.length} chars). This may cause issues.`);
-  }
-  if (enhancedPrompt.length > 5000) {
-    console.error(`❌ ERROR: Prompt is too long (${enhancedPrompt.length} chars). Generation may fail.`);
+  // 检查Prompt长度并警告/截断
+  const finalPrompt = cleanEnhancedPrompt.length > 4000
+    ? (() => {
+        const truncIndex = cleanEnhancedPrompt.lastIndexOf('. ', 3900);
+        const truncated = truncIndex > 0 ? cleanEnhancedPrompt.substring(0, truncIndex + 1) : cleanEnhancedPrompt.substring(0, 4000);
+        console.log(`Truncated prompt length: ${truncated.length} chars`);
+        return truncated;
+      })()
+    : cleanEnhancedPrompt;
+
+  if (finalPrompt.length > 5000) {
+    console.error(`❌ ERROR: Prompt is still too long (${finalPrompt.length} chars) after truncation. Generation may fail.`);
   }
 
   const taskId = await createImageTask(
-    enhancedPrompt,
+    finalPrompt,
     referenceImages.filter((img): img is string => typeof img === 'string'),
     apiKey,
     imageModel || 'doubao-seedream-5-0-lite',
