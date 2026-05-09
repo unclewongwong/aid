@@ -35,16 +35,29 @@ export async function generateStoryboardImage(
   // 场景参考图
   const sceneImages = globalSceneImage ? [globalSceneImage] : [];
 
-  // 收集所有物体的参考图片
-  const objectImages = sceneObjects
-    .map(obj => obj.imageUrl || obj.imageBase64)
-    .filter(img => img);
+  // 收集所有物体的参考图片，同时记录哪些物体有参考图
+  const objectImages: string[] = [];
+  const objectsWithRef: ObjectItem[] = [];
+  const objectsWithoutRef: ObjectItem[] = [];
 
-  // 合并所有参考图片：定妆图 + 场景图 + 物体图
+  sceneObjects.forEach((obj) => {
+    const img = obj.imageUrl || obj.imageBase64;
+    if (img) {
+      objectImages.push(img);
+      objectsWithRef.push(obj);
+    } else {
+      objectsWithoutRef.push(obj);
+    }
+  });
+
+  // 合并所有参考图片：定妆图 + 场景图 + 有参考图的物体图
   const referenceImages = [...characterImages, ...sceneImages, ...objectImages];
 
-  // 如果既没有角色也没有物体，使用纯文生图
-  if (referenceImages.length === 0) {
+  // 检查是否有任何角色或物体（无论是否有参考图）
+  const hasAnyContent = sceneCharacters.length > 0 || sceneObjects.length > 0;
+
+  // 如果没有任何角色和物体，使用纯文生图
+  if (!hasAnyContent) {
     console.log(`Scene ${storyboard.sceneNumber} has no characters or objects, using text-to-image generation`);
 
     // 纯文生图也要清理 brackets
@@ -86,11 +99,19 @@ export async function generateStoryboardImage(
     imgIndex++;
   }
 
-  sceneObjects.forEach((obj) => {
+  // 有参考图的物体：添加 Reference image X 引用
+  objectsWithRef.forEach((obj) => {
     referenceDescriptions.push(
       `Reference image ${imgIndex}: "${obj.name}" - ${obj.description}. MUST reproduce exact shape, color, material, texture, text, and all details from this reference image.`
     );
     imgIndex++;
+  });
+
+  // 没有参考图的物体：直接添加描述，不引用 Reference image
+  objectsWithoutRef.forEach((obj) => {
+    referenceDescriptions.push(
+      `Object requirement: "${obj.name}" - ${obj.description}. Generate this object according to the description, maintaining consistent appearance across all shots.`
+    );
   });
 
   const enhancedPrompt = `${cleanedScenePrompt}
