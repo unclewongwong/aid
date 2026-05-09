@@ -147,8 +147,15 @@ export default function StoryPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             storyboard: { ...group[0], prompt: gridPrompt },
-            characters, objects, aspectRatio, imageModel: settings.imageModel,
-            apiKey: settings.apiKey, costumeImages, sceneImage: sceneImages[0] || ''
+            characters,
+            objects,
+            aspectRatio,
+            imageModel: settings.imageModel,
+            apiKey: settings.apiKey,
+            costumeImages,
+            sceneImage: sceneImages[0] || '',
+            // 传递所有参考图（角色 + 场景 + 物体）
+            referenceImages: refImages
           })
         });
         if (!res.ok) throw new Error('Grid generation failed');
