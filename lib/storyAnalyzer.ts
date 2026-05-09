@@ -58,8 +58,18 @@ ${language === 'en'
 2. 然后将它们映射到用户上传的角色和物体名称
 3. 在分镜的 characters 和 objects 字段中，只能使用用户上传的精确名称
 4. 绝对不允许自己创造、推断或修改任何名称
-5. 如果故事中的角色/物体在上传列表中找不到对应，则不要包含在该分镜中
-6. 🎭 保持台词一致性：如果原文中有对话或台词，必须在场景描述中完整保留，不得改写或省略
+5. 🎭 保持台词一致性：如果原文中有对话或台词，必须在场景描述中完整保留，不得改写或省略
+
+⚠️ 临时角色与物体规则（重要）：
+- characters 和 objects 字段：只包含用户上传的角色和物体（用于匹配参考图）
+- prompt 和 description 中：必须描述脚本中出现的所有角色和物体，包括用户未上传的
+- 示例：如果脚本提到"一条鱼在水中游"，但用户没有上传"鱼"：
+  · characters 数组为空或只包含用户上传的角色（如["人物A"]）
+  · 但 prompt 中必须描述"a fish swimming in the water"
+  · description 中必须描述"一条鱼在水中游动"
+- 常见临时角色：动物、路人、背景人物、幻想生物等
+- 常见临时物体：自然元素（树、石、水）、日常物品（椅、桌、灯）等
+
 ⚠️ 特别注意：物体与角色同等重要，必须准确识别和使用
 
 ═══════════════════════════════════════════════════════════════
@@ -111,13 +121,18 @@ ${storyContent}
 在生成分镜之前，你必须：
 1. 识别故事中提到的所有角色和物体
 2. 将它们映射到用户上传的名称列表
-3. 只有能够精确映射的角色/物体才能出现在分镜中
-4. 无法映射的角色/物体不要包含在分镜中
+3. 分为两类：
+   · 已映射：用户上传了参考图的角色/物体 → 加入 characters/objects 数组
+   · 未映射：脚本中提到但用户未上传的 → 只在 prompt/description 中描述
+4. 所有角色和物体都必须在 prompt/description 中描述，无论是否上传了参考图
 
 示例映射过程：
-- 故事中提到"模特" → 检查角色列表 → 如果有"模特"，使用"模特"
-- 故事中提到"金膜产品盒" → 检查物体列表 → 如果有"金膜产品盒"，使用"金膜产品盒"
-- 故事中提到"小狗" → 检查角色列表 → 如果没有"小狗"，该场景不包含此角色
+- 故事中提到"模特" → 检查角色列表 → 如果有"模特"，加入 characters 数组
+- 故事中提到"金膜产品盒" → 检查物体列表 → 如果有"金膜产品盒"，加入 objects 数组
+- 故事中提到"一条鱼" → 检查角色/物体列表 → 如果没有"鱼"：
+  · 不加入 characters/objects 数组
+  · 但必须在 prompt 中描述"a fish"或"a swimming fish"
+  · 在 description 中必须描述"一条鱼"
 
 
 ═══════════════════════════════════════════════════════════════
@@ -308,7 +323,8 @@ ${storyContent}
 2. objects 数组中的每个名称必须完全匹配用户上传的物体名称
 3. 不允许出现任何用户未上传的名称
 4. 名称必须完全一致，包括大小写、空格、标点符号
-5. 如果场景中没有角色或物体，使用空数组 []
+5. 如果场景中没有用户上传的角色或物体，使用空数组 []
+6. ⚠️ 重要：脚本中提到的临时角色（如动物、路人、幻想生物）和临时物体（如自然元素、日常物品）不在 characters/objects 数组中，但必须在 prompt/description 中描述
 
 ═══════════════════════════════════════════════════════════════
 ✅ Prompt 编写规范（极其重要 — 直接决定图像生成质量）
@@ -322,6 +338,12 @@ ${storyContent}
 格式：[角色名](外观关键词) 动作描述
 示例：[BABADA](young woman with long black hair, wearing white dress) standing in the center
 
+⚠️ 临时角色和物体的处理：
+- 已上传参考图的角色/物体：使用 [名称](外观描述) 格式
+- 未上传参考图的临时角色/物体：直接描述，不需要方括号
+- 临时角色示例："a colorful fish swimming", "a black cat", "a passerby in the background"
+- 临时物体示例："a wooden chair", "sunlight streaming through window", "ripples on water"
+
 每个 prompt 必须包含：
 
 1. **镜头设定** (Shot Setup)
@@ -330,13 +352,15 @@ ${storyContent}
    - 构图：centered / rule of thirds / leading lines
 
 2. **角色表现** (Character Performance)
-   - 格式：[角色名](从角色描述中提取的2-3个关键外观特征) + 动作/表情
+   - 已上传角色格式：[角色名](从角色描述中提取的2-3个关键外观特征) + 动作/表情
+   - 临时角色格式：直接描述，如 "a colorful fish swimming gracefully"
    - 具体动作：running / jumping / reaching / turning
    - 表情情绪：determined / joyful / worried / surprised
    - 肢体语言：arms raised / crouching / leaning forward
 
 3. **物体描述** (Object Description)
-   - 格式：[物体名](从物体描述中提取的关键外观特征) + 位置/状态
+   - 已上传物体格式：[物体名](从物体描述中提取的关键外观特征) + 位置/状态
+   - 临时物体格式：直接描述，如 "a wooden table in the center"
    - 物体位置：on the table / in hand / in background
    - 物体状态：opened / closed / glowing
 
@@ -355,22 +379,28 @@ ${storyContent}
 - 视觉风格将由参考图片自动决定
 
 ═══════════════════════════════════════════════════════════════
-📌 示例 Prompt（注意每个角色/物体都带有外观描述）
+📌 示例 Prompt（注意区分已上传和临时角色/物体）
 ═══════════════════════════════════════════════════════════════
 
-示例 1 - 只有角色：
+示例 1 - 只有已上传角色：
 "Medium shot, eye-level angle. [BABADA](young woman, long black hair, white summer dress) standing in the center, arms crossed, determined expression, looking directly forward. Forest environment with dappled sunlight filtering through trees. Shallow depth of field."
 
-示例 2 - 角色和物体：
+示例 2 - 已上传角色和物体：
 "Close-up shot, slightly low angle. [模特](Asian female model, sleek ponytail, minimal makeup) holding [金膜产品盒](golden luxury skincare box with Chinese text logo) in both hands, gentle smile, looking at the product. The product box positioned in the foreground with clear visibility of text and logo. Soft studio lighting, white background."
 
-示例 3 - 多个角色和物体：
-"Wide shot, eye-level angle. [BABADA](young woman, long black hair, white dress) on the left reaching toward [玩具车](red toy car, plastic, palm-sized), [FAFADA](young man, short brown hair, blue jacket) on the right watching with curious expression. The toy car in the center of the table. Warm indoor lighting, cozy living room."
+示例 3 - 已上传角色 + 临时角色（关键示例）：
+"Medium shot, eye-level angle. [BABADA](young woman, long black hair, white dress) standing by a river, watching a colorful fish swimming gracefully in the clear water. The fish has vibrant orange and white scales, fins fluttering. Sunlight filters through trees, creating dappled light on the water surface. Peaceful atmosphere."
+→ 注意：BABADA 是已上传角色，用 [BABADA](...) 格式
+→ 注意：鱼是临时角色（用户未上传），直接描述 "a colorful fish"
+
+示例 4 - 多个已上传角色 + 临时物体：
+"Wide shot, eye-level angle. [BABADA](young woman, long black hair, white dress) on the left reaching toward [玩具车](red toy car, plastic, palm-sized), [FAFADA](young man, short brown hair, blue jacket) on the right watching. A wooden table sits in the center, sunlight streaming through a window in the background. Warm indoor lighting, cozy living room."
 
 🚨 关键提醒：
-- 每次提到角色/物体，必须使用 [名称](外观描述) 格式
-- 外观描述从用户提供的角色/物体描述中提取最关键的2-4个视觉特征
-- 这些内联描述帮助图像模型理解参考图中的主体是什么样的
+- 已上传角色/物体：使用 [名称](外观描述) 格式，外观描述从用户提供的内容提取
+- 临时角色/物体：直接描述，不需要方括号，描述要足够具体以便图像模型理解
+- characters/objects 数组：只包含已上传的角色/物体
+- prompt 中：必须描述所有角色和物体，包括临时的
 
 现在请开始分析故事并生成专业分镜。分镜数量：最多9个，根据故事复杂度决定，尽量精简。
 `;
