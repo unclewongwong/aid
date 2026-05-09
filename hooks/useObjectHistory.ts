@@ -31,12 +31,16 @@ export function useObjectHistory() {
       }
 
       // 保存名称、描述和缩略图
+      // 关键：保留原始的 Cloudinary URL（如果是 http/s 开头的），用于生成时的高质量参考
+      // 仅将缩略图用于 imageBase64 字段
+      const isCloudinaryUrl = object.imageUrl && (object.imageUrl.startsWith('http://') || object.imageUrl.startsWith('https://'));
+
       const historyItem = {
         id: object.id,
         name: object.name,
         description: object.description,
-        imageUrl: thumbnailBase64, // 保存缩略图
-        imageBase64: thumbnailBase64, // 保存缩略图
+        imageUrl: isCloudinaryUrl ? object.imageUrl : (thumbnailBase64 || object.imageUrl),
+        imageBase64: thumbnailBase64 || object.imageBase64,
       };
 
       // 检查是否已存在相同名称的物体

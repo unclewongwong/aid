@@ -93,11 +93,21 @@ export default function ObjectUpload({ onObjectsChange }: ObjectUploadProps) {
 
   // 从历史记录添加物体
   const handleSelectFromHistory = (selectedItems: ObjectItem[]) => {
-    const newObjects = selectedItems.map(item => ({
-      ...item,
-      id: `obj-${Date.now()}-${Math.random()}`,
-      imageFile: undefined // 历史记录中的缩略图没有原始文件
-    }));
+    const newObjects = selectedItems.map(item => {
+      // 只检查 imageUrl 是否为 base64（缩略图）
+      // 如果是 base64，说明没有 Cloudinary URL，使用 imageBase64 作为参考
+      // 如果是 http/https，说明是 Cloudinary URL，直接使用
+      const isCloudinaryUrl = item.imageUrl?.startsWith('http://') || item.imageUrl?.startsWith('https://');
+
+      return {
+        ...item,
+        id: `obj-${Date.now()}-${Math.random()}`,
+        imageFile: undefined,
+        // 如果没有 Cloudinary URL，使用 imageBase64（缩略图）
+        ...(!isCloudinaryUrl && !item.imageUrl ? { imageUrl: item.imageBase64 } : {})
+      };
+    });
+
     const updatedObjects = [...objects, ...newObjects];
     setObjects(updatedObjects);
     onObjectsChange(updatedObjects);
