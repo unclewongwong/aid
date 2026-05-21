@@ -198,7 +198,14 @@ export async function createVideoTask(
     if (isOmniFlashExt) {
       requestBody.aspect_ratio = aspectRatio;
       requestBody.resolution = (options?.resolution ?? '1080p').toLowerCase();
-      requestBody.duration = options?.duration ?? 6;
+      // Omni-Flash-Ext 只支持 4/6/8/10 秒，需要映射其他值
+      const rawDuration = options?.duration ?? 6;
+      if ([4, 6, 8, 10].includes(rawDuration)) {
+        requestBody.duration = rawDuration;
+      } else {
+        // 将其他值映射到最接近的支持值
+        requestBody.duration = rawDuration <= 4 ? 4 : rawDuration <= 6 ? 6 : rawDuration <= 8 ? 8 : 10;
+      }
     } else if (model.includes('wan2') || isHappyHorse) {
       // wan2.7 / HappyHorse 使用 size + resolution 参数
       requestBody.size = aspectRatio;
