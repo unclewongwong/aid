@@ -192,9 +192,15 @@ export async function createVideoTask(
     };
 
     const isHappyHorse = model.includes('happyhorse');
+    const isOmniFlashExt = model.toLowerCase().includes('omni-flash-ext');
 
-    // wan2.7 / HappyHorse 使用 size + resolution 参数
-    if (model.includes('wan2') || isHappyHorse) {
+    // Omni-Flash-Ext 使用特殊参数格式
+    if (isOmniFlashExt) {
+      requestBody.aspect_ratio = aspectRatio;
+      requestBody.resolution = (options?.resolution ?? '1080p').toLowerCase();
+      requestBody.duration = options?.duration ?? 6;
+    } else if (model.includes('wan2') || isHappyHorse) {
+      // wan2.7 / HappyHorse 使用 size + resolution 参数
       requestBody.size = aspectRatio;
       requestBody.resolution = options?.resolution ?? '1080P';
     } else if (model.includes('doubao') || model.includes('seedance')) {
@@ -205,7 +211,13 @@ export async function createVideoTask(
     }
 
     // 根据模型类型应用参考图
-    if (isHappyHorse) {
+    if (isOmniFlashExt) {
+      // Omni-Flash-Ext: 支持 0/1/3 张参考图
+      if (referenceImageUrls.length > 0 && referenceImageUrls.length !== 2) {
+        requestBody.image_urls = referenceImageUrls;
+      }
+      // 2 张图片不被支持，会返回错误
+    } else if (isHappyHorse) {
       if (options?.imageRoles && options.imageRoles.length > 0) {
         const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
         const lastFrame = options.imageRoles.find(img => img.role === 'last_frame');
