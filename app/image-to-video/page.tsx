@@ -26,6 +26,17 @@ export default function ImageToVideoPage() {
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
   const [duration, setDuration] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // 根据 videoModel 动态调整 duration 参数
+  const isOmniFlashExt = settings.videoModel?.toLowerCase().includes('omni-flash-ext');
+  const durationMin = isOmniFlashExt ? 4 : 5;
+  const durationMax = isOmniFlashExt ? 10 : 15;
+  const durationOptions = isOmniFlashExt ? [4, 6, 8, 10] : undefined;
+
+  // 当切换到 Omni-Flash-Ext 时，自动调整 duration
+  if (isOmniFlashExt && ![4, 6, 8, 10].includes(duration)) {
+    setDuration(6);
+  }
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,22 +298,36 @@ export default function ImageToVideoPage() {
               <div>
                 <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Duration</h2>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min={5}
-                    max={15}
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
-                    className="flex-1"
-                  />
-                  <input
-                    type="number"
-                    min={5}
-                    max={15}
-                    value={duration}
-                    onChange={(e) => setDuration(Math.min(15, Math.max(5, Number(e.target.value))))}
-                    className="w-16 px-2 py-1 text-sm font-mono bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
-                  />
+                  {durationOptions ? (
+                    <select
+                      value={duration}
+                      onChange={(e) => setDuration(Number(e.target.value))}
+                      className="px-3 py-1.5 text-sm font-mono bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
+                    >
+                      {durationOptions.map(d => (
+                        <option key={d} value={d}>{d}s</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <>
+                      <input
+                        type="range"
+                        min={durationMin}
+                        max={durationMax}
+                        value={duration}
+                        onChange={(e) => setDuration(Number(e.target.value))}
+                        className="flex-1"
+                      />
+                      <input
+                        type="number"
+                        min={durationMin}
+                        max={durationMax}
+                        value={duration}
+                        onChange={(e) => setDuration(Math.min(durationMax, Math.max(durationMin, Number(e.target.value))))}
+                        className="w-16 px-2 py-1 text-sm font-mono bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
+                      />
+                    </>
+                  )}
                   <span className="text-sm font-mono text-[var(--text-secondary)]">seconds</span>
                 </div>
               </div>
