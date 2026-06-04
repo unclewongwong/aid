@@ -13,7 +13,6 @@ import ReactFlow, {
   Connection,
   Panel,
   ReactFlowProvider,
-  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Play, Pause, ZoomIn, ZoomOut, Maximize2, Grid3x3, Edit2, X, Eye, Save } from 'lucide-react';
@@ -43,7 +42,6 @@ function CanvasModeContent({
   storyboards,
   onUpdate,
 }: CanvasModeProps) {
-  const { getNodes, setNodes } = useReactFlow();
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<string | null>(null);
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
