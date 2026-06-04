@@ -12,16 +12,19 @@ import Step4 from '@/components/Step4';
 import Step5 from '@/components/Step5';
 import Step6 from '@/components/Step6';
 import SettingsModal from '@/components/SettingsModal';
+import CanvasMode from '@/components/CanvasMode';
 import { Character, ObjectItem, Storyboard } from '@/types';
 import { analyzeStory } from '@/lib/storyAnalyzer';
 import { useProject } from '@/hooks/useProject';
 import { useSettings } from '@/hooks/useSettings';
+import { Grid3x3, List } from 'lucide-react';
 
 export default function StoryPage() {
   const { projectName, setProjectName, saveProject, loadProject, exportProject, newProject } = useProject();
   const { settings, saveSettings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isCanvasMode, setIsCanvasMode] = useState(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [objects, setObjects] = useState<ObjectItem[]>([]);
   const [storyContent, setStoryContent] = useState('');
@@ -445,87 +448,111 @@ export default function StoryPage() {
         />
       }
     >
-      <div className="h-full overflow-y-auto bg-[var(--bg-primary)]">
-        <div className="max-w-7xl mx-auto p-3 md:p-6">
-          <StepIndicator
-            currentStep={currentStep}
-            steps={['Characters', 'Story', 'Script', 'Images', 'Videos', 'Export']}
-          />
-          {currentStep === 1 && (
-            <Step2
-              characters={characters}
-              objects={objects}
-              onCharactersChange={setCharacters}
-              onObjectsChange={setObjects}
-              onBack={() => {}}
-              onNext={() => setCurrentStep(2)}
-              isLoading={false}
-            />
-          )}
-          {currentStep === 2 && (
-            <Step1
-              storyContent={storyContent}
-              onStoryLoad={setStoryContent}
-              onNext={handleGenerateScript}
-              onBack={() => setCurrentStep(1)}
-              isLoading={isLoading}
-              language={settings.language || 'zh'}
-              onLanguageChange={(lang) => saveSettings({ ...settings, language: lang })}
-              apiKey={settings.apiKey}
-              scriptModel={settings.scriptModel}
-              dmxApiKey={settings.dmxApiKey}
-            />
-          )}
-          {currentStep === 3 && (
-            <Step3
-              storyboards={storyboards}
-              characters={characters}
-              objects={objects}
-              costumeImages={costumeImages}
-              costumeGenerating={costumeGenerating}
-              sceneImage={sceneImages[0] || ''}
-              sceneImages={sceneImages}
-              sceneGenerating={sceneGenerating}
-              onBack={() => setCurrentStep(2)}
-              onNext={() => setCurrentStep(4)}
-              onUpdate={handleUpdateStoryboard}
-              onGenerateCostume={handleGenerateCostume}
-              onClearCostumeImage={(name) => setCostumeImages(prev => { const n = { ...prev }; delete n[name]; return n; })}
-              onClearSceneImage={(idx) => setSceneImages(prev => prev.filter((_, i) => i !== idx))}
-            />
-          )}
-          {currentStep === 4 && (
-            <Step4
-              storyboards={storyboards}
-              onBack={() => setCurrentStep(3)}
-              onNext={() => setCurrentStep(5)}
-              onGenerateImage={handleGenerateImage}
-              onRetry={handleGenerateImage}
-              onUpdate={handleUpdateStoryboard}
-              onGenerateGrid={handleGenerateGrid}
-              isGeneratingGrid={isGeneratingGrid}
-            />
-          )}
-          {currentStep === 5 && (
-            <Step5
-              storyboards={storyboards}
-              characters={characters}
-              onBack={() => setCurrentStep(4)}
-              onNext={() => setCurrentStep(6)}
-              onGenerateVideo={handleGenerateVideo}
-              onGenerateVideoPrompt={handleGenerateVideoPrompt}
-              onGenerateAudio={handleGenerateAudio}
-              onUpdate={handleUpdateStoryboard}
-            />
-          )}
-          {currentStep === 6 && (
-            <Step6
-              storyboards={storyboards}
-              onBack={() => setCurrentStep(5)}
-            />
-          )}
+      {isCanvasMode && storyboards.length > 0 ? (
+        <div className="relative h-full">
+          <CanvasMode storyboards={storyboards} />
+          <button
+            onClick={() => setIsCanvasMode(false)}
+            className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 text-xs font-mono bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] rounded transition-colors"
+          >
+            <List size={14} />
+            List Mode
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="h-full overflow-y-auto bg-[var(--bg-primary)]">
+          <div className="max-w-7xl mx-auto p-3 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <StepIndicator
+                currentStep={currentStep}
+                steps={['Characters', 'Story', 'Script', 'Images', 'Videos', 'Export']}
+              />
+              {storyboards.length > 0 && (
+                <button
+                  onClick={() => setIsCanvasMode(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-mono bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] rounded transition-colors"
+                >
+                  <Grid3x3 size={14} />
+                  Canvas Mode
+                </button>
+              )}
+            </div>
+            {currentStep === 1 && (
+              <Step2
+                characters={characters}
+                objects={objects}
+                onCharactersChange={setCharacters}
+                onObjectsChange={setObjects}
+                onBack={() => {}}
+                onNext={() => setCurrentStep(2)}
+                isLoading={false}
+              />
+            )}
+            {currentStep === 2 && (
+              <Step1
+                storyContent={storyContent}
+                onStoryLoad={setStoryContent}
+                onNext={handleGenerateScript}
+                onBack={() => setCurrentStep(1)}
+                isLoading={isLoading}
+                language={settings.language || 'zh'}
+                onLanguageChange={(lang) => saveSettings({ ...settings, language: lang })}
+                apiKey={settings.apiKey}
+                scriptModel={settings.scriptModel}
+                dmxApiKey={settings.dmxApiKey}
+              />
+            )}
+            {currentStep === 3 && (
+              <Step3
+                storyboards={storyboards}
+                characters={characters}
+                objects={objects}
+                costumeImages={costumeImages}
+                costumeGenerating={costumeGenerating}
+                sceneImage={sceneImages[0] || ''}
+                sceneImages={sceneImages}
+                sceneGenerating={sceneGenerating}
+                onBack={() => setCurrentStep(2)}
+                onNext={() => setCurrentStep(4)}
+                onUpdate={handleUpdateStoryboard}
+                onGenerateCostume={handleGenerateCostume}
+                onClearCostumeImage={(name) => setCostumeImages(prev => { const n = { ...prev }; delete n[name]; return n; })}
+                onClearSceneImage={(idx) => setSceneImages(prev => prev.filter((_, i) => i !== idx))}
+              />
+            )}
+            {currentStep === 4 && (
+              <Step4
+                storyboards={storyboards}
+                onBack={() => setCurrentStep(3)}
+                onNext={() => setCurrentStep(5)}
+                onGenerateImage={handleGenerateImage}
+                onRetry={handleGenerateImage}
+                onUpdate={handleUpdateStoryboard}
+                onGenerateGrid={handleGenerateGrid}
+                isGeneratingGrid={isGeneratingGrid}
+              />
+            )}
+            {currentStep === 5 && (
+              <Step5
+                storyboards={storyboards}
+                characters={characters}
+                onBack={() => setCurrentStep(4)}
+                onNext={() => setCurrentStep(6)}
+                onGenerateVideo={handleGenerateVideo}
+                onGenerateVideoPrompt={handleGenerateVideoPrompt}
+                onGenerateAudio={handleGenerateAudio}
+                onUpdate={handleUpdateStoryboard}
+              />
+            )}
+            {currentStep === 6 && (
+              <Step6
+                storyboards={storyboards}
+                onBack={() => setCurrentStep(5)}
+              />
+            )}
+          </div>
+        </div>
+      )}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
