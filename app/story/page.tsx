@@ -450,7 +450,10 @@ export default function StoryPage() {
     >
       {isCanvasMode && storyboards.length > 0 ? (
         <div className="relative h-full">
-          <CanvasMode storyboards={storyboards} />
+          <CanvasMode
+            storyboards={storyboards}
+            onUpdate={handleUpdateStoryboard}
+          />
           <button
             onClick={() => setIsCanvasMode(false)}
             className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 text-xs font-mono bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] rounded transition-colors"
