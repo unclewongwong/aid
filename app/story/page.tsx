@@ -453,6 +453,10 @@ export default function StoryPage() {
           <CanvasMode
             storyboards={storyboards}
             onUpdate={handleUpdateStoryboard}
+            onGenerateImage={handleGenerateImage}
+            onGenerateVideoPrompt={handleGenerateVideoPrompt}
+            onGenerateAudio={handleGenerateAudio}
+            onGenerateVideo={handleGenerateVideo}
           />
           <button
             onClick={() => setIsCanvasMode(false)}
