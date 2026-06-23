@@ -176,6 +176,7 @@ export async function createVideoTask(
     audioUrls?: string[];
     imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' }>;
     resolution?: '720P' | '1080P';
+    quality?: '480p' | '720p';
   }
 ): Promise<string> {
   try {
@@ -193,9 +194,20 @@ export async function createVideoTask(
 
     const isHappyHorse = model.includes('happyhorse');
     const isOmniFlashExt = model.toLowerCase().includes('omni-flash-ext');
+    const isGrokImagine = model.toLowerCase().includes('grok-imagine');
 
-    // Omni-Flash-Ext 使用特殊参数格式
-    if (isOmniFlashExt) {
+    // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
+    if (isGrokImagine) {
+      requestBody.size = aspectRatio;
+      requestBody.quality = options?.quality ?? '480p';
+      // Duration: 6-30秒
+      const rawDuration = options?.duration ?? 6;
+      requestBody.duration = Math.max(6, Math.min(30, rawDuration));
+      // Support up to 7 reference images
+      if (referenceImageUrls.length > 0) {
+        requestBody.image_urls = referenceImageUrls.slice(0, 7);
+      }
+    } else if (isOmniFlashExt) {
       requestBody.aspect_ratio = aspectRatio;
       requestBody.resolution = (options?.resolution ?? '1080p').toLowerCase();
       // Omni-Flash-Ext 只支持 4/6/8/10 秒，需要映射其他值
@@ -218,7 +230,9 @@ export async function createVideoTask(
     }
 
     // 根据模型类型应用参考图
-    if (isOmniFlashExt) {
+    if (isGrokImagine) {
+      // Already handled above in Grok Imagine block
+    } else if (isOmniFlashExt) {
       // Omni-Flash-Ext: 支持 0/1/3 张参考图
       if (referenceImageUrls.length > 0 && referenceImageUrls.length !== 2) {
         requestBody.image_urls = referenceImageUrls;

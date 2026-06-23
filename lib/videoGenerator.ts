@@ -52,6 +52,8 @@ ${characterAudios.length > 0 ? '- Mouth and body motion must naturally synchroni
   console.log(`Reference image: ${storyboard.imageUrl}`);
   console.log(`Using model: ${model}`);
 
+  const isGrokImagine = model.toLowerCase().includes('grok-imagine');
+
   // firstFrameUrl = last frame of previous shot's video (Cloudinary so_last)
   const imageRoles = firstFrameUrl
     ? [{ url: firstFrameUrl, role: 'first_frame' as const }, { url: storyboard.imageUrl!, role: 'last_frame' as const }]
@@ -65,6 +67,7 @@ ${characterAudios.length > 0 ? '- Mouth and body motion must naturally synchroni
     aspectRatio,
     {
       duration: storyboard.videoDuration,
+      quality: isGrokImagine ? '480p' : undefined,
       // Don't pass audio when using firstFrame/lastFrame continuity mode (API limitation)
       audioUrls: firstFrameUrl ? [] : audioFiles,
       imageRoles

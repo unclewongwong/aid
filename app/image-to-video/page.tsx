@@ -25,16 +25,22 @@ export default function ImageToVideoPage() {
   const [cameraParams, setCameraParams] = useState('');
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
   const [duration, setDuration] = useState(5);
+  const [quality, setQuality] = useState<'480p' | '720p'>('480p');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // 根据 videoModel 动态调整 duration 参数
+  // 根据 videoModel 动态调整参数
   const isOmniFlashExt = settings.videoModel?.toLowerCase().includes('omni-flash-ext');
-  const durationMin = isOmniFlashExt ? 4 : 5;
-  const durationMax = isOmniFlashExt ? 10 : 15;
+  const isGrokImagine = settings.videoModel?.toLowerCase().includes('grok-imagine');
+  const durationMin = isOmniFlashExt ? 4 : (isGrokImagine ? 6 : 5);
+  const durationMax = isOmniFlashExt ? 10 : (isGrokImagine ? 30 : 15);
   const durationOptions = isOmniFlashExt ? [4, 6, 8, 10] : undefined;
 
   // 当切换到 Omni-Flash-Ext 时，自动调整 duration
   if (isOmniFlashExt && ![4, 6, 8, 10].includes(duration)) {
+    setDuration(6);
+  }
+  // 当切换到 Grok Imagine 时，自动调整 duration
+  if (isGrokImagine && (duration < 6 || duration > 30)) {
     setDuration(6);
   }
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -141,6 +147,7 @@ export default function ImageToVideoPage() {
           prompt: fullPrompt,
           aspectRatio,
           duration,
+          quality: isGrokImagine ? quality : undefined,
           apiKey: settings.apiKey,
           videoModel: settings.videoModel,
           videoFiles,
@@ -331,6 +338,31 @@ export default function ImageToVideoPage() {
                   <span className="text-sm font-mono text-[var(--text-secondary)]">seconds</span>
                 </div>
               </div>
+
+              {/* Quality - Grok Imagine only */}
+              {isGrokImagine && (
+                <div>
+                  <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Quality</h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: '480p' as const, label: '480p (Default)' },
+                      { value: '720p' as const, label: '720p' }
+                    ].map((q) => (
+                      <button
+                        key={q.value}
+                        onClick={() => setQuality(q.value)}
+                        className={`p-2 text-xs font-mono rounded border ${
+                          quality === q.value
+                            ? 'border-[var(--accent-blue)] bg-[var(--accent-blue)] text-white'
+                            : 'border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--text-secondary)]'
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Motion Description */}
               <div>

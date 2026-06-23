@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       prompt,
       aspectRatio = '16:9',
       duration,
+      quality,
       apiKey,
       videoModel = 'sora-2',
       videoFiles = [],
@@ -103,6 +104,7 @@ AUDIO: Use the provided reference audio. Natural sound effects only (footsteps, 
       aspectRatio,
       {
         duration,
+        quality,
         videoUrls: uploadedVideoUrls,
         audioUrls: uploadedAudioUrls,
         imageRoles: imageRoles.length > 0 ? imageRoles : undefined

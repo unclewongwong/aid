@@ -12,6 +12,18 @@ const DEFAULT_SETTINGS: AppSettings = {
   aspectRatio: '16:9', // 默认横屏
 };
 
+const LEGACY_VIDEO_MODEL_MAP: Record<string, string> = {
+  'grok-imagine-1.0-video-apimart': 'grok-imagine-1.5-video-apimart',
+};
+
+function migrateSettings(settings: AppSettings): AppSettings {
+  const migratedVideoModel = LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel;
+  return {
+    ...settings,
+    videoModel: migratedVideoModel,
+  };
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
@@ -20,8 +32,9 @@ export function useSettings() {
     const saved = localStorage.getItem('appSettings');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved) as AppSettings;
+        const parsed = migrateSettings(JSON.parse(saved) as AppSettings);
         setSettings(parsed);
+        localStorage.setItem('appSettings', JSON.stringify(parsed));
       } catch (error) {
         console.error('Failed to load settings:', error);
       }
@@ -30,9 +43,10 @@ export function useSettings() {
 
   // 保存设置到 localStorage
   const saveSettings = useCallback((newSettings: AppSettings) => {
-    setSettings(newSettings);
-    localStorage.setItem('appSettings', JSON.stringify(newSettings));
-    console.log('Settings saved:', newSettings);
+    const migrated = migrateSettings(newSettings);
+    setSettings(migrated);
+    localStorage.setItem('appSettings', JSON.stringify(migrated));
+    console.log('Settings saved:', migrated);
   }, []);
 
   // 重置为默认设置
