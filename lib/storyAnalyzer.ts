@@ -255,44 +255,83 @@ ${storyContent}
       → 缺少中间的"门打开"动作，不连贯
     - 如果动作涉及物体互动，必须展示"接触 → 互动 → 结果"的完整过程
 
-11. **运镜与视频提示词设计（Seedance 2.0 标准）**
+11. **运镜与视频提示词设计（电影级标准）**
 
-   核心原则（来自最佳实践）：
+   核心原则：
    - 时间轴分段：每段标注时间范围和镜头编号，如 [00–03s] Shot 1: (Interior / Close-up)
    - 每段聚焦一个核心动作，不堆砌多个事件
    - 动作分解：不写"角色走路"，写"feet plant → body leans → coat billows → stride completes"
-   - 微表情细节：subtle nod、eyes narrow、jaw tightens、breathing heavily
+   - 微表情细节：subtle nod、eyes narrow、jaw tightens、breathing lightly、tears gathering in lower eyelid
    - 环境互动：rain lashes windshield、water sprays into lens、motion blur stretches lights
    - 多层音效（具体化）：rain patter + engine roar + tire screech，不只写"环境音"
-   - 光影质感：rim light、lens flare、motion blur、volumetric god rays、shallow DOF
    - 连贯性结尾：seamless transition / no cut / smooth camera movement
 
+   🎬 **电影级真实感要求**（关键新增）：
+   - **皮肤真实纹理**：visible pores, fine facial hair, natural skin texture, subtle under-eye lines, NO excessive smoothing, NO plastic skin
+   - **泪水物理效果**：tears gathering in eyes → moisture reflects light → single tear slowly rolls down cheek → clear tear track visible on skin surface, wet eyelashes
+   - **微表情时间轴**（人物特写必备）：
+     * 0-5s: eyes downcast, suppressing emotion, reddening eyes, moisture beginning to appear
+     * 6-10s: slowly lifting gaze toward camera, eyes glistening with tears gathering in lower eyelid
+     * 11-15s: single tear falls, rolls down cheek naturally, tear track clearly visible
+   - **光线的电影级控制**：
+     * 主光源方向：left side cool moonlight / right side warm candlelight / backlit rim light
+     * 光线性格：soft and delicate / dramatic and contrasty / restrained and melancholic
+     * 光影细节：eye catchlight, cheek highlights, subtle contour shadows
+   - **镜头语言专业化**：
+     * 85mm cinema lens / macro lens effect / extreme shallow DOF (f/1.4-f/2.8)
+     * slow push-in with slight handheld breathing feel
+     * background completely blurred with soft bokeh
+     * face sharp and detailed in foreground
+   - **克制的情绪表达**：
+     * quiet and suppressed, NOT exaggerated crying or shouting
+     * lips gently closed, breathing very light
+     * eyes slowly reddening, tears gathering but NOT streaming
+     * broken gaze, restrained sadness
+
    运镜类型：
-   - Push in / Pull out / Pan left/right / Tracking shot / Dolly in
-   - Static shot / Handheld / Orbital shot / Low angle / Over-shoulder / POV / FPV
+   - Push in / Pull out / Pan left/right / Tracking shot / Dolly in / Slow push-in
+   - Static shot / Handheld breathing / Orbital shot / Low angle / Over-shoulder / POV / FPV
+   - Macro close-up / Extreme close-up (eyes/hands/product details)
 
    videoPrompt 格式（必须遵守）：
 
-   [00–Xs] Shot N: (景别 / 角度)
-   场景描述。角色动作分解（micro-expression + body movement）。环境互动细节。光影效果。SFX: 音效1 + 音效2 + 音效3。
+   [00–Xs] Shot N: (景别 / 角度 / 镜头规格)
+   场景描述。角色动作分解（micro-expression + body movement + realistic skin details）。环境互动细节。光影效果（light direction + character + color temperature）。真实物理细节（tear physics / cloth simulation / breathing rhythm）。SFX: 音效1 + 音效2 + 音效3。
 
-   [Xs–Ys] Shot N+1: (景别 / 角度)
-   动作延续或转折。物理效果（cloth simulation / fluid dynamics）。质感（motion blur, shallow DOF）。SFX: 音效变化。
+   [Xs–Ys] Shot N+1: (景别 / 角度 / 镜头规格)
+   动作延续或转折。情绪变化细节（eyes/expression/posture）。物理效果（fluid dynamics / natural motion）。质感（motion blur, shallow DOF, skin texture）。SFX: 音效变化。
 
-   MOOD: 情绪关键词
-   STYLE: 视觉风格（Cinematic realism / Fantasy / Commercial / Surreal）
-   QUALITY: 4K Ultra HD, cinematic texture, stable face, no deformation, smooth transitions
+   MOOD: 情绪关键词（restrained / melancholic / tense / joyful）
+   STYLE: 视觉风格（Cinematic realism / Period drama / Commercial / Editorial portrait）
+   LIGHTING: 光线设置（left cool moonlight + right warm candlelight / natural window light / dramatic side light）
+   QUALITY: 8K ultra-clear, realistic skin texture, cinema-grade color grading, real portrait photography feel, HDR, high dynamic range, realistic tear physics, visible pores and fine hair, NO plastic skin, NO beauty filter
 
-   示例：
-   "[00–05s] Shot 1: (Interior / Close-up)
+   示例 1 - 动作场景：
+   "[00–05s] Shot 1: (Interior / Close-up / 85mm f/2.0)
    Rain lashes the windshield. The driver (in helmet) looks over, calm and focused. Dashboard lights reflect on his visor. He gives a subtle nod and mouths 'Let's go.' SFX: rain patter + engine idle + visor tap.
 
-   [05–10s] Shot 2: (Wide action)
+   [05–10s] Shot 2: (Wide action / Tracking shot)
    Both cars accelerate in sync on wet asphalt. Water sprays into the camera lens. Motion blur stretches stadium lights into long color streaks. SFX: tire screech + engine roar + crowd cheer.
 
    MOOD: High-stakes tension
    STYLE: Hollywood cinematic realism
+   LIGHTING: Stadium floodlights + wet asphalt reflections
    QUALITY: 4K Ultra HD, cinematic texture, stable face, no deformation, smooth transitions"
+
+   示例 2 - 情绪特写（电影级真实感）：
+   "[00–05s] Shot 1: (Extreme close-up / Fixed frame / 85mm f/1.4)
+   Ancient Chinese woman in her 20s, classical hair bun with jade hairpin, pale blue silk collar. Eyes downcast, suppressing emotion, eye rims slowly reddening, moisture beginning to gather. Realistic skin texture with visible pores and fine facial hair. Soft left-side cool moonlight illuminates eyes and cheeks. Background completely blurred with wooden lattice window bokeh. SFX: gentle breathing + distant wind chimes.
+
+   [05–10s] Shot 2: (Extreme close-up / Slow push-in / 85mm f/1.4 macro)
+   She slowly lifts her gaze toward camera, eyes glistening with broken sadness. Tears gathering in lower eyelid, eyelashes becoming wet with moisture, eye catchlight reflecting moonlight. Lips gently closed, breathing very light. Natural makeup with subtle blush on eye corners. Right side has faint warm candlelight creating rim light on cheek contour. SFX: barely audible breathing + fabric rustle.
+
+   [10–15s] Shot 3: (Extreme close-up / Fixed with handheld breathing / 85mm f/1.4 macro)
+   Single tear slowly falls from right eye, rolls down cheek naturally along skin texture, tear track clearly visible with moisture reflecting light. Wet eyelashes detailed and sharp. Face remains composed but eyes convey restrained heartbreak. Camera holds on her sorrowful yet controlled expression. Real tear physics, skin pores and fine hair clearly visible. SFX: silent moment + distant guqin note.
+
+   MOOD: Restrained melancholy, quiet heartbreak, suppressed emotion
+   STYLE: Chinese period drama, cinematic portrait realism, editorial aesthetic
+   LIGHTING: Left cool moonlight (main light on eyes/cheeks) + right warm candlelight (subtle rim light)
+   QUALITY: 8K ultra-clear, realistic skin texture with visible pores and fine facial hair, cinema-grade color grading, real portrait photography feel, HDR, realistic tear physics with natural flow and reflection, NO plastic skin, NO beauty filter smoothing, natural imperfections preserved"
 
 ═══════════════════════════════════════════════════════════════
 📝 输出格式（只输出 JSON，不要其他内容）
