@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (status.status === 'failed') {
-      return NextResponse.json({ status: 'failed' });
+      console.error('Image generation failed:', JSON.stringify(status, null, 2));
+      return NextResponse.json({
+        status: 'failed',
+        error: status.error || status.message || 'Unknown error',
+        details: status
+      });
     }
 
     return NextResponse.json({ status: status.status || 'pending' });

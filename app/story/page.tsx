@@ -12,7 +12,7 @@ import Step4 from '@/components/Step4';
 import Step5 from '@/components/Step5';
 import Step6 from '@/components/Step6';
 import SettingsModal from '@/components/SettingsModal';
-import CanvasMode from '@/components/CanvasMode';
+import CanvasMode from '@/components/CanvasModeTldraw';
 import { Character, ObjectItem, Storyboard } from '@/types';
 import { analyzeStory } from '@/lib/storyAnalyzer';
 import { useProject } from '@/hooks/useProject';
@@ -176,27 +176,47 @@ export default function StoryPage() {
           if (!statusRes.ok) continue;
           const statusData = await statusRes.json();
           if (statusData.status === 'completed' && statusData.imageUrl) { gridUrl = statusData.imageUrl; break; }
-          if (statusData.status === 'failed') throw new Error('Grid image failed');
+          if (statusData.status === 'failed') {
+            console.error('Grid generation failed:', statusData);
+            throw new Error(statusData.error || statusData.details?.message || 'Grid image failed');
+          }
         }
         if (!gridUrl) throw new Error('Grid image timeout');
 
         // Split grid into 9 cells and upload to Cloudinary
         const cells = await splitGridImage(gridUrl, aspectRatio);
-        const uploadedCells = await Promise.all(cells.map(async (cell) => {
+        console.log('Split cells:', cells.length);
+        const uploadedCells = await Promise.all(cells.map(async (cell, idx) => {
           if (!cell.startsWith('data:')) return cell;
-          const uploadRes = await fetch('/api/upload-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageData: cell })
-          });
-          if (!uploadRes.ok) return cell; // fallback to base64 if upload fails
-          const { url } = await uploadRes.json();
-          return url;
+          try {
+            const uploadRes = await fetch('/api/upload-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imageData: cell })
+            });
+            if (!uploadRes.ok) {
+              console.error(`Upload failed for cell ${idx}:`, await uploadRes.text());
+              return cell;
+            }
+            const { url } = await uploadRes.json();
+            console.log(`Cell ${idx} uploaded:`, url);
+            return url;
+          } catch (error) {
+            console.error(`Upload error for cell ${idx}:`, error);
+            return cell;
+          }
         }));
+        console.log('Uploaded cells:', uploadedCells);
         setStoryboards(prev => prev.map(sb => {
           const idx = group.findIndex(g => g.id === sb.id);
-          if (idx === -1 || !uploadedCells[idx]) return sb;
-          return { ...sb, imageUrl: uploadedCells[idx], status: 'completed' as const };
+          if (idx === -1) return sb;
+          const newImageUrl = uploadedCells[idx];
+          if (!newImageUrl) {
+            console.warn(`No image URL for ${sb.id} at index ${idx}`);
+            return sb;
+          }
+          console.log(`Setting imageUrl for ${sb.id}:`, newImageUrl);
+          return { ...sb, imageUrl: newImageUrl, status: 'completed' as const };
         }));
       } catch (error) {
         alert(`Grid generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
