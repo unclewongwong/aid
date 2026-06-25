@@ -119,6 +119,9 @@ export default function StoryPage() {
     for (let i = 0; i < batch.length; i += 9) {
       const group = batch.slice(i, i + 9);
       setIsGeneratingGrid(true);
+      setStoryboards(prev => prev.map(sb =>
+        group.some(g => g.id === sb.id) ? { ...sb, status: 'generating' } : sb
+      ));
       try {
         // Build grid prompt from group's prompts
         const sceneStyle = group[0]?.sceneStyle || '';
@@ -161,8 +164,14 @@ export default function StoryPage() {
             referenceImages: refImages
           })
         });
-        if (!res.ok) throw new Error('Grid generation failed');
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || 'Grid generation failed');
+        }
         const { taskId } = await res.json();
+        setStoryboards(prev => prev.map(sb =>
+          group.some(g => g.id === sb.id) ? { ...sb, taskId } : sb
+        ));
 
         // Poll for grid image
         let gridUrl = '';
@@ -186,7 +195,7 @@ export default function StoryPage() {
         // Split grid into 9 cells and upload to Cloudinary
         const cells = await splitGridImage(gridUrl, aspectRatio);
         console.log('Split cells:', cells.length);
-        const uploadedCells = await Promise.all(cells.map(async (cell, idx) => {
+        const uploadedCells = await Promise.all(cells.slice(0, group.length).map(async (cell, idx) => {
           if (!cell.startsWith('data:')) return cell;
           try {
             const uploadRes = await fetch('/api/upload-image', {
@@ -219,6 +228,10 @@ export default function StoryPage() {
           return { ...sb, imageUrl: newImageUrl, status: 'completed' as const };
         }));
       } catch (error) {
+        console.error('Grid generation failed:', error);
+        setStoryboards(prev => prev.map(sb =>
+          group.some(g => g.id === sb.id) ? { ...sb, status: 'failed' } : sb
+        ));
         alert(`Grid generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setIsGeneratingGrid(false);

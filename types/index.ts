@@ -82,6 +82,8 @@ export interface ApiMartImageTaskResponse {
 export interface ApiMartImageStatusResponse {
   task_id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  error?: string;
+  message?: string;
   result?: {
     images: Array<{
       url: string;
