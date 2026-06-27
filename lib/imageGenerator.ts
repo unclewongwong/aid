@@ -11,7 +11,8 @@ export async function generateStoryboardImage(
   imageModel?: string,
   globalCostumeImages: Record<string, string> = {},
   globalSceneImage?: string,
-  preUploadedReferences?: string[]
+  preUploadedReferences?: string[],
+  preUploadedReferenceLabels: string[] = []
 ): Promise<string> {
   // 找到该分镜中出现的角色
   const sceneCharacters = characters.filter(c =>
@@ -48,31 +49,11 @@ export async function generateStoryboardImage(
       }
     });
 
-    // 构建参考图描述
-    const referenceDescriptions: string[] = [];
-    let imgIndex = 1;
-
-    sceneCharacters.forEach((char) => {
-      const usingCostume = !!globalCostumeImages[char.name];
-      referenceDescriptions.push(
-        `Reference image ${imgIndex}: "${char.name}" - ${usingCostume ? 'CHARACTER REFERENCE. Maintain consistent appearance, hairstyle, clothing, and visual style from this reference.' : `${char.description}. Match the character's appearance and clothing style from this reference image.`}`
-      );
-      imgIndex++;
-    });
-
-    if (globalSceneImage) {
-      referenceDescriptions.push(
-        `Reference image ${imgIndex}: SCENE REFERENCE - Use this as the environment/background style. Match the lighting, atmosphere, and setting exactly.`
-      );
-      imgIndex++;
-    }
-
-    // 有参考图的物体
-    objectsWithRef.forEach((obj) => {
-      referenceDescriptions.push(
-        `Reference image ${imgIndex}: "${obj.name}" - ${obj.description}. MUST reproduce exact shape, color, material, texture, text, and all details from this reference image.`
-      );
-      imgIndex++;
+    // Grid callers provide labels in the exact same order as the images. Using
+    // those labels avoids reference number drift when an entity has no image.
+    const referenceDescriptions = preUploadedReferences.map((_, index) => {
+      const label = preUploadedReferenceLabels[index];
+      return `Reference image ${index + 1}: ${label || `uploaded visual reference ${index + 1}`}. Match this reference exactly.`;
     });
 
     // 没有参考图的物体

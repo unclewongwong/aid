@@ -123,45 +123,90 @@ export default function StoryPage() {
         group.some(g => g.id === sb.id) ? { ...sb, status: 'generating' } : sb
       ));
       try {
+        // Grid generation must consider the cast from every panel, not only the
+        // first storyboard in the group. Otherwise later character references
+        // are uploaded without a matching prompt label and can be ignored.
+        const mentionsEntity = (sb: Storyboard, name: string, listedNames?: string[]) =>
+          listedNames?.includes(name) ||
+          sb.prompt.includes(`[${name}]`) ||
+          sb.prompt.includes(name) ||
+          sb.description.includes(name);
+        const groupCharacters = characters.filter(character =>
+          group.some(sb => mentionsEntity(sb, character.name, sb.characters))
+        );
+        const groupObjects = objects.filter(object =>
+          group.some(sb => mentionsEntity(sb, object.name, sb.objects))
+        );
+        const summarize = (value: string, maxLength = 160) =>
+          value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+
         // Build grid prompt from group's prompts
         const sceneStyle = group[0]?.sceneStyle || '';
-        const charDescs = characters.map(c => `${c.name}: ${c.description}`).join('\n');
+        const charDescs = groupCharacters
+          .map(c => `${c.name}: ${summarize(c.description)}`)
+          .join('\n');
         const shotDescs = group.map(sb => {
           const cleanPrompt = sb.prompt.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\[([^\]]+)\]/g, '$1');
-          const panelChars = sb.characters?.length ? `Characters: ${sb.characters.join(', ')}.` : '';
-          const panelObjs = sb.objects?.length ? `Objects: ${sb.objects.join(', ')}.` : '';
-          return `${cleanPrompt} ${panelChars} ${panelObjs}`.trim();
+          const requiredCharacters = groupCharacters
+            .filter(character => mentionsEntity(sb, character.name, sb.characters))
+            .map(character => character.name);
+          const requiredObjects = groupObjects
+            .filter(object => mentionsEntity(sb, object.name, sb.objects))
+            .map(object => object.name);
+          const panelChars = requiredCharacters.length
+            ? `REQUIRED CHARACTERS (all must be visible): ${requiredCharacters.join(', ')}.`
+            : 'REQUIRED CHARACTERS: none.';
+          const panelObjs = requiredObjects.length
+            ? `REQUIRED OBJECTS (all must be visible): ${requiredObjects.join(', ')}.`
+            : '';
+          return `${summarize(cleanPrompt, 220)} ${panelChars} ${panelObjs}`.trim();
         });
-        // Build reference image labels in order: costume images first, then scene image, then objects
-        const refLabels: string[] = [
-          ...characters.map(c => `${c.name} — ${c.description}`),
-          ...(sceneImages[0] ? ['Scene/environment reference'] : []),
-          ...objects.map(o => `${o.name} — ${o.description}`)
-        ];
+
+        // Keep labels and images in exactly the same order. Text-only entities
+        // stay in the prompt but must not consume a reference image number.
+        const characterReferences = groupCharacters
+          .map(character => ({
+            image: costumeImages[character.name] || character.imageUrl || character.imageBase64,
+            label: `${character.name} — ${summarize(character.description)}`
+          }))
+          .filter((reference): reference is { image: string; label: string } => Boolean(reference.image));
+        const objectReferences = groupObjects
+          .map(object => ({
+            image: object.imageUrl || object.imageBase64,
+            label: `${object.name} — ${summarize(object.description)}`
+          }))
+          .filter((reference): reference is { image: string; label: string } => Boolean(reference.image));
+        const sceneReference = sceneImages[0]
+          ? [{ image: sceneImages[0], label: 'Scene/environment reference' }]
+          : [];
+        const references = [...characterReferences, ...sceneReference, ...objectReferences];
+        const refLabels = references.map(reference => reference.label);
         const gridPrompt = buildGridPrompt(sceneStyle, charDescs, shotDescs, aspectRatio, refLabels);
 
-        // Collect reference images — prefer costume image, fallback to original imageUrl
-        const refImages = [
-          ...characters.map(c => costumeImages[c.name] || c.imageUrl).filter(Boolean),
-          ...(sceneImages[0] ? [sceneImages[0]] : []),
-          ...objects.map(o => o.imageUrl || o.imageBase64).filter(Boolean)
-        ];
+        const refImages = references.map(reference => reference.image);
+        const gridStoryboard = {
+          ...group[0],
+          prompt: gridPrompt,
+          characters: groupCharacters.map(character => character.name),
+          objects: groupObjects.map(object => object.name)
+        };
 
         // Generate grid image
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            storyboard: { ...group[0], prompt: gridPrompt },
-            characters,
-            objects,
+            storyboard: gridStoryboard,
+            characters: groupCharacters,
+            objects: groupObjects,
             aspectRatio,
             imageModel: settings.imageModel,
             apiKey: settings.apiKey,
             costumeImages,
             sceneImage: sceneImages[0] || '',
             // 传递所有参考图（角色 + 场景 + 物体）
-            referenceImages: refImages
+            referenceImages: refImages,
+            referenceImageLabels: refLabels
           })
         });
         if (!res.ok) {

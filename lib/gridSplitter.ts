@@ -51,21 +51,26 @@ export function buildGridPrompt(
   referenceImageLabels?: string[] // e.g. ['TOTODA (ref image 1)', 'MOMODA (ref image 2)']
 ): string {
   const orientation = aspectRatio === '9:16' ? 'vertical portrait' : aspectRatio === '1:1' ? 'square' : 'horizontal landscape';
-  const shots = shotDescriptions.slice(0, 9);
+  const shots = shotDescriptions.slice(0, 9).map(shot => {
+    const requirementIndex = shot.indexOf('REQUIRED CHARACTERS');
+    if (requirementIndex === -1 || shot.length <= 320) return shot;
+    const requirements = shot.slice(requirementIndex);
+    const visualBudget = Math.max(80, 320 - requirements.length - 1);
+    return `${shot.slice(0, visualBudget).trim()} ${requirements}`;
+  });
   while (shots.length < 9) shots.push(shots[shots.length - 1] || 'medium shot');
 
   const refSection = referenceImageLabels && referenceImageLabels.length > 0
     ? `\nReference image mapping:\n${referenceImageLabels.map((label, i) => `- Reference image ${i + 1}: ${label}`).join('\n')}\n`
     : '';
 
-  return `Generate a 3x3 cinematic storyboard contact sheet. Each of the 9 panels is ${orientation} (${aspectRatio}). The overall canvas is a uniform 3x3 mosaic with no borders, no gaps, and no separator lines between panels.
+  return `Generate one 3x3 cinematic storyboard contact sheet. Each panel is ${orientation} (${aspectRatio}). Arrange panels left-to-right, top-to-bottom with no borders, gaps, separator lines, labels, captions, or text.
 
 Scene environment: ${sceneStyle}
 ${refSection}
-Characters (MUST match reference images exactly — same face, hair, skin tone, body type, clothing in every panel):
+Character identities (match mapped references exactly wherever they appear):
 ${characterDescriptions}
 
-Panel layout (left-to-right, top-to-bottom):
 Panel 1: ${shots[0]}
 Panel 2: ${shots[1]}
 Panel 3: ${shots[2]}
@@ -76,5 +81,10 @@ Panel 7: ${shots[6]}
 Panel 8: ${shots[7]}
 Panel 9: ${shots[8]}
 
-CRITICAL: Every panel must show the EXACT same character appearance as the reference images — identical face shape, facial features, eye color, hair style, hair color, skin tone, and costume. Do NOT alter any character's appearance between panels. Maintain exact same lighting and environment across all 9 panels. Panels must be seamlessly adjacent with NO borders, NO separators, NO white lines, NO black lines, NO gaps between panels. The grid must be a pure 3x3 image mosaic with zero padding. Each panel must be a complete standalone ${orientation} composition, not a cropped fragment.`;
+CRITICAL CAST RULES:
+- Every REQUIRED CHARACTERS entry must be clearly visible in its panel. Never omit, replace, merge, or hide one as a background detail.
+- Animals and non-human characters are full characters, not props. A required cat must visibly match its reference identity, fur, markings, size, and species.
+- Do not add characters to panels where they are not requested. Preserve each character's exact reference appearance across panels.
+
+Keep lighting and environment continuous. Each cell must be a complete standalone composition, never a cropped fragment.`;
 }
