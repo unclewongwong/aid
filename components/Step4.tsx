@@ -56,7 +56,7 @@ export default function Step4({ storyboards, onBack, onNext, onGenerateImage, on
           return (
           <div key={sb.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded overflow-hidden">
             {sb.imageUrl ? (
-              <img src={sb.imageUrl} alt={`Scene ${sb.sceneNumber}`} className={`w-full ${aspectClass} object-cover`} />
+              <img key={sb.imageUrl} src={sb.imageUrl} alt={`Scene ${sb.sceneNumber}`} className={`w-full ${aspectClass} object-cover`} />
             ) : (
               <div className={`w-full ${aspectClass} bg-[var(--bg-tertiary)] flex items-center justify-center`}>
                 {sb.status === 'generating' ? (

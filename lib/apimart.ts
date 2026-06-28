@@ -71,10 +71,10 @@ export async function createImageTask(
       try {
         if (img.startsWith('data:')) {
           const url = await uploadImageToPublic(img, apiKey);
-          imageUrls.push(url);
+          imageUrls.push(ensureCloudinaryMinHeight(url));
           console.log(`Image ${i + 1}/${rawUrls.length} uploaded successfully: ${url}`);
         } else {
-          imageUrls.push(img);
+          imageUrls.push(ensureCloudinaryMinHeight(img));
           console.log(`Image ${i + 1}/${rawUrls.length} is already a URL: ${img}`);
         }
       } catch (error) {
@@ -163,6 +163,12 @@ export async function getTaskStatus(taskId: string, apiKey: string): Promise<Api
   }
 }
 
+// Seedance/Doubao 要求图片高度 >= 300px，对 Cloudinary URL 加条件缩放
+function ensureCloudinaryMinHeight(url: string): string {
+  if (!url.includes('res.cloudinary.com/')) return url;
+  return url.replace('/upload/', '/upload/if_h_lt_300/c_scale,h_300/if_end/');
+}
+
 // 视频生成 API - 创建任务
 export async function createVideoTask(
   prompt: string,
@@ -195,6 +201,7 @@ export async function createVideoTask(
     const isHappyHorse = model.includes('happyhorse');
     const isOmniFlashExt = model.toLowerCase().includes('omni-flash-ext');
     const isGrokImagine = model.toLowerCase().includes('grok-imagine');
+    const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
 
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
     if (isGrokImagine) {
@@ -251,10 +258,14 @@ export async function createVideoTask(
       }
     } else if (options?.imageRoles && options.imageRoles.length > 0) {
       // 使用自定义角色（首帧/尾帧）
-      requestBody.image_with_roles = options.imageRoles;
+      requestBody.image_with_roles = isDoubaoSeedance
+        ? options.imageRoles.map(r => ({ ...r, url: ensureCloudinaryMinHeight(r.url) }))
+        : options.imageRoles;
     } else if (referenceImageUrls.length > 0) {
       // 所有模型都使用 image_urls
-      requestBody.image_urls = referenceImageUrls;
+      requestBody.image_urls = isDoubaoSeedance
+        ? referenceImageUrls.map(ensureCloudinaryMinHeight)
+        : referenceImageUrls;
     }
 
     // Seedance 2.0 / HappyHorse 增强功能
