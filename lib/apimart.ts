@@ -283,9 +283,7 @@ export async function createVideoTask(
       }
     }
     if (options?.audioUrls && options.audioUrls.length > 0 && !isHappyHorse) {
-      requestBody.audio_urls = isDoubaoSeedance
-        ? options.audioUrls.map(ensureCloudinaryAudioDuration)
-        : options.audioUrls;
+      requestBody.audio_urls = options.audioUrls;
     }
 
     console.log('=== Video Generation Request ===');

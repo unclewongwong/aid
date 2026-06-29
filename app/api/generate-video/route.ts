@@ -25,7 +25,15 @@ export async function POST(request: NextRequest) {
     console.log('Image URL:', storyboard.imageUrl);
 
     // audioFiles are already public URLs (from fish.audio → Cloudinary), pass directly
-    const uploadedAudioUrls = characterAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
+    // For Seedance/Doubao: filter audio outside valid range 1.8s–15.2s
+    const isDoubaoSeedance = (videoModel || '').includes('doubao') || (videoModel || '').includes('seedance');
+    const validAudios = isDoubaoSeedance
+      ? characterAudios.filter((a: { audioDuration?: number }) => {
+          const d = a.audioDuration ?? Infinity;
+          return d >= 1.8 && d <= 15.2;
+        })
+      : characterAudios;
+    const uploadedAudioUrls = validAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
 
     // 生成视频任务（image-to-video 模式，视觉信息已在图片中）
     const taskId = await generateStoryboardVideo(

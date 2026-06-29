@@ -25,13 +25,13 @@ async function generateTTS(text: string, voiceId: string | undefined, fishAudioK
   return Buffer.from(await res.arrayBuffer());
 }
 
-async function uploadBuffer(buffer: Buffer): Promise<string> {
+async function uploadBuffer(buffer: Buffer): Promise<{ url: string; duration: number }> {
   const base64 = `data:audio/mpeg;base64,${buffer.toString('base64')}`;
   const result = await cloudinary.uploader.upload(base64, {
     folder: 'aid-audio',
     resource_type: 'video',
   });
-  return result.secure_url;
+  return { url: result.secure_url, duration: result.duration ?? 0 };
 }
 
 // lines: [{ text, voiceId, character }] in dialogue order
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate and upload audio per character
-    const characterAudios: { character: string; audioUrl: string }[] = [];
+    const characterAudios: { character: string; audioUrl: string; audioDuration: number }[] = [];
     for (const character of characterOrder) {
       const charLines = characterLines[character];
       const buffers: Buffer[] = [];
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
         buffers.push(await generateTTS(text, voiceId, fishAudioKey));
       }
       const combined = Buffer.concat(buffers);
-      const audioUrl = await uploadBuffer(combined);
-      characterAudios.push({ character, audioUrl });
+      const { url: audioUrl, duration: audioDuration } = await uploadBuffer(combined);
+      characterAudios.push({ character, audioUrl, audioDuration });
     }
 
     return NextResponse.json({ characterAudios });
