@@ -169,6 +169,12 @@ function ensureCloudinaryMinHeight(url: string): string {
   return url.replace('/upload/', '/upload/if_h_lt_300/c_scale,h_300/if_end/');
 }
 
+// Seedance/Doubao 要求音频时长在 1.8s–15.2s，对 Cloudinary URL 加条件处理
+function ensureCloudinaryAudioDuration(url: string): string {
+  if (!url.includes('res.cloudinary.com/')) return url;
+  return url.replace('/upload/', '/upload/if_du_lt_1.8/du_1.8/if_end/eo_15.2/');
+}
+
 // 视频生成 API - 创建任务
 export async function createVideoTask(
   prompt: string,
@@ -277,7 +283,9 @@ export async function createVideoTask(
       }
     }
     if (options?.audioUrls && options.audioUrls.length > 0 && !isHappyHorse) {
-      requestBody.audio_urls = options.audioUrls;
+      requestBody.audio_urls = isDoubaoSeedance
+        ? options.audioUrls.map(ensureCloudinaryAudioDuration)
+        : options.audioUrls;
     }
 
     console.log('=== Video Generation Request ===');
