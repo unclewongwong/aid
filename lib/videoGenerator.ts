@@ -39,6 +39,7 @@ export async function generateStoryboardVideo(
 
 STRICT RULES — follow exactly:
 - Keep the EXACT same face, hairstyle, clothing, object shape, color, text/logo and all scene elements as shown in the reference image. Zero morphing or appearance drift.
+- Motion pacing must match the scene energy: action/conflict = sharp, decisive movements with tension; emotional/intimate = slow, micro-movements with long holds; never uniform speed throughout.
 - One complete action arc only: clear beginning, middle, and natural end. Do not cut off mid-action. Never stack multiple unrelated events.
 - No extra characters not shown in the reference image.
 - No subtitles, no text overlays, no background music.

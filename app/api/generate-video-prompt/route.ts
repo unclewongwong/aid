@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
 Scene ${storyboard.sceneNumber}: ${storyboard.description}
 Image prompt context: ${storyboard.prompt}
 
+## PACING — Match motion tempo to scene energy
+Choose the right pace before writing the timeline:
+- **FAST** (action, conflict, shock, chase): snappy weight shifts, quick decisive gestures, sharp body tension, sudden stops; camera moves react quickly — whip-pan, fast dolly, urgent handheld
+- **MEDIUM** (conversation, discovery, transition): natural walk pace, measured gestures, breathing visible; smooth dolly or steady arc, moderate depth shifts
+- **SLOW** (grief, awe, intimacy, suspense): micro-movements only — a trembling hand, slow exhale, gaze that drifts; camera barely moves or imperceptibly creeps; long holds
+
+State the chosen pace at the start of the timeline (e.g. "PACE: FAST —").
+
 ## Your Task
 Write a professional cinematic video prompt using a TIMELINE structure. The video should feel like a real film shot with a complete action arc.
 
@@ -55,7 +63,8 @@ CAMERA / LIGHTING / AUDIO / CONSISTENCY
 ## Examples of TIMELINE vs NON-TIMELINE
 
 ❌ Non-timeline: "The character walks forward and looks around."
-✅ Timeline: "[00-02s] Medium shot, 50mm. Locked-off. Subject enters from screen left, pauses at center, weight shifting to one foot — a moment of hesitation. Eyes scan the space. [02-04s] Slow dolly in. Subject leans toward off-screen right, hand reaching out tentatively. Motivated window light from left creates soft shadow across face. [04-05s] Subject's fingers make contact with surface, breath held. Camera holds. Shallow DOF. Quiet dread. 24fps, film grain."
+✅ Timeline (SLOW): "PACE: SLOW — [00-02s] Extreme close-up, 85mm. Camera locked-off. Subject's eyes are downcast, barely moving — a single slow blink. Shallow DOF, soft rim light from window. [02-04s] Imperceptible creep inward. A barely-visible exhale lifts the chest, then falls. One finger tightens around an object in hand. [04-05s] Eyes lift fractionally toward off-screen. Hold. 24fps, film grain."
+✅ Timeline (FAST): "PACE: FAST — [00-02s] Medium shot, 35mm handheld. Subject snaps upright from chair, weight immediately forward. Camera jolts with the motion. [02-04s] Rapid stride toward frame edge — two steps, hard stop. Shoulders tense, jaw set. Camera pushes in urgently. [04-05s] Hand slams surface. Sharp impact. Body coiled. Hold one beat. 24fps."
 
 Now write the cinematic video prompt for Scene ${storyboard.sceneNumber}:`;
 
