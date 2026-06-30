@@ -27,6 +27,12 @@ export async function generateStoryboardVideo(
     ? storyboard.videoPrompt
     : storyboard.prompt.replace(/\[([^\]]+)\]/g, '$1');
 
+  // Inject dialogue lines so the model knows what words to speak
+  const dialogueSection = storyboard.dialogueLines && storyboard.dialogueLines.length > 0
+    ? '\n\nDIALOGUE — character must speak these exact lines with lip sync:\n' +
+      storyboard.dialogueLines.map(l => `${l.character}: "${l.text}"`).join('\n')
+    : '';
+
   // Build character-audio mapping lines
   const audioMapping = characterAudios.length > 0
     ? '\n' + characterAudios.map(a => `@[${a.character}] 使用@[${a.audioUrl}]`).join('\n')
@@ -36,7 +42,7 @@ export async function generateStoryboardVideo(
     ? `\n\nCONTINUITY — this shot continues from the previous one:\n- The action must start exactly from the state shown in the first frame. Character position, pose, clothing, and environment must match seamlessly.\n- The motion must flow naturally from the first frame into the rest of the shot, with no abrupt jumps, freezes, or stutters.\n- Character orientation and spatial relationship must remain consistent throughout the transition.\n- Avoid any visual glitch, flicker, or sudden change in lighting, color, or background between the first frame and the generated motion.\n- The camera movement style should match the previous shot (e.g., if previous was handheld, continue handheld; if locked-off, stay locked-off).`
     : '';
 
-  const videoPrompt = `${basePrompt}${audioMapping}${continuityRules}
+  const videoPrompt = `${basePrompt}${dialogueSection}${audioMapping}${continuityRules}
 
 STRICT RULES — follow exactly:
 - Keep the EXACT same face, hairstyle, clothing, object shape, color, text/logo and all scene elements as shown in the reference image. Zero morphing or appearance drift.
