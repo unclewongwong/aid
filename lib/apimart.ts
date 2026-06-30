@@ -175,6 +175,34 @@ function ensureCloudinaryAudioDuration(url: string): string {
   return url.replace('/upload/', '/upload/if_du_lt_1.8/du_1.8/if_end/eo_15.2/');
 }
 
+/**
+ * 将期望时长（秒）对齐到指定模型允许的最近合法值。
+ * 用于将音频时长映射为视频时长，同时满足各模型约束。
+ */
+export function snapDurationToModel(desiredSeconds: number, model: string): number {
+  if (model.toLowerCase().includes('omni-flash-ext')) {
+    // 只支持 4/6/8/10 秒
+    const steps = [4, 6, 8, 10];
+    return steps.reduce((prev, cur) =>
+      Math.abs(cur - desiredSeconds) < Math.abs(prev - desiredSeconds) ? cur : prev
+    );
+  }
+  if (model.toLowerCase().includes('grok-imagine')) {
+    // 6–30 秒，取整后限幅
+    return Math.min(30, Math.max(6, Math.round(desiredSeconds)));
+  }
+  if (model.includes('wan2') || model.includes('happyhorse')) {
+    // 通常支持任意整数，按文档取 3–10
+    return Math.min(10, Math.max(3, Math.round(desiredSeconds)));
+  }
+  if (model.includes('doubao') || model.includes('seedance')) {
+    // Seedance 接受任意整数；最短 3s 保证视觉完整
+    return Math.min(10, Math.max(3, Math.ceil(desiredSeconds)));
+  }
+  // sora-2 / 其他：默认最短5s
+  return Math.min(10, Math.max(5, Math.round(desiredSeconds)));
+}
+
 // 视频生成 API - 创建任务
 export async function createVideoTask(
   prompt: string,

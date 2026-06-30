@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStoryboardVideo, waitForVideoGeneration } from '@/lib/videoGenerator';
+import { snapDurationToModel } from '@/lib/apimart';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,15 +36,14 @@ export async function POST(request: NextRequest) {
       : characterAudios;
     const uploadedAudioUrls = validAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
 
-    // For Seedance with audio: sync video duration to audio duration to prevent stretching
+    // Sync video duration to audio duration, snapped to the model's valid values
     let effectiveStoryboard = storyboard;
-    if (isDoubaoSeedance && validAudios.length > 0) {
+    if (validAudios.length > 0) {
       const maxAudioDuration = Math.max(
         ...validAudios.map((a: { audioDuration?: number }) => a.audioDuration ?? 5)
       );
-      // Round up to nearest integer, clamp to [3, 10]
-      const syncedDuration = Math.min(Math.max(Math.ceil(maxAudioDuration), 3), 10);
-      console.log(`Syncing video duration to audio: ${maxAudioDuration.toFixed(2)}s → ${syncedDuration}s`);
+      const syncedDuration = snapDurationToModel(maxAudioDuration, videoModel || 'sora-2');
+      console.log(`Syncing video duration to audio: ${maxAudioDuration.toFixed(2)}s → ${syncedDuration}s (model: ${videoModel})`);
       effectiveStoryboard = { ...storyboard, videoDuration: syncedDuration };
     }
 
