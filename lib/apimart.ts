@@ -226,6 +226,7 @@ export async function createVideoTask(
     duration?: number;
     videoUrls?: string[];
     audioUrls?: string[];
+    generateAudio?: boolean;
     imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' }>;
     resolution?: '720P' | '1080P';
     quality?: '480p' | '720p';
@@ -328,12 +329,14 @@ export async function createVideoTask(
     const isWan26 = model.toLowerCase().includes('wan2.6') || model.toLowerCase().includes('wan 2.6');
     const isWan27 = model.toLowerCase().includes('wan2.7') || model.toLowerCase().includes('wan 2.7');
 
-    if (options?.audioUrls && options.audioUrls.length > 0) {
+    if (options?.generateAudio) {
+      // 让模型自动生成音频（seedance-2.0 支持 generate_audio，seedance-1-5 支持 audio）
+      if (isSeedance20) requestBody.generate_audio = true;
+      else if (isSeedance15) requestBody.audio = true;
+    } else if (options?.audioUrls && options.audioUrls.length > 0) {
       if (isSeedance20) {
-        // doubao-seedance-2.0: audio_urls 数组，最多3个
         requestBody.audio_urls = options.audioUrls.slice(0, 3);
       } else if (isWan26 || isWan27) {
-        // wan2.6 / wan2.7: audio_url 单个字符串
         requestBody.audio_url = options.audioUrls[0];
       }
       // seedance-1-5-pro 只支持 audio: boolean（AI自动配音），不支持传入自定义音频

@@ -9,7 +9,8 @@ export async function generateStoryboardVideo(
   aspectRatio: '16:9' | '9:16' = '16:9',
   audioFiles: string[] = [],
   characterAudios: { character: string; audioUrl: string }[] = [],
-  firstFrameUrl?: string
+  firstFrameUrl?: string,
+  generateAudio?: boolean
 ): Promise<string> {
   // 确保有生成的图片
   if (!storyboard.imageUrl) {
@@ -71,6 +72,7 @@ ${characterAudios.length > 0 ? '- Mouth and body motion must naturally synchroni
       quality: isGrokImagine ? '480p' : undefined,
       // Don't pass audio when using firstFrame/lastFrame continuity mode (API limitation)
       audioUrls: firstFrameUrl ? [] : audioFiles,
+      generateAudio: !firstFrameUrl && generateAudio,
       imageRoles
     }
   );

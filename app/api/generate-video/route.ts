@@ -25,34 +25,12 @@ export async function POST(request: NextRequest) {
     console.log('Aspect ratio:', aspectRatio || '16:9');
     console.log('Image URL:', storyboard.imageUrl);
 
-    // audioFiles are already public URLs (from fish.audio → Cloudinary), pass directly
-    // Filter audio to valid range per model:
-    //   seedance-2.0: 1.8–15s | wan2.6/wan2.7: 2–30s | others: no audio support
-    const m = (videoModel || '').toLowerCase();
-    const isSeedance20 = m.includes('seedance-2') || m.includes('seedance-4') || m.includes('seedance-5');
-    const isWanAudio = m.includes('wan2.6') || m.includes('wan2.7') || m.includes('wan 2.6') || m.includes('wan 2.7');
-    const supportsAudio = isSeedance20 || isWanAudio;
-
-    const validAudios = supportsAudio
-      ? characterAudios.filter((a: { audioDuration?: number }) => {
-          const d = a.audioDuration ?? Infinity;
-          if (isSeedance20) return d >= 1.8 && d <= 15;
-          if (isWanAudio)   return d >= 2   && d <= 30;
-          return false;
-        })
-      : [];
-    const uploadedAudioUrls = validAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
-
-    // Sync video duration to audio duration, snapped to the model's valid values
-    let effectiveStoryboard = storyboard;
-    if (validAudios.length > 0) {
-      const maxAudioDuration = Math.max(
-        ...validAudios.map((a: { audioDuration?: number }) => a.audioDuration ?? 5)
-      );
-      const syncedDuration = snapDurationToModel(maxAudioDuration, videoModel || 'sora-2');
-      console.log(`Syncing video duration to audio: ${maxAudioDuration.toFixed(2)}s → ${syncedDuration}s (model: ${videoModel})`);
-      effectiveStoryboard = { ...storyboard, videoDuration: syncedDuration };
-    }
+    // 暂时禁用自定义TTS配音，改为让模型自动生成音频
+    // TODO: 恢复自定义配音时删除此段，取消下方 generateAudio 注释
+    const uploadedAudioUrls: string[] = [];
+    const validAudios: unknown[] = [];
+    const effectiveStoryboard = storyboard;
+    const useGenerateAudio = true; // 让模型自动配音
 
     // 生成视频任务（image-to-video 模式，视觉信息已在图片中）
     const taskId = await generateStoryboardVideo(
@@ -62,7 +40,8 @@ export async function POST(request: NextRequest) {
       aspectRatio || '16:9',
       uploadedAudioUrls,
       characterAudios,
-      firstFrameUrl
+      firstFrameUrl,
+      useGenerateAudio
     );
     console.log('Video task created, ID:', taskId);
 

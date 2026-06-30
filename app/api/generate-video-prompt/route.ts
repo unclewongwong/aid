@@ -8,65 +8,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'storyboard and apiKey are required' }, { status: 400 });
     }
 
-    const prompt = `You are a professional cinematographer and film director writing AI video generation prompts. Your prompts must produce CINEMATIC motion — not just "images that move", but real film language with intentional camera work, blocking, and staging.
+    const prompt = `You are a professional cinematographer writing AI video generation prompts. Every prompt must produce KINETIC, PRECISELY TIMED motion — specific camera mechanics, not vague intentions.
 
 ## Shot Information
 Scene ${storyboard.sceneNumber}: ${storyboard.description}
-Image prompt context: ${storyboard.prompt}
+Context: ${storyboard.prompt}
 
-## PACING — Match motion tempo to scene energy
-Choose the right pace before writing the timeline:
-- **FAST** (action, conflict, shock, chase): snappy weight shifts, quick decisive gestures, sharp body tension, sudden stops; camera moves react quickly — whip-pan, fast dolly, urgent handheld
-- **MEDIUM** (conversation, discovery, transition): natural walk pace, measured gestures, breathing visible; smooth dolly or steady arc, moderate depth shifts
-- **SLOW** (grief, awe, intimacy, suspense): micro-movements only — a trembling hand, slow exhale, gaze that drifts; camera barely moves or imperceptibly creeps; long holds
+## PACING — Choose before writing
+- **FAST** (action/shock/chase): explosive weight shifts, zero hesitation, sharp muscle tension; camera: whip pan, snap dolly push, urgent handheld shake, fast arc
+- **MEDIUM** (conversation/discovery): natural gait, controlled gestures, eye contact; camera: smooth tracking, gentle arc, breathing Steadicam
+- **SLOW** (grief/awe/intimacy/dread): micro-tremors only — finger curl, slow blink, chest rise; camera: imperceptible creep, glacial pull-back, locked-off hold
 
-State the chosen pace at the start of the timeline (e.g. "PACE: FAST —").
+## CAMERA MOVEMENT — Always specify ALL of these:
+**Speed**: instant / snap (0–0.2s) | quick (0.2–0.5s) | moderate (0.5–1.5s) | slow (1.5–3s) | glacial (3s+)
+**Easing**: linear | ease-in (starts slow, accelerates) | ease-out (decelerates into hold) | ease-in-out (smooth S-curve) | snap-hold (instant move, hard stop)
+**Amplitude**: micro (1–3cm / 1–3°) | small (5–10cm / 5–10°) | medium (20–50cm / 15–30°) | large (1–2m / 45°+)
+**Path**: straight axis push/pull | curved arc (concave/convex) | spiral | pendulum swing | floating drift
 
-## Your Task
-Write a professional cinematic video prompt using a TIMELINE structure. The video should feel like a real film shot with a complete action arc.
+## REQUIRED OUTPUT STRUCTURE
 
-Follow this EXACT structure (no section labels in output):
+Line 1: PACE: [FAST/MEDIUM/SLOW] — [one-line scene energy statement]
 
-[00-02s] Establish shot
-- Shot size + lens: [ECU / CU / MCU / MS / MLS / WS / EWS / OTS], [24mm / 35mm / 50mm / 85mm / telephoto]
-- Camera movement: locked-off / dolly in / track / crane / Steadicam / handheld / arc / pull back reveal
-- Subject enters frame or position, establishing context
+[00-Xs] [Shot size], [lens mm]. [Camera move: speed + easing + amplitude + path]. [Subject action with muscle/weight specifics].
 
-[02-04s] Core action
-- The main action unfolds with specific body language: timing, body tension, eye line, hand gestures
-- Environment interaction: light, objects, weather, surface contact
-- Camera continues or transitions
+[Xs-Ys] [Camera continues or transitions: exact mechanics]. [Subject action develops — body tension, eye line, contact point].
 
-[04-05s] Resolution
-- Action completes naturally, no abrupt cut
-- Final body position, emotional state, environment state
-- End with seamless transition or hold
+[Ys-end] [Final camera state: speed + easing + hold]. [Subject resolves — final body position, breath state].
 
-CAMERA / LIGHTING / AUDIO / CONSISTENCY
-- Motivated lighting source and quality
-- Depth of field: shallow DOF / deep focus
-- Mood tone
-- 24fps, film grain or cinematic 4K
+Lighting: [source direction + quality]. DOF: [aperture feel]. Grain/format: [24fps film grain / clean 4K].
 
-## Critical Rules
-- Each time segment focuses on ONE core action — never stack multiple events in a single segment
-- Every camera movement must be MOTIVATED by the scene's emotion and narrative
-- Blocking must feel like real actor performance, not random movement
-- Do NOT describe character appearance (reference image handles that)
-- Do NOT mention art style, animation, or rendering style
-- Do NOT add background music, sound effects, or subtitles
-- Do NOT change character face, clothing, hair, or object details from the input image
-- No extra characters that do not appear in the reference image
-- The shot must feel COMPLETE — clear beginning, middle, natural end
-- Output ONLY the prompt text, no labels or section headers
+## EXAMPLES
 
-## Examples of TIMELINE vs NON-TIMELINE
+PACE: FAST — explosive confrontation, no room to breathe
+[00-01s] MCU, 35mm. Snap dolly push-in (instant ease-in, 40cm straight axis). Subject's torso lurches forward — weight slams onto front foot, jaw tightens, fists clench at sides.
+[01-03s] Camera holds locked-off with micro handheld flutter (±2mm, random). Subject's arm snaps up in a single hard movement — elbow fully extended, finger pointing off-screen right. Shoulder muscles visibly strain.
+[03-04s] Slow ease-out pull-back (1.5s, 30cm, straight axis). Subject holds rigid pose, then chest deflates in one sharp exhale. Eyes stay locked forward. Hard hold.
+Lighting: harsh overhead practical, hard shadows under brow. DOF: f/2.8 shallow. 24fps, film grain.
 
-❌ Non-timeline: "The character walks forward and looks around."
-✅ Timeline (SLOW): "PACE: SLOW — [00-02s] Extreme close-up, 85mm. Camera locked-off. Subject's eyes are downcast, barely moving — a single slow blink. Shallow DOF, soft rim light from window. [02-04s] Imperceptible creep inward. A barely-visible exhale lifts the chest, then falls. One finger tightens around an object in hand. [04-05s] Eyes lift fractionally toward off-screen. Hold. 24fps, film grain."
-✅ Timeline (FAST): "PACE: FAST — [00-02s] Medium shot, 35mm handheld. Subject snaps upright from chair, weight immediately forward. Camera jolts with the motion. [02-04s] Rapid stride toward frame edge — two steps, hard stop. Shoulders tense, jaw set. Camera pushes in urgently. [04-05s] Hand slams surface. Sharp impact. Body coiled. Hold one beat. 24fps."
+---
 
-Now write the cinematic video prompt for Scene ${storyboard.sceneNumber}:`;
+PACE: SLOW — suffocating grief, time has stopped
+[00-03s] CU, 85mm. Glacial creep inward (3s, ease-in-out, 8cm straight axis, barely perceptible). Subject's eyes downcast — a single slow blink, lashes wet. No other movement.
+[03-05s] Camera locks off completely. Subject's hand, resting on a surface, curls one finger inward — micro-movement, 2cm arc. Breath is held, then releases as near-silent exhale that barely moves the chest.
+[05-06s] Micro pull-back (1s, ease-out, 5cm). Eyes lift fractionally — not to look at anything, just upward. Hold.
+Lighting: soft diffused window light from screen left, cool tone. DOF: f/1.8 extreme shallow, background dissolved. 24fps, heavy grain.
+
+## RULES
+- Every camera move must name: speed + easing curve + amplitude + path direction
+- Never write "the camera moves" — write exactly HOW it moves
+- Subject actions: name the specific muscles, weight shifts, contact points
+- Do NOT describe appearance, costume, or art style
+- Do NOT add music, subtitles, or sound effects
+- Output ONLY the prompt — no labels, no section headers
+
+Write the prompt for Scene ${storyboard.sceneNumber}:`;
 
     const videoPrompt = await chatCompletion(prompt, apiKey);
     return NextResponse.json({ videoPrompt: videoPrompt.trim() });
