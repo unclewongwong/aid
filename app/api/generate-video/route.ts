@@ -26,14 +26,21 @@ export async function POST(request: NextRequest) {
     console.log('Image URL:', storyboard.imageUrl);
 
     // audioFiles are already public URLs (from fish.audio → Cloudinary), pass directly
-    // For Seedance/Doubao: filter audio outside valid range 1.8s–15.2s
-    const isDoubaoSeedance = (videoModel || '').includes('doubao') || (videoModel || '').includes('seedance');
-    const validAudios = isDoubaoSeedance
+    // Filter audio to valid range per model:
+    //   seedance-2.0: 1.8–15s | wan2.6/wan2.7: 2–30s | others: no audio support
+    const m = (videoModel || '').toLowerCase();
+    const isSeedance20 = m.includes('seedance-2') || m.includes('seedance-4') || m.includes('seedance-5');
+    const isWanAudio = m.includes('wan2.6') || m.includes('wan2.7') || m.includes('wan 2.6') || m.includes('wan 2.7');
+    const supportsAudio = isSeedance20 || isWanAudio;
+
+    const validAudios = supportsAudio
       ? characterAudios.filter((a: { audioDuration?: number }) => {
           const d = a.audioDuration ?? Infinity;
-          return d >= 1.8 && d <= 15.2;
+          if (isSeedance20) return d >= 1.8 && d <= 15;
+          if (isWanAudio)   return d >= 2   && d <= 30;
+          return false;
         })
-      : characterAudios;
+      : [];
     const uploadedAudioUrls = validAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
 
     // Sync video duration to audio duration, snapped to the model's valid values

@@ -177,29 +177,41 @@ function ensureCloudinaryAudioDuration(url: string): string {
 
 /**
  * 将期望时长（秒）对齐到指定模型允许的最近合法值。
- * 用于将音频时长映射为视频时长，同时满足各模型约束。
  */
 export function snapDurationToModel(desiredSeconds: number, model: string): number {
-  if (model.toLowerCase().includes('omni-flash-ext')) {
-    // 只支持 4/6/8/10 秒
+  const m = model.toLowerCase();
+  if (m.includes('omni-flash-ext')) {
     const steps = [4, 6, 8, 10];
     return steps.reduce((prev, cur) =>
       Math.abs(cur - desiredSeconds) < Math.abs(prev - desiredSeconds) ? cur : prev
     );
   }
-  if (model.toLowerCase().includes('grok-imagine')) {
-    // 6–30 秒，取整后限幅
+  if (m.includes('grok-imagine')) {
     return Math.min(30, Math.max(6, Math.round(desiredSeconds)));
   }
-  if (model.includes('wan2') || model.includes('happyhorse')) {
-    // 通常支持任意整数，按文档取 3–10
-    return Math.min(10, Math.max(3, Math.round(desiredSeconds)));
+  if (m.includes('veo3') || m.includes('veo 3')) {
+    return 8; // 固定8秒
   }
-  if (model.includes('doubao') || model.includes('seedance')) {
-    // Seedance 接受任意整数；最短 3s 保证视觉完整
-    return Math.min(10, Math.max(3, Math.ceil(desiredSeconds)));
+  if (m.includes('wan2.6')) {
+    // 只支持 5 / 10 / 15 秒
+    const steps = [5, 10, 15];
+    return steps.reduce((prev, cur) =>
+      Math.abs(cur - desiredSeconds) < Math.abs(prev - desiredSeconds) ? cur : prev
+    );
   }
-  // sora-2 / 其他：默认最短5s
+  if (m.includes('wan2') || m.includes('wan ') || m.includes('happyhorse')) {
+    // wan2.7: 2–15s
+    return Math.min(15, Math.max(2, Math.round(desiredSeconds)));
+  }
+  if (m.includes('seedance-2') || m.includes('seedance-4') || m.includes('seedance-5')) {
+    // seedance 2.0: 4–15s
+    return Math.min(15, Math.max(4, Math.ceil(desiredSeconds)));
+  }
+  if (m.includes('seedance-1') || m.includes('doubao')) {
+    // seedance 1.x: 4–12s
+    return Math.min(12, Math.max(4, Math.ceil(desiredSeconds)));
+  }
+  // sora-2 / 其他：5–10s
   return Math.min(10, Math.max(5, Math.round(desiredSeconds)));
 }
 
@@ -310,8 +322,26 @@ export async function createVideoTask(
         requestBody.video_urls = options.videoUrls;
       }
     }
-    if (options?.audioUrls && options.audioUrls.length > 0 && isDoubaoSeedance) {
-      requestBody.audio_urls = options.audioUrls;
+    // 按模型分发音频参数
+    const isSeedance20 = model.includes('seedance-2') || model.includes('seedance-4') || model.includes('seedance-5');
+    const isSeedance15 = (model.includes('seedance-1') || model.includes('doubao')) && !isSeedance20;
+    const isWan26 = model.toLowerCase().includes('wan2.6') || model.toLowerCase().includes('wan 2.6');
+    const isWan27 = model.toLowerCase().includes('wan2.7') || model.toLowerCase().includes('wan 2.7');
+
+    if (options?.audioUrls && options.audioUrls.length > 0) {
+      if (isSeedance20) {
+        // doubao-seedance-2.0: audio_urls 数组，最多3个
+        requestBody.audio_urls = options.audioUrls.slice(0, 3);
+      } else if (isWan26 || isWan27) {
+        // wan2.6 / wan2.7: audio_url 单个字符串
+        requestBody.audio_url = options.audioUrls[0];
+      }
+      // seedance-1-5-pro 只支持 audio: boolean（AI自动配音），不支持传入自定义音频
+      // sora-2 / veo3 / grok / omni-flash-ext / happyhorse：无音频参数
+    }
+    if (isSeedance15 && options?.audioUrls === undefined) {
+      // seedance-1-5-pro 在没有指定自定义音频时可开启AI自动配音（可选）
+      // requestBody.audio = true; // 如需自动配音可取消注释
     }
 
     console.log('=== Video Generation Request ===');
