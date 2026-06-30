@@ -1,57 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateStoryboardVideo, waitForVideoGeneration } from '@/lib/videoGenerator';
+import { generateStoryboardVideo } from '@/lib/videoGenerator';
 import { snapDurationToModel } from '@/lib/apimart';
 
 export async function POST(request: NextRequest) {
   try {
-    const { storyboard, apiKey, videoModel, aspectRatio, characterAudios = [], firstFrameUrl } = await request.json();
+    const {
+      storyboard, apiKey, videoModel, aspectRatio,
+      characterAudios = [], firstFrameUrl,
+      voiceReferences = {},  // { 角色名: CloudinaryURL }
+    } = await request.json();
 
-    if (!storyboard) {
-      return NextResponse.json(
-        { error: 'Storyboard is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API key is required' },
-        { status: 400 }
-      );
-    }
+    if (!storyboard) return NextResponse.json({ error: 'Storyboard is required' }, { status: 400 });
+    if (!apiKey)     return NextResponse.json({ error: 'API key is required' }, { status: 400 });
 
     console.log('Starting video generation for scene:', storyboard.sceneNumber);
     console.log('Using model:', videoModel || 'sora-2');
-    console.log('Aspect ratio:', aspectRatio || '16:9');
-    console.log('Image URL:', storyboard.imageUrl);
 
-    // 暂时禁用自定义TTS配音，改为让模型自动生成音频
-    // TODO: 恢复自定义配音时删除此段，取消下方 generateAudio 注释
-    const uploadedAudioUrls: string[] = [];
-    const validAudios: unknown[] = [];
-    const effectiveStoryboard = storyboard;
-    const useGenerateAudio = true; // 让模型自动配音
+    const m = (videoModel || '').toLowerCase();
+    const isSeedance20 = m.includes('seedance-2') || m.includes('seedance-4') || m.includes('seedance-5');
+    const isWanAudio   = m.includes('wan2.6') || m.includes('wan2.7') || m.includes('wan 2.6') || m.includes('wan 2.7');
 
-    // 生成视频任务（image-to-video 模式，视觉信息已在图片中）
+    // 声音参考模式（Seedance 2.0）：从当前分镜出现的角色中取声音参考 URL
+    const storyboardChars: string[] = storyboard.characters || [];
+    const voiceRefUrls: string[] = isSeedance20
+      ? storyboardChars
+          .map((name: string) => voiceReferences[name])
+          .filter(Boolean)
+          .slice(0, 3)  // Seedance 2.0 最多 3 个
+      : [];
+
+    // Wan 系列：取第一个角色的声音参考作为 audio_url（单轨）
+    const singleVoiceRef = isWanAudio
+      ? storyboardChars.map((name: string) => voiceReferences[name]).find(Boolean)
+      : undefined;
+
+    const audioUrls = voiceRefUrls.length > 0
+      ? voiceRefUrls
+      : singleVoiceRef
+        ? [singleVoiceRef]
+        : [];
+
+    // 有声音参考 → 用参考音色让模型自己生成音频；无参考 → 模型自动配音
+    const useGenerateAudio = audioUrls.length === 0;
+
+    // 有声音参考时，将视频时长对齐到合法值（避免模型默认5s拉伸）
+    let effectiveStoryboard = storyboard;
+
+    console.log(`Voice refs for scene ${storyboard.sceneNumber}:`, audioUrls.length, '| auto-audio:', useGenerateAudio);
+
     const taskId = await generateStoryboardVideo(
       effectiveStoryboard,
       apiKey,
       videoModel,
       aspectRatio || '16:9',
-      uploadedAudioUrls,
+      audioUrls,
       characterAudios,
       firstFrameUrl,
-      useGenerateAudio
+      useGenerateAudio,
     );
-    console.log('Video task created, ID:', taskId);
 
-    // 立即返回 taskId，不等待完成（异步模式）
-    // 前端将轮询检查状态
+    console.log('Video task created, ID:', taskId);
     return NextResponse.json({ taskId, status: 'processing' });
   } catch (error: any) {
     console.error('Generate video API error:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     return NextResponse.json(
       { error: error.message || 'Failed to generate video' },
       { status: 500 }

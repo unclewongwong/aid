@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Storyboard, Character, ObjectItem } from '@/types';
-import { Loader2, RefreshCw, ZoomIn, X } from 'lucide-react';
+import { Loader2, RefreshCw, ZoomIn, X, Mic, MicOff } from 'lucide-react';
 
 interface Step3Props {
   storyboards: Storyboard[];
@@ -13,12 +13,16 @@ interface Step3Props {
   sceneImage: string;
   sceneImages: string[];
   sceneGenerating: boolean;
+  voiceReferences: Record<string, string>;
+  voiceGenerating: Record<string, boolean>;
   onBack: () => void;
   onNext: () => void;
   onUpdate?: (storyboard: Storyboard) => void;
   onGenerateCostume?: (type: 'costume' | 'scene', characterName?: string) => void;
   onClearCostumeImage?: (characterName: string) => void;
   onClearSceneImage?: (idx: number) => void;
+  onGenerateVoiceReference?: (characterName: string) => void;
+  onClearVoiceReference?: (characterName: string) => void;
 }
 
 function ImageThumb({ src, label, generating, onGenerate, onClear }: {
@@ -58,7 +62,7 @@ function ImageThumb({ src, label, generating, onGenerate, onClear }: {
   );
 }
 
-export default function Step3({ storyboards, characters, objects, costumeImages, costumeGenerating, sceneImages, sceneGenerating, onBack, onNext, onUpdate, onGenerateCostume, onClearCostumeImage, onClearSceneImage }: Step3Props) {
+export default function Step3({ storyboards, characters, objects, costumeImages, costumeGenerating, sceneImages, sceneGenerating, voiceReferences, voiceGenerating, onBack, onNext, onUpdate, onGenerateCostume, onClearCostumeImage, onClearSceneImage, onGenerateVoiceReference, onClearVoiceReference }: Step3Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedPrompt, setEditedPrompt] = useState('');
   const [draggingScene, setDraggingScene] = useState<string | null>(null);
@@ -132,6 +136,44 @@ export default function Step3({ storyboards, characters, objects, costumeImages,
           ) : null)}
         </div>
       </div>
+
+      {/* Voice reference panel — one sample per character, reused across all shots */}
+      {characters.length > 0 && (
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded p-4">
+          <p className="text-xs font-mono text-[var(--text-secondary)] mb-1">Voice References — generate once to lock character voice timbre</p>
+          <p className="text-[10px] font-mono text-[var(--text-secondary)] mb-3 opacity-60">Used as audio reference for Seedance 2.0 to maintain consistent voice across shots</p>
+          <div className="flex gap-3 flex-wrap">
+            {characters.map(char => {
+              const hasRef = !!voiceReferences[char.name];
+              const isGenerating = !!voiceGenerating[char.name];
+              return (
+                <div key={char.name} className="flex flex-col gap-1 items-center w-20">
+                  <div className={`relative group w-full aspect-square rounded border overflow-hidden flex items-center justify-center
+                    ${hasRef ? 'border-[var(--accent-green)] bg-[var(--accent-green)]/10' : 'border-[var(--border-color)] bg-[var(--bg-tertiary)]'}`}>
+                    {isGenerating ? (
+                      <Loader2 size={20} className="animate-spin text-[var(--accent-blue)]" />
+                    ) : hasRef ? (
+                      <>
+                        <Mic size={20} className="text-[var(--accent-green)]" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                          <button onClick={() => onGenerateVoiceReference?.(char.name)} title="Regenerate" className="p-1 bg-white/20 rounded hover:bg-white/40"><RefreshCw size={10} /></button>
+                          <button onClick={() => onClearVoiceReference?.(char.name)} title="Remove" className="p-1 bg-white/20 rounded hover:bg-white/40"><X size={10} /></button>
+                        </div>
+                      </>
+                    ) : (
+                      <button onClick={() => onGenerateVoiceReference?.(char.name)} className="w-full h-full flex flex-col items-center justify-center gap-1 text-[var(--text-secondary)] hover:text-[var(--accent-green)] transition-colors">
+                        <MicOff size={16} />
+                        <span className="text-[8px]">Generate</span>
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-mono text-[var(--text-secondary)] text-center truncate w-full">{char.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Shot list */}
       <div className="space-y-3">

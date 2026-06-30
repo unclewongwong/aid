@@ -32,6 +32,8 @@ export default function StoryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [costumeImages, setCostumeImages] = useState<Record<string, string>>({}); // { 角色名: URL }
   const [costumeGenerating, setCostumeGenerating] = useState<Record<string, boolean>>({}); // { 角色名: bool }
+  const [voiceReferences, setVoiceReferences] = useState<Record<string, string>>(); // { 角色名: Cloudinary URL }
+  const [voiceGenerating, setVoiceGenerating] = useState<Record<string, boolean>>({}); // { 角色名: bool }
   const [sceneImages, setSceneImages] = useState<string[]>([]);
   const [sceneGenerating, setSceneGenerating] = useState(false);
   const [isGeneratingGrid, setIsGeneratingGrid] = useState(false);
@@ -387,6 +389,34 @@ export default function StoryPage() {
     }
   };
 
+  const handleGenerateVoiceReference = async (characterName: string) => {
+    if (!settings.fishAudioKey) { alert('Please configure Fish Audio API Key in settings'); return; }
+    const character = characters.find(c => c.name === characterName);
+    if (!character) return;
+    setVoiceGenerating(prev => ({ ...prev, [characterName]: true }));
+    try {
+      // 用角色描述的前60字作为声音参考样本
+      const sampleText = character.description.slice(0, 60) || `我是${characterName}`;
+      const res = await fetch('/api/generate-voice-reference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterName,
+          sampleText,
+          voiceId: character.voiceId,
+          fishAudioKey: settings.fishAudioKey,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
+      const { url } = await res.json();
+      setVoiceReferences(prev => ({ ...(prev || {}), [characterName]: url }));
+    } catch (err) {
+      alert(`Voice reference failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setVoiceGenerating(prev => ({ ...prev, [characterName]: false }));
+    }
+  };
+
   const handleGenerateVideoPrompt = async (storyboard: Storyboard) => {
     if (!settings.apiKey) { alert('Please configure API Key in settings'); return; }
     setStoryboards(prev => prev.map(sb => sb.id === storyboard.id ? { ...sb, videoPrompt: 'generating...' } : sb));
@@ -464,7 +494,7 @@ export default function StoryPage() {
       const response = await fetch('/api/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storyboard, apiKey: settings.apiKey, videoModel: settings.videoModel, aspectRatio: storyboard.aspectRatio || settings.aspectRatio, characterAudios: storyboard.characterAudios || [], firstFrameUrl })
+        body: JSON.stringify({ storyboard, apiKey: settings.apiKey, videoModel: settings.videoModel, aspectRatio: storyboard.aspectRatio || settings.aspectRatio, characterAudios: storyboard.characterAudios || [], firstFrameUrl, voiceReferences: voiceReferences || {} })
       });
       if (!response.ok) throw new Error((await response.json()).error || 'Failed to generate video');
       const data = await response.json();
@@ -603,6 +633,10 @@ export default function StoryPage() {
                 onGenerateCostume={handleGenerateCostume}
                 onClearCostumeImage={(name) => setCostumeImages(prev => { const n = { ...prev }; delete n[name]; return n; })}
                 onClearSceneImage={(idx) => setSceneImages(prev => prev.filter((_, i) => i !== idx))}
+                voiceReferences={voiceReferences || {}}
+                voiceGenerating={voiceGenerating}
+                onGenerateVoiceReference={handleGenerateVoiceReference}
+                onClearVoiceReference={(name) => setVoiceReferences(prev => { const n = { ...(prev || {}) }; delete n[name]; return n; })}
               />
             )}
             {currentStep === 4 && (
