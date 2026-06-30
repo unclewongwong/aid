@@ -16,6 +16,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'sampleText and fishAudioKey are required' }, { status: 400 });
     }
 
+    // 保证文本足够长，避免生成的音频 < 1.8s（Seedance 最低时长要求）
+    // 中文约4.5字/秒，1.8s ≈ 8字；保险起见保持 ≥ 20字（约4.5s）
+    const MIN_CHARS = 20;
+    const paddedText = sampleText.length >= MIN_CHARS
+      ? sampleText
+      : `${sampleText}，这是我的声音，请记住这个音色特征，谢谢大家。`.slice(0, Math.max(MIN_CHARS, sampleText.length + 20));
+
     // 用 fish.audio 生成 TTS
     const ttsRes = await fetch('https://api.fish.audio/v1/tts', {
       method: 'POST',
@@ -25,7 +32,7 @@ export async function POST(request: NextRequest) {
         'model': 's2-pro',
       },
       body: JSON.stringify({
-        text: sampleText,
+        text: paddedText,
         format: 'mp3',
         ...(voiceId ? { reference_id: voiceId } : {}),
       }),

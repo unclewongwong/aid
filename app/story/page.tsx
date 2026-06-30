@@ -395,8 +395,8 @@ export default function StoryPage() {
     if (!character) return;
     setVoiceGenerating(prev => ({ ...prev, [characterName]: true }));
     try {
-      // 用角色描述的前60字作为声音参考样本
-      const sampleText = character.description.slice(0, 60) || `我是${characterName}`;
+      // 取描述前80字，不足时补一句兜底语保证TTS时长 >= 1.8s
+      const sampleText = `${character.description.slice(0, 80)}` || `你好，我是${characterName}，很高兴认识你们。`;
       const res = await fetch('/api/generate-voice-reference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
