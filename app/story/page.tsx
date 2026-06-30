@@ -655,6 +655,7 @@ export default function StoryPage() {
               <Step5
                 storyboards={storyboards}
                 characters={characters}
+                videoModel={settings.videoModel}
                 onBack={() => setCurrentStep(4)}
                 onNext={() => setCurrentStep(6)}
                 onGenerateVideo={handleGenerateVideo}

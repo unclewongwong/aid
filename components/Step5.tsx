@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, Video, Wand2, Mic } from 'lucide-react';
 interface Step5Props {
   storyboards: Storyboard[];
   characters: Character[];
+  videoModel?: string;
   onBack: () => void;
   onNext: () => void;
   onGenerateVideo: (storyboard: Storyboard) => void;
@@ -15,11 +16,16 @@ interface Step5Props {
   onUpdate?: (storyboard: Storyboard) => void;
 }
 
-export default function Step5({ storyboards, characters, onBack, onNext, onGenerateVideo, onGenerateVideoPrompt, onGenerateAudio, onUpdate }: Step5Props) {
+export default function Step5({ storyboards, characters, videoModel, onBack, onNext, onGenerateVideo, onGenerateVideoPrompt, onGenerateAudio, onUpdate }: Step5Props) {
   const completedCount = storyboards.filter(sb => sb.videoStatus === 'completed').length;
   const withImages = storyboards.filter(sb => sb.imageUrl);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedPrompt, setEditedPrompt] = useState('');
+
+  // 只有 Wan2.6/Wan2.7 使用 audio_url（实际音轨），需要预先生成 TTS
+  // Seedance 2.0 用声音参考、其他模型不支持音频 → 隐藏按钮
+  const m = (videoModel || '').toLowerCase();
+  const showAudioButton = m.includes('wan2.6') || m.includes('wan2.7') || m.includes('wan 2.6') || m.includes('wan 2.7');
 
   const startEdit = (sb: Storyboard) => {
     setEditingId(sb.id);
@@ -166,8 +172,8 @@ export default function Step5({ storyboards, characters, onBack, onNext, onGener
                   </div>
                 )}
 
-                {/* Generate Audio */}
-                {hasDialogue && (
+                {/* Generate Audio — 仅 Wan2.6/2.7 需要预生成 TTS */}
+                {hasDialogue && showAudioButton && (
                   <button
                     onClick={() => onGenerateAudio?.(sb)}
                     disabled={sb.audioStatus === 'generating'}
