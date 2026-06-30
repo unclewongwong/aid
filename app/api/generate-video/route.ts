@@ -35,9 +35,21 @@ export async function POST(request: NextRequest) {
       : characterAudios;
     const uploadedAudioUrls = validAudios.map((a: { audioUrl: string }) => a.audioUrl).filter(Boolean);
 
+    // For Seedance with audio: sync video duration to audio duration to prevent stretching
+    let effectiveStoryboard = storyboard;
+    if (isDoubaoSeedance && validAudios.length > 0) {
+      const maxAudioDuration = Math.max(
+        ...validAudios.map((a: { audioDuration?: number }) => a.audioDuration ?? 5)
+      );
+      // Round up to nearest integer, clamp to [3, 10]
+      const syncedDuration = Math.min(Math.max(Math.ceil(maxAudioDuration), 3), 10);
+      console.log(`Syncing video duration to audio: ${maxAudioDuration.toFixed(2)}s → ${syncedDuration}s`);
+      effectiveStoryboard = { ...storyboard, videoDuration: syncedDuration };
+    }
+
     // 生成视频任务（image-to-video 模式，视觉信息已在图片中）
     const taskId = await generateStoryboardVideo(
-      storyboard,
+      effectiveStoryboard,
       apiKey,
       videoModel,
       aspectRatio || '16:9',
