@@ -310,7 +310,7 @@ export async function createVideoTask(
         requestBody.video_urls = options.videoUrls;
       }
     }
-    if (options?.audioUrls && options.audioUrls.length > 0 && !isHappyHorse) {
+    if (options?.audioUrls && options.audioUrls.length > 0 && isDoubaoSeedance) {
       requestBody.audio_urls = options.audioUrls;
     }
 
