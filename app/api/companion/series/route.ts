@@ -1,10 +1,11 @@
+import { videoGenerationSelection } from '@/lib/videoGenerationSelection';
 import { seriesJobScope, seriesJobsConflict, mergeSeriesCheckpoint } from '@/lib/series/concurrency';
 import { NextRequest, NextResponse } from "next/server";
 import { recordSeriesInterruption, seriesCheckpointAdvanced } from '@/lib/series/interruption';
 import { seriesRetryBlocker } from '@/lib/series/jobHistory';
 import { setSeriesStyleReference } from '@/lib/series/styleReference';
 import { imageModelRequiresApiKey } from '@/lib/imageModels';
-import { enforceSeriesVideoProvider, mergeResumedSeriesSettings, resetEpisodeVideosForProviderChange } from '@/lib/series/videoProviderChange';
+import { enforceSeriesVideoProvider, mergeResumedSeriesSettings } from '@/lib/series/videoProviderChange';
 import { castSeriesRole } from "@/lib/series/casting";
 import { seriesAssetsReady, seriesStageBlocker } from "@/lib/series/readiness";
 import { seriesScriptAssetFingerprint } from '@/lib/series/scriptStructureRepair';
@@ -496,22 +497,27 @@ export async function POST(request: NextRequest) {
                 createdAt: now,
                 updatedAt: now,
                 sealedSettings,
+                videoSelection: videoGenerationSelection(effectiveSettings),
               });
               added++;
             }
           }
           for (const episodeId of episodeIds) {
-            if (
-              db.jobs.some(
-                (j) =>
-                  j.seriesId === project.id &&
-                  j.episodeId === episodeId &&
-                  j.assetId === (assetId || undefined) &&
-                  j.kind === kind &&
-                  ["queued", "running", "paused"].includes(j.status),
-              )
-            )
+            const existing = db.jobs.find(j => j.seriesId === project.id && j.episodeId === episodeId &&
+              j.assetId === (assetId || undefined) && j.kind === kind && ['queued', 'running', 'paused'].includes(j.status));
+            if (existing) {
+              if (existing.status === 'paused') {
+                existing.sealedSettings = sealedSettings;
+                existing.videoSelection = videoGenerationSelection(effectiveSettings);
+                existing.status = 'queued';
+                existing.cancelRequested = false;
+                existing.error = undefined;
+                existing.stage = '等待恢复';
+                existing.updatedAt = now;
+                added++;
+              }
               continue;
+            }
             db.jobs.push({
               id: seriesId("job"),
               seriesId: project.id,
@@ -524,6 +530,7 @@ export async function POST(request: NextRequest) {
               createdAt: now,
               updatedAt: now,
               sealedSettings,
+              videoSelection: videoGenerationSelection(effectiveSettings),
             });
             added++;
           }
@@ -576,6 +583,7 @@ export async function POST(request: NextRequest) {
               createdAt: now,
               updatedAt: now,
               sealedSettings,
+              videoSelection: videoGenerationSelection(effectiveSettings),
             });
           }
           project.paused = false;
@@ -598,15 +606,8 @@ export async function POST(request: NextRequest) {
                 body.settings,
                 process.env.APIMART_API_KEY || '',
               );
-              if (
-                job.kind === 'produce' &&
-                previousSettings.videoProvider !== resumedSettings.videoProvider
-              ) {
-                resetEpisodeVideosForProviderChange(
-                  project.episodes.find((episode) => episode.id === job.episodeId),
-                );
-              }
               job.sealedSettings = await sealSettings(resumedSettings);
+              job.videoSelection = videoGenerationSelection(resumedSettings);
             }
           }
           for (const job of db.jobs.filter((j) => j.seriesId === project.id)) {
@@ -647,12 +648,11 @@ export async function POST(request: NextRequest) {
             throw new Error("连续剧已在回收站或不存在，不能重试任务");
           const retryBlocker = seriesRetryBlocker(job, db.jobs);
           if (retryBlocker) throw new Error(retryBlocker);
-          if (body.settings)
-            job.sealedSettings = await sealSettings(enforceSeriesVideoProvider({
-              ...(await openSettings(job.sealedSettings!)),
-              ...body.settings,
-              apiKey: body.settings.apiKey || process.env.APIMART_API_KEY || '',
-            }));
+          if (body.settings) {
+            const resumedSettings = mergeResumedSeriesSettings(await openSettings(job.sealedSettings!), body.settings, process.env.APIMART_API_KEY || '');
+            job.sealedSettings = await sealSettings(resumedSettings);
+            job.videoSelection = videoGenerationSelection(resumedSettings);
+          }
           job.status = "queued";
           job.attempts = 0;
           job.consecutiveInterruptions = 0;
@@ -710,12 +710,7 @@ export async function POST(request: NextRequest) {
           const openedSettings = await openSettings(job.sealedSettings!);
           const settings = enforceSeriesVideoProvider(openedSettings);
           settings.apiKey ||= process.env.APIMART_API_KEY || '';
-          if (job.kind === 'produce' && openedSettings.videoProvider !== settings.videoProvider) {
-            resetEpisodeVideosForProviderChange(
-              owner.episodes.find((episode) => episode.id === job.episodeId),
-            );
-            job.sealedSettings = await sealSettings(settings);
-          }
+          job.videoSelection = videoGenerationSelection(settings);
           if (imageModelRequiresApiKey(settings.imageModel || 'seedream-5-0-pro') && !settings.apiKey) {
             job.status = 'failed';
             job.stage = '制作配置缺失';

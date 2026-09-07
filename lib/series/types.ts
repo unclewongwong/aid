@@ -222,6 +222,8 @@ export interface SeriesJob {
   /** Earliest epoch milliseconds at which a recoverable queued job may be claimed again. */
   resumeAfter?: number;
   cancelRequested?: boolean;
+  /** Public, credential-free record of the actual submitted video choice. */
+  videoSelection?: import('@/lib/videoGenerationSelection').VideoGenerationSelection;
   sealedSettings?: string;
 }
 

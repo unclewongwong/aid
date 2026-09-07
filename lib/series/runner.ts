@@ -14,7 +14,7 @@ import { refreshVisualRedoProduction } from './visualRedo';
 import { isGptImage2Model } from '@/lib/imageModels';
 import { usesPhotographicReferences } from '@/lib/gptImageReferences';
 import { resolveMidjourneyProfileSetting, resolveMidjourneyStyleSetting } from '@/lib/midjourney';
-import { SERIES_VIDEO_MODEL, SERIES_VIDEO_PROVIDER } from './videoProviderChange';
+import { enforceSeriesVideoProvider } from './videoProviderChange';
 import type {
   SeriesClaim,
   SeriesEpisode,
@@ -71,11 +71,7 @@ export async function executeSeriesClaim(
   // The worker lives on Companion's origin. Keep script/media calls here and
   // do not copy its credentials into the user's ordinary Story settings slot.
   const productionSettings = {
-    ...settings,
-    // Series production is contractually H3-only. Never inherit or fall back
-    // to a general-purpose video provider from ordinary Story settings.
-    videoProvider: SERIES_VIDEO_PROVIDER,
-    videoModel: SERIES_VIDEO_MODEL,
+    ...enforceSeriesVideoProvider(settings),
     comfyui: settings.comfyui
       ? {
           ...settings.comfyui,

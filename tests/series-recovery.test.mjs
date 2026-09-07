@@ -139,6 +139,75 @@ test('durable recovery claim prevents duplicate requests from concurrent callers
   } finally { release?.(); await rm(root, { recursive: true, force: true }); }
 });
 
+test('completed continuation enters prop repair without repeating or rewriting the screenplay', async () => {
+  const project = scriptFixture(), good = shotFixture();
+  project.objects = [{ id: 'glasses', name: '黑框眼镜', aliases: ['眼镜'] }];
+  good.shots[3].objectIds = ['glasses']; // Speculative binding in the preserved prefix.
+  good.shots[15].objectIds = ['glasses'];
+  const original = JSON.stringify({ shots: good.shots.slice(0, 6) }).slice(0, -2) + ',{"number":7';
+  let cached = original, state, calls = 0;
+  const deps = {
+    read: async () => cached, save: async value => { cached = value; },
+    readState: async () => state, saveState: async value => { state = structuredClone(value); },
+    chat: async prompt => {
+      calls++;
+      if (calls === 1) {
+        assert.match(prompt, /只补齐第 7–16 镜/);
+        return JSON.stringify({ shots: good.shots.slice(6) });
+      }
+      assert.equal(calls, 2);
+      assert.match(prompt, /ASSET-AUTHORITATIVE SCREENPLAY REPAIR/);
+      assert.equal(JSON.parse(cached).shots.length, 16);
+      assert.equal(state.recovery.status, 'validating');
+      return JSON.stringify({ repairs: [4, 16].map(shotNumber => ({ shotNumber, objectId: 'glasses', decision: 'remove' })) });
+    },
+  };
+  const result = await generateSeriesStage('script', project, project.episodes[0].id, deps);
+  assert.equal(result.script.length, 16);
+  assert.equal(state.recovery.originalDraft, original);
+  assert.equal(state.recovery.status, 'completed');
+  const expected = structuredClone(good);
+  expected.shots[3].objectIds = []; expected.shots[15].objectIds = [];
+  assert.deepEqual(JSON.parse(cached), expected);
+  await generateSeriesStage('script', project, project.episodes[0].id, deps);
+  assert.equal(calls, 2);
+});
+
+test('legacy failed continuation is recovered from metadata and retained through a repair outage', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'aid-legacy-prop-recovery-'));
+  const project = scriptFixture(), good = shotFixture(), key = 'd'.repeat(64);
+  project.objects = [{ id: 'glasses', name: '黑框眼镜', aliases: ['眼镜'] }];
+  good.shots[8].objectIds = ['glasses'];
+  const original = JSON.stringify({ shots: good.shots.slice(0, 2) }).slice(0, -2) + ',{"number":3';
+  try {
+    const cache = createSeriesGenerationCache(root, key);
+    await cache.save(original);
+    await cache.claimRecovery();
+    await cache.saveState({ version: 1, recovery: {
+      status: 'failed', originalDraft: original,
+      response: JSON.stringify({ shots: good.shots.slice(2) }), error: '道具校验失败',
+    } });
+    let calls = 0;
+    await assert.rejects(generateSeriesStage('script', project, project.episodes[0].id, { ...cache,
+      chat: async prompt => {
+        calls++; assert.match(prompt, /ASSET-AUTHORITATIVE SCREENPLAY REPAIR/);
+        throw new Error('temporary repair outage');
+      },
+    }), /temporary repair outage/);
+    assert.deepEqual(JSON.parse(await cache.read()), good);
+    const result = await generateSeriesStage('script', project, project.episodes[0].id, {
+      ...createSeriesGenerationCache(root, key), chat: async prompt => {
+        calls++; assert.match(prompt, /ASSET-AUTHORITATIVE SCREENPLAY REPAIR/);
+        return JSON.stringify({ repairs: [{ shotNumber: 9, objectId: 'glasses', decision: 'remove' }] });
+      },
+    });
+    assert.equal(result.script.length, 16); assert.equal(calls, 2);
+    const state = await cache.readState();
+    assert.equal(state.recovery.status, 'completed');
+    assert.equal(state.recovery.originalDraft, original);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test('explicit refusal beats recoverable prefix and remains terminal with provider diagnostics', async () => {
   const project = scriptFixture(), raw = JSON.stringify({ shots: shotFixture().shots.slice(0, 15) }).slice(0, -2);
   assert.throws(() => parseScriptOutput(raw, { finishReason: 'content_filter' }), ScriptModelRefusalError);

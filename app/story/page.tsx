@@ -1,7 +1,7 @@
 'use client';
 import type { ImageStyleReference } from '@/lib/imageStyleReference';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import DevToolsLayout from '@/components/DevToolsLayout';
 import Toolbar from '@/components/Toolbar';
 import StatusBar from '@/components/StatusBar';
@@ -20,6 +20,10 @@ import CanvasMode from '@/components/CanvasMode';
 import { CapturePreset, Character, ObjectItem, ProjectProductionTiming, Storyboard, VisualStyle } from '@/types';
 import { StoryPlan } from '@/lib/pipeline/types';
 import { useProject } from '@/hooks/useProject';
+import VideoGenerationSelect from '@/components/VideoGenerationSelect';
+import { useVideoGenerationSelection } from '@/hooks/useVideoGenerationSelection';
+import { withVideoSelection } from '@/lib/videoGenerationSelection';
+import { SETTINGS_REQUIRED_MESSAGE } from '@/lib/settingsReadiness';
 import { useSettings } from '@/hooks/useSettings';
 import { comfyUIApiUrl, companionVersionAtLeast, downloadComfyUIVideo, fetchStoryApi, imageApiUrl, isComfyUIClientTask, localComfyUISettings, SEGMENT_VIDEO_COMPANION_MIN_VERSION, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { getImageModelCapabilities, imageModelRequiresApiKey, isGptImage2Model, isMidjourneyImageModel, resolveStoryboardGridImageModel } from '@/lib/imageModels';
@@ -58,6 +62,7 @@ import { castCharacterVoice, castStoryVoices, lockStoryboardVoiceIds } from '@/l
 import { applyStoryAspectRatio, hasStoryMedia, projectStoryAspectRatio, type StoryAspectRatio } from '@/lib/storyAspectRatio';
 import { storyStorageKeys } from '@/lib/series/storageScope';
 import { bindSeriesPlan, buildApprovedSeriesPlan, reconcileSeriesProductionContract, validateSeriesProduction } from '@/lib/series/productionContract';
+import { recoverCompletedVideoForExport } from '@/lib/videoExportRecovery';
 import { visibleImageCast, type ImageCastCharacter } from '@/lib/series/imageCastContract';
 import { AwaitingMediaTaskError, autoProductionLockName, autoRetryDelayMs, hasUsableStoryboardImage, imagePollingTimeoutError, isTransientAutoProductionError, normalizeStoryboardImageArtifact, planAutoImageBatch, planAutoVideoBatches } from '@/lib/autoProduction';
 import { effectiveStoryCast } from '@/lib/storyCast';
@@ -209,8 +214,18 @@ export default function StoryPage() {
     return () => { window.removeEventListener('aid-series-project-saved', saved); window.alert = originalAlert; };
   }, [batchRunId]);
   const { projectId, projectName, setProjectName, saveProject, loadProject, exportProject, adoptProjectId, newProject } = useProject();
-  const { settings, saveSettings } = useSettings();
+  const { settings: defaultSettings, saveSettings, settingsReady, hasSavedSettings } = useSettings();
+  const videoChoice = useVideoGenerationSelection(`story:${projectId}`, defaultSettings, Boolean(batchRunId));
+  const settings = useMemo(() => withVideoSelection(defaultSettings, videoChoice.selection), [defaultSettings, videoChoice.selection.videoProvider, videoChoice.selection.videoModel]);
   const [showSettings, setShowSettings] = useState(false);
+  const configuredSettingsRef = useRef(false);
+  configuredSettingsRef.current = Boolean(batchRunId) || (settingsReady && hasSavedSettings);
+  const requireConfiguredSettings = () => {
+    if (configuredSettingsRef.current) return true;
+    setShowSettings(true);
+    alert(SETTINGS_REQUIRED_MESSAGE);
+    return false;
+  };
   const [currentStep, setCurrentStep] = useState(1);
   const [isCanvasMode, setIsCanvasMode] = useState(false);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -280,6 +295,7 @@ export default function StoryPage() {
       videoStatus: 'completed',
       ...(sb.id === storyboardId ? {
         videoUrl: sourceUrl,
+        videoTaskId: generationId || sb.videoTaskId,
         videoSourceUrl: sourceUrl.startsWith('http') ? sourceUrl : sb.videoSourceUrl,
         videoCacheKey: cacheKey,
         videoGenerationSignature: generationSignature || sb.videoGenerationSignature,
@@ -297,6 +313,7 @@ export default function StoryPage() {
         videoStatus: 'completed',
         ...(sb.id === storyboardId ? {
           videoUrl: cached.objectUrl,
+          videoTaskId: generationId || sb.videoTaskId,
           videoSourceUrl: sourceUrl.startsWith('http') ? sourceUrl : sb.videoSourceUrl,
           videoCacheKey: cacheKey,
           videoGenerationSignature: generationSignature || sb.videoGenerationSignature,
@@ -313,6 +330,7 @@ export default function StoryPage() {
         ...sb,
         videoStatus: 'completed',
         videoUrl: sourceUrl,
+        videoTaskId: generationId || sb.videoTaskId,
         videoSourceUrl: sourceUrl.startsWith('http') ? sourceUrl : sb.videoSourceUrl,
         videoCacheKey: cacheKey,
         videoCacheStatus: 'failed',
@@ -335,9 +353,7 @@ export default function StoryPage() {
       // had no project namespace, so a fresh project could restore another
       // project's clip simply because both contain `scene-1`.
       const generationSignature = storyboard.videoGenerationSignature;
-      const generationId = storyboard.videoTaskId && (isComfyUIClientTask(storyboard.videoTaskId) || isFalVideoTask(storyboard.videoTaskId))
-        ? storyboard.videoTaskId
-        : undefined;
+      const generationId = storyboard.videoTaskId;
       const cacheKey = videoCacheKeyForStoryboard(cacheProjectId, storyboard.id, generationSignature, generationId);
       try {
         // A regenerated clip can have the same creative signature as its old
@@ -1128,7 +1144,7 @@ export default function StoryPage() {
     projectLanguageRef.current = nextLanguage;
     setProjectLanguage(nextLanguage);
     const merged = { ...nextSettings, language: nextLanguage, aspectRatio: projectAspectRatioRef.current };
-    settingsRef.current = merged;
+    settingsRef.current = withVideoSelection(merged, videoChoice.selection);
     saveSettings(merged);
     return true;
   };
@@ -1389,6 +1405,7 @@ export default function StoryPage() {
   };
 
   const handleGenerateScript = async () => {
+    if (!requireConfiguredSettings()) return;
     if (!settings.apiKey && !settings.dmxApiKey) { alert('Please configure API Key in settings'); return; }
     setScriptGenerationPhase('planning');
     setIsLoading(true);
@@ -1405,8 +1422,11 @@ export default function StoryPage() {
 
   // Step4: batch generate via 2x2 grid
   const handleGenerateGrid = async (batch: Storyboard[], options: { throwOnError?: boolean; resumeTaskId?: string; gridSize?: 2 | 3 } = {}) => {
+    if (!requireConfiguredSettings()) return;
     const activeSettings = { ...settingsRef.current, imageModel: resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current) };
-    if (isMidjourneyImageModel(activeSettings.imageModel)) {
+    const newSeriesImages = storyStorageKeys().isolated && !options.resumeTaskId
+      && !batch.some(item => item.taskId && item.imageTaskMode !== 'single' && !hasUsableStoryboardImage(item));
+    if (newSeriesImages || isMidjourneyImageModel(activeSettings.imageModel)) {
       setIsGeneratingGrid(true);
       try {
         for (const member of batch) {
@@ -1720,6 +1740,7 @@ export default function StoryPage() {
 
   // Step4: individual image generation
   const handleGenerateImage = async (storyboard: Storyboard, options: { throwOnError?: boolean } = {}) => {
+    if (!requireConfiguredSettings()) return;
     const activeSettings = { ...settingsRef.current, imageModel: resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current) };
     if (imageModelRequiresApiKey(activeSettings.imageModel) && !activeSettings.apiKey) {
       const error = new Error('Please configure API Key in settings');
@@ -1754,7 +1775,7 @@ export default function StoryPage() {
           let taskId = safetyAttempt === 0 && latest.imageTaskMode === 'single' ? latest.taskId : undefined;
           if (!taskId) {
             await ensureStoryVisualAssets();
-            const requestBody = await prepareImageRequestRef.current({ storyboard: { ...storyboard, prompt, capturePreset: capturePresetRef.current }, characters: effectiveStoryCast(charactersRef.current, storyPlanRef.current?.characters), objects: objectsRef.current, aspectRatio: projectAspectRatioRef.current, imageModel: activeSettings.imageModel, apiKey: activeSettings.apiKey, costumeImages: costumeImagesRef.current, sceneImage: storyboard.sceneImageOverride || sceneImagesRef.current[0] || '', visualStyle, capturePreset: capturePresetRef.current, comfyui: localComfyUISettings(activeSettings.comfyui), styleReference: styleReferenceRef.current, midjourneyStyle: resolveMidjourneyStyleSetting(activeSettings), midjourneyProfile: resolveMidjourneyProfileSetting(activeSettings) });
+            const requestBody = await prepareImageRequestRef.current({ storyboard: { ...storyboard, prompt, capturePreset: capturePresetRef.current }, resolutionOverride: storyStorageKeys().isolated ? '1K' : undefined, characters: effectiveStoryCast(charactersRef.current, storyPlanRef.current?.characters), objects: objectsRef.current, aspectRatio: projectAspectRatioRef.current, imageModel: activeSettings.imageModel, apiKey: activeSettings.apiKey, costumeImages: costumeImagesRef.current, sceneImage: storyboard.sceneImageOverride || sceneImagesRef.current[0] || '', visualStyle, capturePreset: capturePresetRef.current, comfyui: localComfyUISettings(activeSettings.comfyui), styleReference: styleReferenceRef.current, midjourneyStyle: resolveMidjourneyStyleSetting(activeSettings), midjourneyProfile: resolveMidjourneyProfileSetting(activeSettings) });
             if (generationProjectId !== projectIdRef.current || (autoRunLockRef.current && autoAbortRef.current)) throw new Error('制作已暂停或项目已切换，未提交新的分镜任务');
             const response = await fetch(imageApiUrl('/api/generate', activeSettings.comfyui, activeSettings.imageModel), {
               method: 'POST',
@@ -2046,8 +2067,10 @@ export default function StoryPage() {
     requestedSegment?: Storyboard[],
     options: { throwOnError?: boolean } = {},
   ) => {
+    if (!requireConfiguredSettings()) return;
     const generationProjectId = projectIdRef.current;
     const activeSettings = settingsRef.current;
+    if (!batchRunId) videoChoice.select(activeSettings);
     const failBeforeSubmission = (message: string) => {
       const error = new Error(message);
       if (options.throwOnError) throw error;
@@ -2395,6 +2418,7 @@ export default function StoryPage() {
   // 一键成片：编剧 → 定妆/音色 → 图片 → 视频 → 合并下载。
   // 每个阶段会持续重试，直到成功、切换项目或用户主动暂停。
   const handleAutoGenerate = async (ownsCrossTabLease = false): Promise<void> => {
+    if (!requireConfiguredSettings()) return;
     if (autoRunLockRef.current) {
       // Let the paused orchestration observe autoAbort=true and unwind before
       // starting a replacement. Clearing the abort flag immediately can leave
@@ -2460,6 +2484,7 @@ export default function StoryPage() {
       return;
     }
     const initialSettings = settingsRef.current;
+    if (!batchRunId) videoChoice.select(initialSettings);
     if (imageModelRequiresApiKey(initialSettings.imageModel) && !initialSettings.apiKey) { alert('一键成片使用 APIMart 生图时需要先配置 API Key'); return; }
     if (charactersRef.current.length === 0) { alert('一键成片至少需要一个角色'); return; }
     if (storyboardsRef.current.length === 0 && !storyContent.trim()) { alert('请先填写故事内容'); return; }
@@ -2582,7 +2607,8 @@ export default function StoryPage() {
       if (autoAbortRef.current) return;
 
       setCurrentStep(4);
-      await retryUntilCompleted(isMidjourneyImageModel(resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current)) ? 'MJ 逐镜生成分镜图' : '四宫格生成分镜图', async () => {
+      const singleSeriesImages = storyStorageKeys().isolated;
+      await retryUntilCompleted(singleSeriesImages ? `逐镜生成 ${storyboardsRef.current.length} 张 1K 分镜图` : isMidjourneyImageModel(resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current)) ? 'MJ 逐镜生成分镜图' : '四宫格生成分镜图', async () => {
         const { chunkGridBatch } = await import('@/lib/gridSplitter');
         const normalized = storyboardsRef.current.map(normalizeStoryboardImageArtifact);
         if (normalized.some((item, index) => item !== storyboardsRef.current[index])) {
@@ -2593,7 +2619,7 @@ export default function StoryPage() {
         // failed cards first would shift panel indexes and can assign a crop to
         // the wrong scene on retry.
         for (const group of chunkGridBatch(storyboardsRef.current)) {
-          const plan = planAutoImageBatch(group, resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current));
+          const plan = planAutoImageBatch(group, resolveCharacterStoryboardModel(settingsRef.current.imageModel, charactersRef.current), singleSeriesImages ? 'single' : undefined);
           if (plan.kind === 'skip') continue;
           if (plan.kind === 'await-legacy-grid') throw new AwaitingMediaTaskError(plan.taskId);
           if (plan.kind === 'resume-grid') {
@@ -2708,25 +2734,14 @@ export default function StoryPage() {
       for (const planned of exportGroups) {
         const current = refreshPlannedVideoSegment(exportStoryboards, planned);
         const leader = current[0];
-        if (!leader || leader.videoStatus !== 'completed' || !leader.videoTaskId) {
-          throw new Error(`导出前镜头 ${planned.map(item => item.sceneNumber).join('·')} 尚未完成`);
-        }
-        if (leader.videoUrl) continue;
-        let recovered = leader.videoCacheKey
-          ? await cachedVideoObjectUrl(leader.videoCacheKey)
-          : undefined;
-        if (!recovered) recovered = leader.videoSourceUrl;
-        if (!recovered && isComfyUIClientTask(leader.videoTaskId)) {
-          const downloaded = await downloadComfyUIVideo(leader.videoTaskId, settingsRef.current.comfyui, { smoothAudioTail: true });
-          if (leader.videoCacheKey) {
-            const cached = await cacheVideoSource(leader.videoCacheKey, downloaded);
-            recovered = cached.objectUrl;
-          } else recovered = downloaded;
-        }
-        if (!recovered) throw new Error(`导出前无法恢复镜头 ${leader.sceneNumber} 的已有视频`);
-        exportStoryboards = exportStoryboards.map(item => item.id === leader.id ? {
-          ...item, videoUrl: recovered, videoCacheStatus: leader.videoCacheKey ? 'completed' as const : item.videoCacheStatus,
-        } : item);
+        if (!leader) throw new Error(`导出前镜头 ${planned.map(item => item.sceneNumber).join('·')} 尚未完成`);
+        const restored = await recoverCompletedVideoForExport(leader, {
+          cached: cachedVideoObjectUrl,
+          download: leader.videoTaskId && isComfyUIClientTask(leader.videoTaskId)
+            ? taskId => downloadComfyUIVideo(taskId, settingsRef.current.comfyui, { smoothAudioTail: true })
+            : undefined,
+        });
+        if (restored !== leader) exportStoryboards = exportStoryboards.map(item => item.id === leader.id ? restored : item);
       }
       const missingExportSegments = exportGroups.filter(group => {
         const leader = refreshPlannedVideoSegment(exportStoryboards, group)[0];
@@ -2874,6 +2889,7 @@ export default function StoryPage() {
       ) : (
         <div className="min-h-full bg-[var(--bg-primary)]">
           <div className="mx-auto max-w-[1440px] p-3 md:p-7">
+            {settingsReady && !hasSavedSettings && !batchRunId && <p role="alert" className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">{SETTINGS_REQUIRED_MESSAGE}</p>}
             <div className="aid-page-lead mb-5">
               <div><p className="aid-eyebrow">Story production pipeline</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl">从故事设定到完整视频</h1><p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">按步骤固定角色、剧本与视觉参考，每一步的结果都会带到下一阶段。</p></div>
               <div className="flex gap-2"><span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]">STEP {String(currentStep).padStart(2, '0')} / 06</span><span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]">{storyboards.length} SCENES</span></div>
@@ -2883,7 +2899,9 @@ export default function StoryPage() {
                 currentStep={currentStep}
                 steps={['角色', '故事', '剧本', '图片', '视频', '导出']}
               />
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {!batchRunId && <VideoGenerationSelect value={videoChoice.selection} onChange={videoChoice.select}
+                  disabled={!videoChoice.ready || autoRunning || storyboards.some(shot => shot.videoStatus === 'generating')} />}
                 {(storyContent.trim() || storyboards.length > 0) && (
                   autoRunning ? (
                     <button
@@ -3048,7 +3066,7 @@ export default function StoryPage() {
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        settings={settings}
+        settings={defaultSettings}
         onSave={handleSettingsSave}
       />
     </DevToolsLayout>

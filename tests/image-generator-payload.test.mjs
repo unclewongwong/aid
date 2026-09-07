@@ -3,6 +3,35 @@ import test from 'node:test';
 import axios from 'axios';
 import { generateStoryboardImage } from '../lib/imageGenerator.ts';
 import { buildGridPrompt } from '../lib/gridSplitter.ts';
+import { createStoryImageRequestPreparer } from '../lib/storyImageRequest.ts';
+import { POST } from '../app/api/generate/route.ts';
+
+test('series single-shot 1K request reaches the provider with cast and scene references intact', async () => {
+  const original = axios.post; const submissions = [];
+  axios.post = async (_url, body) => { submissions.push(body); return { data: { data: [{ task_id: 'single-1k' }] } }; };
+  try {
+    const prepare = createStoryImageRequestPreparer();
+    for (const visible of [true, false]) {
+      const body = await prepare({
+        storyboard: { id: 'scene-6', sceneNumber: 6, characters: visible ? ['玲玲'] : [], prompt: visible ? '玲玲握住帕子，站在院内。' : 'Empty stone courtyard, no people.' },
+        characters: [{ name: '玲玲', description: 'Pink robe and floral hairpin.', imageUrl: 'https://example.com/lingling.png' }],
+        objects: [], aspectRatio: '9:16', imageModel: 'gpt-image-2', apiKey: 'test',
+        sceneImage: 'https://example.com/courtyard.png', resolutionOverride: '1K', visualStyle: 'cinematic-natural',
+      });
+      const response = await POST(new Request('http://localhost/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }));
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).taskId, 'single-1k');
+      const submitted = submissions.at(-1);
+      assert.equal(submitted.resolution, '1k');
+      assert.equal(submitted.n, 1);
+      assert.equal(submitted.size, '9:16');
+      assert.doesNotMatch(submitted.prompt, /UNIQUE STORYBOARD BATCH|LAYOUT: one 2x2/);
+      assert.ok(submitted.image_urls.includes('https://example.com/courtyard.png'));
+      if (visible) assert.ok(submitted.image_urls.includes('https://example.com/lingling.png'));
+    }
+    assert.equal(submissions.length, 2);
+  } finally { axios.post = original; }
+});
 
 test('silent tagged companions each receive their identity reference in a five-role GPT shot', async () => {
   const original = axios.post; let submitted;

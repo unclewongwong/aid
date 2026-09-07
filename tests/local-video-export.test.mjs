@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -139,4 +139,52 @@ test('Companion persists, reuses, retries and natively merges local clips', { ti
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
+});
+
+test('six API clips with audio longer than video preserve their planned export duration', { timeout: 120_000 }, async () => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'aid-api-export-test-'));
+  const ffmpeg = require('ffmpeg-static');
+  process.env.AID_COMPANION_DATA_DIR = temporary;
+  process.env.FFMPEG_PATH = ffmpeg;
+  process.env.FFPROBE_PATH = require('ffprobe-static').path;
+  try {
+    const source = path.join(temporary, 'api.mp4');
+    await execFileAsync(ffmpeg, [
+      '-y', '-f', 'lavfi', '-i', 'color=c=blue:s=180x320:d=15.041667:r=24',
+      '-f', 'lavfi', '-i', 'sine=frequency=440:duration=15.104',
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', source,
+    ]);
+    const server = await import('../lib/companionVideoExportServer.ts');
+    const { withFilmEndingPacing, clippedPacingSections } = await import('../lib/videoPacing.ts');
+    const bytes = await readFile(source);
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    const duration = (await server.probeMedia(source)).duration;
+    const projectId = 'six-api-clips';
+    const clips = [];
+    for (let i = 0; i < 6; i++) {
+      await server.persistExportSegment(new Request('http://localhost/segment', { method: 'POST', body: bytes }), projectId, `clip-${i}`, sha);
+      clips.push({ clipId: `clip-${i}`, name: `Scene ${i+1}`, duration, trimStart: 0, trimEnd: 0, segmentSha256: sha,
+        pacingSections: [{ sourceStart: 0, sourceEnd: duration, rate: 1.08, kind: 'dialogue', reason: 'dialogue' }] });
+    }
+    const expected = withFilmEndingPacing(clips).reduce((sum, clip) => sum + clippedPacingSections(clip).reduce((n,s) => n + (s.sourceEnd-s.sourceStart)/s.rate, 0), 0);
+    // Old exports accepted individually decodable caches up to 250 ms short.
+    // Resume must repair these too, without discarding or downloading sources.
+    const oldCache = path.join(temporary, 'video-exports', server.safeStorageId(projectId), 'jobs',
+      server.safeStorageId(server.exportJobId(withFilmEndingPacing(clips), '9:16')), 'normalized', '000.mp4');
+    await mkdir(path.dirname(oldCache), { recursive: true });
+    await execFileAsync(ffmpeg, ['-y', '-i', source, '-t', String(duration / 1.08 - 0.1), '-c:v', 'libx264', '-c:a', 'aac', oldCache]);
+    const oldCacheTime = (await stat(oldCache)).mtimeMs;
+    const created = await server.createOrResumeExportJob(projectId, clips, 'api-film.mp4', '9:16');
+    let job;
+    const deadline = Date.now() + 90_000;
+    do {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      job = await server.readExportJob(projectId, created.jobId);
+    } while (!['completed', 'failed'].includes(job.status) && Date.now() < deadline);
+    assert.equal(job.status, 'completed', job.error);
+    assert.notEqual((await stat(oldCache)).mtimeMs, oldCacheTime, 'short legacy cache must be repaired');
+    const result = await server.exportDownloadInfo(projectId, created.jobId);
+    const actual = (await server.probeMedia(result.filePath)).duration;
+    assert.ok(Math.abs(actual - expected) < 0.3, `expected ${expected}, received ${actual}`);
+  } finally { await rm(temporary, { recursive: true, force: true }); }
 });

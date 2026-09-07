@@ -6,15 +6,28 @@ import {
   resetEpisodeVideosForProviderChange,
 } from '../lib/series/videoProviderChange.ts';
 
-test('series production always locks video generation to local H3', () => {
-  for (const videoProvider of ['apimart', 'fal', 'comfyui']) {
-    const settings = enforceSeriesVideoProvider({
-      apiProvider: 'apimart', apiKey: '', scriptModel: 'gpt-4o', imageModel: 'gpt-image-2',
-      videoModel: 'doubao-seedance-1-5-pro', videoProvider,
-    });
-    assert.equal(settings.videoProvider, 'comfyui');
-    assert.equal(settings.videoModel, 'minimax-h3');
+test('series respects explicit API choices and only normalizes fixed-provider model names', () => {
+  for (const [videoProvider, videoModel, expectedModel] of [
+    ['apimart', 'MiniMax-H3', 'MiniMax-H3'],
+    ['apimart', 'wan3.0-video', 'wan3.0-video'],
+    ['apimart', 'seedance-2.0-mini', 'seedance-2.0-mini'],
+    ['apimart', 'minimax-h3', 'MiniMax-H3'],
+    ['fal', 'wan3.0-video', 'minimax/h3-max/image-to-video'],
+    ['comfyui', 'wan3.0-video', 'minimax-h3'],
+  ]) {
+    const settings = enforceSeriesVideoProvider({ videoProvider, videoModel, apiKey: 'fixture' });
+    assert.equal(settings.videoProvider, videoProvider);
+    assert.equal(settings.videoModel, expectedModel);
+    assert.equal(settings.apiKey, 'fixture');
   }
+});
+
+test('resume replaces old forced ComfyUI with the explicit API model and retains credentials', () => {
+  const settings = mergeResumedSeriesSettings({videoProvider: 'comfyui', videoModel: 'minimax-h3', apiKey: 'saved'},
+    {videoProvider: 'apimart', videoModel: 'wan3.0-video', apiKey: ''});
+  assert.equal(settings.videoProvider, 'apimart');
+  assert.equal(settings.videoModel, 'wan3.0-video');
+  assert.equal(settings.apiKey, 'saved');
 });
 
 test('resuming with a new video provider keeps sealed credentials and nested Companion settings', () => {

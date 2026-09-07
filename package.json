@@ -1,6 +1,6 @@
 {
   "name": "aid",
-  "version": "0.1.205",
+  "version": "0.1.207",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -36,7 +36,7 @@
     "test:character-design": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/character-design.test.mjs",
     "test:image-style-controls": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/image-style-controls.test.mjs tests/character-visual-master.test.mjs tests/series-style-reference.test.mjs",
     "test:character-library": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/character-library.test.mjs",
-    "test:local-export": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/local-video-export.test.mjs",
+    "test:local-export": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/local-video-export.test.mjs tests/video-export-recovery.test.mjs tests/companion-export-poll.test.mjs tests/settings-readiness.test.mjs",
     "test:audio-tail": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --test tests/audio-tail-cleanup.test.mjs",
     "test:h3-director-ab": "node --test tests/minimax-h3-director-ab.test.mjs",
     "test:h3-director": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/h3-director-long-video.test.mjs tests/h3-motion-context.test.mjs tests/minimax-h3-director-ab.test.mjs",

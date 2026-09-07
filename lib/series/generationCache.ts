@@ -8,7 +8,7 @@ export interface SeriesGenerationState {
   responses?: Array<{ at: string; kind: 'generation' | 'repair' | 'continuation'; metadata: ProviderResponseMetadata }>;
   refusal?: string;
   objectGrounding?: { evidenceOnly: true };
-  recovery?: { status: 'pending' | 'failed' | 'completed'; originalDraft: string; response?: string; error?: string };
+  recovery?: { status: 'pending' | 'failed' | 'validating' | 'completed'; originalDraft: string; response?: string; error?: string };
 }
 
 /** Keep legacy .txt drafts readable. A sidecar stores diagnostics, while an

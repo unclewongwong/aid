@@ -5,7 +5,7 @@ import type { Storyboard, Character, ObjectItem, VisualStyle, CapturePreset } fr
 import { buildCompactImageCaptureContract, buildImageCaptureContract, buildMediumLock } from './promptArchitecture';
 import { buildImageCapturePresetContract } from './capturePresets';
 import { buildGptImage2PhotographicContract, buildGptImage2StoryPrompt } from './gptImagePrompt';
-import { getImageModelCapabilities, isComfyUIZImageTurbo, isGptImage2Model, isMidjourneyImageModel } from './imageModels';
+import { getImageModelCapabilities, isComfyUIZImageTurbo, isGptImage2Model, isMidjourneyImageModel, type ImageResolutionOverride } from './imageModels';
 import { visibleImageCast } from './series/imageCastContract';
 import { isMidjourneyTask, type MidjourneyStyleReference } from './midjourney';
 import { midjourneyShotInput } from './midjourneyStory';
@@ -34,6 +34,7 @@ export async function generateStoryboardImage(
   midjourneyProfile = '',
   midjourneyStyle: MidjourneyStyleReference = {},
   styleReference?: ImageStyleReference,
+  resolutionOverride?: ImageResolutionOverride,
 ): Promise<string> {
   const selectedImageModel = resolveCharacterStoryboardModel(imageModel || 'seedream-5-0-pro', characters);
   globalCostumeImages = characterAliasValues(globalCostumeImages, characters);
@@ -190,7 +191,7 @@ Strict rules: obey EXACT CAST literally; maintain exact face, hairstyle, clothin
       aspectRatio,
       // Generate the 2x2 mother grid at 4K, then the split route stores a
       // compressed mother and serves compact native-detail cells to H3.
-      '4K',
+      isStructuredGridPrompt ? '4K' : resolutionOverride || '4K',
       comfyui,
       {
         // Storyboard contact sheets use V8.2 HD with a loose image reference.
@@ -304,7 +305,7 @@ ${buildImageCapturePresetContract(capturePreset || storyboard.capturePreset)}`;
       apiKey,
       selectedImageModel,
       aspectRatio,
-      undefined,
+      resolutionOverride,
       comfyui,
       {
         midjourneyReferenceMode: 'image',
@@ -405,7 +406,7 @@ Obey EXACT CAST literally. Maintain exact face, body proportions, hairstyle, clo
     apiKey,
     selectedImageModel,
     aspectRatio,
-    undefined,
+    resolutionOverride,
     comfyui,
     {
       midjourneyReferenceMode: globalSceneImage ? 'image' : sceneCharacters.length === 1 && referenceImages.length > 0 ? 'character' : 'image',

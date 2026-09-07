@@ -27,6 +27,10 @@ import {
   Workflow,
   X,
 } from "lucide-react";
+import VideoGenerationSelect from '@/components/VideoGenerationSelect';
+import { useVideoGenerationSelection } from '@/hooks/useVideoGenerationSelection';
+import { withVideoSelection, videoSelectionLabel } from '@/lib/videoGenerationSelection';
+import { SETTINGS_REQUIRED_MESSAGE } from '@/lib/settingsReadiness';
 import SettingsModal from "@/components/SettingsModal";
 import SeriesCastPicker from "@/components/SeriesCastPicker";
 import SeriesVoicePicker from '@/components/SeriesVoicePicker';
@@ -390,7 +394,7 @@ function EpisodeEditor({
               <BookOpen className="mx-auto mb-4 opacity-50" size={36} />
               <p className="text-sm">分集故事已就绪，尚未生成分镜剧本。</p>
               <p className="mt-2 text-xs">
-                点击列表中的“生成分镜剧本”，或成片时自动补齐。参考图每批 4 镜，已有成稿保留原镜数。
+                点击列表中的“生成分镜剧本”，或成片时自动补齐。定稿后每镜单独生成 1K 参考图。
               </p>
             </div>
           )}
@@ -755,7 +759,7 @@ function FixedObjectCard({
 }
 
 export default function SeriesPage() {
-  const { settings, saveSettings } = useSettings();
+  const { settings, saveSettings, settingsReady, hasSavedSettings } = useSettings();
   const [showSettings, setShowSettings] = useState(false);
   const [snapshot, setSnapshot] = useState<SeriesSnapshot>({
     projects: [],
@@ -765,6 +769,8 @@ export default function SeriesPage() {
   const [base, setBase] = useState<string>();
   const [connected, setConnected] = useState(false);
   const [selectedId, setSelectedId] = useState("");
+  const videoChoice = useVideoGenerationSelection(`series:${selectedId}`, settings);
+  const productionSettings = withVideoSelection(settings, videoChoice.selection);
   const [tab, setTab] = useState<Tab>("outline");
   const [creating, setCreating] = useState(false);
   const [trashTarget, setTrashTarget] = useState<SeriesProject>();
@@ -942,6 +948,17 @@ export default function SeriesPage() {
     setError("");
     setNotice("");
     try {
+      if (body.settings && (!settingsReady || !hasSavedSettings)) {
+        setShowSettings(true);
+        throw new Error(SETTINGS_REQUIRED_MESSAGE);
+      }
+      if (body.settings && ['enqueue', 'resume', 'retry'].includes(String(body.action))) {
+        if (!videoChoice.ready) throw new Error('视频模型选择正在加载，请稍后重试');
+        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean }>(
+          await fetch(`${base}/api/companion/status`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }), '无法检查视频模型选择支持');
+        if (!status.seriesVideoModelSelection) throw new Error('请更新 Companion 后再开始制作，旧版会覆盖所选视频模型。');
+        if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后再开始制作，以便按定稿镜数逐张生成 1K 分镜图。');
+      }
       if (body.action === "delete-job") {
         const response = await fetch(`${base}/api/companion/status`, {
           cache: "no-store", signal: AbortSignal.timeout(5000),
@@ -981,7 +998,10 @@ export default function SeriesPage() {
     setError("");
     setNotice("");
     try {
+      if (!settingsReady || !hasSavedSettings) { setShowSettings(true); throw new Error(SETTINGS_REQUIRED_MESSAGE); }
       const status = await readApiJson<{
+        seriesVideoModelSelection?: boolean;
+        seriesSingleShotImages?: boolean;
         seriesVisualRedo?: boolean;
         seriesVisualPromptRewrite?: boolean;
         seriesVisualRedoRecovery?: boolean;
@@ -994,13 +1014,15 @@ export default function SeriesPage() {
         }),
         "无法检查一键重做支持",
       );
+      if (!status.seriesVideoModelSelection) throw new Error("请更新 Companion 后重做，旧版会覆盖所选视频模型。");
+      if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后重做，以便逐张生成 1K 分镜图。');
       if (!status.seriesVisualRedo || !status.seriesVisualPromptRewrite || !status.seriesVisualRedoRecovery || !status.storySingleImageShots || !status.h3DasiwaCheckpointPair)
         throw new Error("一键重做需要更新 Companion 后重新连接。");
       await seriesRequest({
         action: "redo-visuals",
         seriesId: project.id,
         revision: project.revision,
-        settings,
+        settings: productionSettings,
       }, base);
       await refresh(base);
       setShowVisualRedo(false);
@@ -1069,7 +1091,7 @@ export default function SeriesPage() {
         seriesId:target.id,
         revision:target.revision,
         objectId,
-        settings,
+        settings: productionSettings,
         patch:{
           ...patch,
           aliases,
@@ -1158,7 +1180,7 @@ export default function SeriesPage() {
         || (project.objects || []).find(item => item.id === assetId)
       : undefined;
     await action(
-      { action: "enqueue", kind, episodeIds, assetId, manualImageRetry: Boolean(assetId), settings },
+      { action: "enqueue", kind, episodeIds, assetId, manualImageRetry: Boolean(assetId), settings: productionSettings },
       assetId ? `“${targetAsset?.name || '单项素材'}”已加入单项生成队列；不会重新生成其他已指定或已完成素材。` : "已加入队列，系统将自动补齐所需步骤。",
     );
   };
@@ -1344,6 +1366,10 @@ export default function SeriesPage() {
           </div>
         </aside>
         <main className="min-w-0 flex-1 p-4 md:p-7 lg:p-9">
+          {settingsReady && !hasSavedSettings && <div role="alert" className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
+            {SETTINGS_REQUIRED_MESSAGE}
+            <button className={`${button} ml-3`} onClick={() => setShowSettings(true)}>确认模型设置</button>
+          </div>}
           {error && (
             <div
               role="alert"
@@ -1420,14 +1446,14 @@ export default function SeriesPage() {
                   </h1>
                   <p className="mt-3 text-xs text-[var(--text-secondary)]">
                     {project.episodeCount} 集{" "}
-                    <span className="mx-2 opacity-40">/</span> 四宫格参考 · 镜数按各集剧本 ·
+                    <span className="mx-2 opacity-40">/</span> 逐镜 1K 参考 · 张数按定稿镜数 ·
                     约{project.durationSeconds}秒 <span className="mx-2 opacity-40">/</span>{" "}
                     {project.aspectRatio}{" "}
                     <span className="mx-2 opacity-40">/</span> {completed}{" "}
                     集成片就绪
                   </p>
                   <p className="mt-2 text-[11px] text-[#9f8bd7]">
-                    连续剧视频固定使用 ComfyUI / MiniMax H3；不可用时保存断点并停止，不会切换其他视频接口。
+                    在成片按钮旁选择视频模型；选择随任务保存，已有视频保留。
                   </p>
                   {project.episodes.some(ep => ep.production?.storyboards?.some(b => b.imageCastReviewWarning)) && (
                     <details className="mt-3 max-w-2xl text-xs text-amber-300">
@@ -1466,7 +1492,7 @@ export default function SeriesPage() {
                       void action(
                         {
                           action: project.paused ? "resume" : "pause",
-                          ...(project.paused ? { settings } : {}),
+                          ...(project.paused ? { settings: productionSettings } : {}),
                         },
                         project.paused
                           ? "队列已恢复"
@@ -1488,9 +1514,10 @@ export default function SeriesPage() {
                     <RefreshCw size={14} />
                     一键重做
                   </button>
+                  <VideoGenerationSelect value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
                   <button
                     className={primary}
-                    disabled={busy || !ready}
+                    disabled={busy || !ready || !videoChoice.ready}
                     onClick={() => void enqueue("produce")}
                   >
                     <Play size={14} />
@@ -1596,6 +1623,7 @@ export default function SeriesPage() {
                         >
                           批量生成分镜剧本
                         </button>
+                        <VideoGenerationSelect value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
                         {selection.length > 0 && (
                           <button
                             className={primary}
@@ -1705,7 +1733,7 @@ export default function SeriesPage() {
                                 </span>
                                 <button
                                   className={button}
-                                  disabled={busy || !ready}
+                                  disabled={busy || !ready || !videoChoice.ready}
                                   onClick={() =>
                                     void enqueue(
                                       ep.script ? "produce" : "script",
@@ -2060,6 +2088,7 @@ export default function SeriesPage() {
                             </p>
                             <p className="mt-2 break-words text-xs leading-5 text-[var(--text-secondary)]">
                               {j.stage}
+                              {j.kind === "produce" && j.videoSelection && <span className="block mt-1 text-[#c1afff]">{videoSelectionLabel(j.videoSelection)}</span>}
                             </p>
                             <p className="mt-1 text-[10px] text-[var(--text-muted)]">上次更新：{new Date(j.updatedAt).toLocaleString()}</p>
                             {j.status === "failed" && j.error && (
@@ -2080,7 +2109,7 @@ export default function SeriesPage() {
                                   disabled={busy || !connected}
                                   onClick={() =>
                                     void action(
-                                      { action: "retry", jobId: j.id, settings },
+                                      { action: "retry", jobId: j.id, settings: productionSettings },
                                       "已加入重试队列。",
                                     )
                                   }
@@ -2220,7 +2249,7 @@ export default function SeriesPage() {
           >
             <h2 id="visual-redo-title" className="text-lg font-semibold">从角色生图开始一键重做？</h2>
             <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
-              保留故事总纲、分集故事、镜头数量、动作、表情、景别、运镜、逐字台词、音色和历史成片；自动角色卡、场景和自动道具完成后，按最新角色与道具重新编译每镜生图提示词与 H3 视频指令，再重做四宫格分镜图、视频及最终拼接。用户上传和角色库指定的图片不会重画。
+              保留故事总纲、分集故事、镜头数量、动作、表情、景别、运镜、逐字台词、音色和历史成片；自动角色卡、场景和自动道具完成后，按最新角色与道具重新编译每镜生图提示词与视频指令，再按定稿镜数逐张生成 1K 分镜图、视频及最终拼接。用户上传和角色库指定的图片不会重画。
             </p>
             <p className="mt-3 rounded-lg bg-amber-400/10 px-3 py-2 text-xs leading-6 text-amber-200">
               此操作会产生新的图片与视频生成费用。

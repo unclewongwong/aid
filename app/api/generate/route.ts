@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStoryboardImage } from '@/lib/imageGenerator';
-import { Storyboard, Character, ObjectItem } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { storyboard, characters, objects, aspectRatio, imageModel, apiKey, costumeImages, sceneImage, referenceImages, referenceImageLabels, visualStyle, styleReference, capturePreset, comfyui = {}, midjourneyProfile = '', midjourneyStyle = {} } = await request.json();
+    const { storyboard, characters, objects, aspectRatio, imageModel, apiKey, costumeImages, sceneImage, referenceImages, referenceImageLabels, visualStyle, styleReference, capturePreset, comfyui = {}, midjourneyProfile = '', midjourneyStyle = {}, resolutionOverride } = await request.json();
+    if (resolutionOverride !== undefined && !['1K', '2K', '4K'].includes(resolutionOverride))
+      return NextResponse.json({ error: 'Invalid image resolution' }, { status: 400 });
 
     if (!storyboard || !characters || characters.length === 0) {
       return NextResponse.json(
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       midjourneyProfile,
       midjourneyStyle,
       styleReference,
+      resolutionOverride,
     );
 
     return NextResponse.json({ taskId });

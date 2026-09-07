@@ -36,6 +36,8 @@ export async function GET() {
     seriesEpisodeCountAuthority: true,
     seriesDialogueTimingRepair: true,
     seriesConcurrentJobs: true,
+    seriesVideoModelSelection: true,
+    seriesSingleShotImages: true,
     authoredDialogueTimingRepair: true,
     seriesCrossLanguageVoices: true,
     sshDirectHost: process.env.COMFYUI_SSH_DIRECT_HOST || '',

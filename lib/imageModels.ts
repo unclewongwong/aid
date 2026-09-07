@@ -1,5 +1,5 @@
 export type ImageGenerationAspectRatio = '16:9' | '9:16' | '1:1' | '4:3';
-export type ImageResolutionOverride = '2K' | '4K';
+export type ImageResolutionOverride = '1K' | '2K' | '4K';
 
 export interface ImageModelCapabilities {
   model: string;
@@ -159,7 +159,10 @@ export function buildImageGenerationPayload(input: {
     // The alternate `gpt-image-2` route does not document this field.
     if (isOfficialGptImage2(input.model)) body.quality = 'high';
   } else {
-    const requested = input.resolutionOverride || '2K';
+    // Nano Banana supports the 1K tier. Other non-GPT routes keep their
+    // documented native minimum instead of receiving an unsupported value.
+    const requested = input.resolutionOverride === '1K' && !isNanoBanana2(input.model)
+      ? '2K' : input.resolutionOverride || '2K';
     body.resolution = capabilities.maxResolution === '2K' && requested === '4K' ? '2K' : requested;
   }
 

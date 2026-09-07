@@ -7,6 +7,7 @@ import { visibleImageCast, type ImageCastCharacter } from './series/imageCastCon
 import { visibleStoryObjects, visualAssetDescription } from './storyVisualAssets';
 import { characterAliasValues } from './characterIdentity';
 import { resolveCharacterStoryboardModel } from './characterVisualMaster';
+import type { ImageResolutionOverride } from './imageModels';
 
 export const MAX_STORY_IMAGE_REQUEST_BYTES = 1024 * 1024;
 const MAX_REFERENCE_BYTES = 50 * 1024 * 1024;
@@ -21,6 +22,7 @@ interface StoryImageRequest {
   referenceImageLabels?: string[];
   aspectRatio: string;
   imageModel: string;
+  resolutionOverride?: ImageResolutionOverride;
   apiKey: string;
   visualStyle?: VisualStyle;
   capturePreset?: CapturePreset;
@@ -168,6 +170,7 @@ export function createStoryImageRequestPreparer(
       characters, objects: preparedObjects, costumeImages: costumes, sceneImage,
       referenceImages: resolvedReferences, referenceImageLabels: input.referenceImageLabels || [],
       aspectRatio: input.aspectRatio, imageModel: resolveCharacterStoryboardModel(input.imageModel, input.characters), apiKey: input.apiKey,
+      resolutionOverride: input.resolutionOverride,
       visualStyle: input.visualStyle, capturePreset: input.capturePreset, comfyui: input.comfyui,
       styleReference: input.styleReference ? {
         imageUrl: await resolve(input.styleReference.imageUrl), description: input.styleReference.description,

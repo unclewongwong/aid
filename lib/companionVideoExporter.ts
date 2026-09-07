@@ -115,7 +115,7 @@ async function requireNativeCompanion(settings?: Partial<ComfyUISettings>): Prom
   }
 }
 
-async function pollJob(
+export async function pollJob(
   projectId: string,
   jobId: string,
   settings: Partial<ComfyUISettings> | undefined,
@@ -124,6 +124,7 @@ async function pollJob(
   const startedAt = Date.now();
   let transientFailures = 0;
   while (Date.now() - startedAt < EXPORT_POLL_TIMEOUT_MS) {
+    let job: ExportJobResponse['job'];
     try {
       const url = comfyUIApiUrl(
         `/api/companion/export/status?projectId=${encodeURIComponent(projectId)}&jobId=${encodeURIComponent(jobId)}`,
@@ -133,14 +134,18 @@ async function pollJob(
       if (!response.ok) throw new Error(await responseError(response));
       const data = await response.json() as ExportJobResponse;
       transientFailures = 0;
-      const job = data.job;
-      onProgress(Math.min(99, 48 + Number(job.progress || 0) * 0.51), job.stage || '本机合并中');
-      if (job.status === 'completed') return job;
-      if (job.status === 'failed') throw new Error(job.error || '本机 FFmpeg 合并失败');
+      job = data.job;
     } catch (error) {
       transientFailures += 1;
       if (transientFailures >= REQUEST_ATTEMPTS) throw error;
+      await delay(1200);
+      continue;
     }
+    // A terminal job failure is not a transient network failure. In particular,
+    // resetting the counter on each successful response must not swallow it.
+    onProgress(Math.min(99, 48 + Number(job.progress || 0) * 0.51), job.stage || '本机合并中');
+    if (job.status === 'completed') return job;
+    if (job.status === 'failed') throw new Error(job.error || '本机 FFmpeg 合并失败');
     await delay(1200);
   }
   throw new Error('本机合并超过 90 分钟，任务记录仍保留，可刷新后自动继续');

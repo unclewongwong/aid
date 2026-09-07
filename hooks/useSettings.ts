@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { hasExplicitGenerationModels } from '@/lib/settingsReadiness';
 import { AppSettings } from '@/types';
 import { SEEDREAM_5_PRO } from '@/lib/imageModels';
 import { storyStorageKeys } from '@/lib/series/storageScope';
@@ -86,37 +87,51 @@ function migrateSettings(settings: AppSettings): AppSettings {
 
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [hasSavedSettings, setHasSavedSettings] = useState(false);
 
   // 从 localStorage 加载设置
   useEffect(() => {
-    const saved = localStorage.getItem(storyStorageKeys().settings);
-    if (saved) {
-      try {
-        const parsed = migrateSettings(JSON.parse(saved) as AppSettings);
+    try {
+      const saved = localStorage.getItem(storyStorageKeys().settings);
+      if (saved) {
+        const raw = JSON.parse(saved);
+        const parsed = migrateSettings(raw as AppSettings);
         setSettings(parsed);
-        localStorage.setItem(storyStorageKeys().settings, JSON.stringify(parsed));
-      } catch (error) {
-        console.error('Failed to load settings:', error);
+        // Do not let migration turn an empty/partial record into configured defaults.
+        const configured = hasExplicitGenerationModels(raw);
+        setHasSavedSettings(configured);
+        if (configured) localStorage.setItem(storyStorageKeys().settings, JSON.stringify(parsed));
       }
+    } catch {
+      setHasSavedSettings(false);
+    } finally {
+      setSettingsReady(true);
     }
   }, []);
 
   // 保存设置到 localStorage
   const saveSettings = useCallback((newSettings: AppSettings) => {
     const migrated = migrateSettings(newSettings);
-    setSettings(migrated);
     localStorage.setItem(storyStorageKeys().settings, JSON.stringify(migrated));
+    setSettings(migrated);
+    setHasSavedSettings(hasExplicitGenerationModels(migrated));
+    setSettingsReady(true);
   }, []);
 
   // 重置为默认设置
   const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
     localStorage.setItem(storyStorageKeys().settings, JSON.stringify(DEFAULT_SETTINGS));
+    setSettings(DEFAULT_SETTINGS);
+    setHasSavedSettings(true);
+    setSettingsReady(true);
     console.log('Settings reset to defaults');
   }, []);
 
   return {
     settings,
+    settingsReady,
+    hasSavedSettings,
     saveSettings,
     resetSettings,
   };

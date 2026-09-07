@@ -19,7 +19,7 @@ test('script tab, summary and readiness display the actual saved episode length'
   assert.match(source, /label: episode\.script\?\.length \? `\$\{episode\.script\.length\}镜就绪` : "故事就绪"/);
 });
 
-test('four-panel batching is explained without claiming every episode has a fixed shot count', () => {
-  assert.match(source, /四宫格参考 · 镜数按各集剧本/);
-  assert.match(source, /参考图每批 4 镜，已有成稿保留原镜数/);
+test('single images follow the approved screenplay without advertising a padded grid batch', () => {
+  assert.match(source, /逐镜 1K 参考 · 张数按定稿镜数/);
+  assert.doesNotMatch(source, /参考图每批 4 镜|四宫格参考/);
 });

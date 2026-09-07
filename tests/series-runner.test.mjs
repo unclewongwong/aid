@@ -55,7 +55,7 @@ test('production runner reuses locked shared assets, saves checkpoints and uploa
   project.episodes = parseEpisodes(episodeFixtures(), project, 1, 3);
   project.characters.forEach((c, i) => { c.locked = true; c.voiceId = `fixed-${i}`; c.voiceSource = 'auto'; c.bibleUrl = `https://assets.test/${i}.png`; c.voiceReferenceUrl = `https://assets.test/voice-${i}.mp3`; });
   project.locations[0].imageUrl = 'https://assets.test/location.png';
-  const settings = { apiKey: 'fixture-key', fishAudioKey: 'fixture-fish', imageModel: 'fixture-image', comfyui: { useLocalCompanion: true } };
+  const settings = { videoProvider: 'apimart', videoModel: 'seedance-2.0-mini', apiKey: 'fixture-key', fishAudioKey: 'fixture-fish', imageModel: 'fixture-image', comfyui: { useLocalCompanion: true } };
   const saved = { fetch: globalThis.fetch, window: globalThis.window, document: globalThis.document, localStorage: globalThis.localStorage };
   const storage = new Map([['aid:current-project:v2', 'ordinary-story'], ['appSettings', 'ordinary-settings'], ['aid:auto-production', 'ordinary-auto']]);
   globalThis.localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) };
@@ -86,6 +86,8 @@ test('production runner reuses locked shared assets, saves checkpoints and uploa
       const production = JSON.parse(storage.get(keys.current));
       assert.ok(production.characters.every(c => c.voiceLocked && c.voiceSource === 'auto'));
       assert.equal(JSON.parse(storage.get(keys.settings)).comfyui.useLocalCompanion, false);
+      assert.equal(JSON.parse(storage.get(keys.settings)).videoProvider, 'apimart');
+      assert.equal(JSON.parse(storage.get(keys.settings)).videoModel, 'seedance-2.0-mini');
       assert.equal(JSON.parse(storage.get(keys.contract)).shotCount, 16);
       const send = data => { const event = new Event('message'); Object.assign(event, { origin: events.location.origin, source: frame.contentWindow, data: { type: 'aid-story-batch', runId: params.get('batchRunId'), ...data } }); events.dispatchEvent(event); };
       queueMicrotask(() => {

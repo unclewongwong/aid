@@ -63,6 +63,7 @@ export async function generateSeriesStage(
     const saved = project.episodes.find(e => e.id === episodeId)?.script;
     if (saved?.length) draft = JSON.stringify({ shots: saved });
   }
+  let continuationDraft = Boolean(state.recovery && draft && completeScriptPrefix(draft).length === project.shotCount);
   let problem = '';
   let fieldIssues: EpisodeFieldIssue[] | undefined;
   let dialogueIssues: DialogueIssue[] | undefined;
@@ -71,6 +72,8 @@ export async function generateSeriesStage(
   let incompleteShots: Record<string, unknown>[] | undefined;
   const rememberProblem = (error: unknown) => {
     if (error instanceof ScriptModelRefusalError || error instanceof ScriptRecoveryStoppedError) throw error;
+    if (continuationDraft && !(error instanceof ScriptStructureError) && !(error instanceof ScriptDialogueError))
+      throw new ScriptRecoveryStoppedError(`镜头已补齐，但当前问题不能安全局部修复；完整镜头及原稿均已保留。${error instanceof Error ? error.message : '格式错误'}`);
     problem = error instanceof Error ? error.message : '格式错误';
     fieldIssues = error instanceof EpisodeFieldError ? error.issues : undefined;
     dialogueIssues = error instanceof ScriptDialogueError ? error.issues : undefined;
@@ -78,8 +81,44 @@ export async function generateSeriesStage(
     shotCount = error instanceof ScriptShotCountError ? error.actual : undefined;
     incompleteShots = error instanceof IncompleteScriptOutputError && error.shots[0]?.number === 1 ? error.shots : undefined;
   };
+  const accept = async (candidate: string) => {
+    const result = parse(candidate);
+    if (state.recovery && continuationDraft) {
+      state.recovery.status = 'completed';
+      state.recovery.error = undefined;
+      await deps.saveState?.(state);
+    }
+    return result;
+  };
+  const retainContinuation = async (prefix: Record<string, unknown>[], response: string) => {
+    let candidate;
+    try {
+      const metadata = state.responses?.findLast(item => item.kind === 'continuation')?.metadata;
+      if (providerReportedRefusal(metadata)) throw new ScriptModelRefusalError(metadata?.refusal);
+      candidate = appendScriptContinuation(prefix, response, project.shotCount);
+      if (candidate._aidIncompleteScript) throw new Error('补镜结果仍不完整');
+    } catch (error) {
+      if (error instanceof ScriptModelRefusalError) throw error;
+      state.recovery = { ...state.recovery!, status: 'failed', error: safeProviderDetail(error instanceof Error ? error.message : String(error)) };
+      await deps.saveState?.(state);
+      throw new ScriptRecoveryStoppedError(`自动补镜未获得完整且未改动前文的镜头；原稿与回复已保留，不会重复补镜。${state.recovery.error}`);
+    }
+    // Completion and content validation are separate phases. Persist all returned
+    // shots before any focused repair, including when upgrading a legacy failed cache.
+    draft = JSON.stringify(candidate);
+    continuationDraft = true;
+    state.recovery!.status = 'validating';
+    state.recovery!.error = undefined;
+    await deps.saveState?.(state);
+    await deps.save?.(draft);
+  };
   if (draft) {
-    try { return parse(draft); }
+    try { return await accept(draft); }
+    catch (error) { rememberProblem(error); }
+  }
+  if (incompleteShots?.length && state.recovery?.response) {
+    await retainContinuation(completeScriptPrefix(state.recovery.originalDraft), state.recovery.response);
+    try { return await accept(draft!); }
     catch (error) { rememberProblem(error); }
   }
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -88,7 +127,7 @@ export async function generateSeriesStage(
       // lost. Restore the envelope locally, then run the full script validation.
       draft = JSON.stringify({ shots: incompleteShots });
       await deps.save?.(draft);
-      try { return parse(draft); }
+      try { return await accept(draft); }
       catch (error) { rememberProblem(error); }
     }
     if (draft && stage === 'script' && structureIssues?.some(issue => issue.kind === 'missing_speaker')) {
@@ -97,7 +136,7 @@ export async function generateSeriesStage(
         repairLogs.push(...repaired.logs);
         draft = JSON.stringify(repaired.raw);
         await deps.save?.(draft);
-        try { return parse(draft); }
+        try { return await accept(draft); }
         catch (error) { rememberProblem(error); }
       }
     }
@@ -106,6 +145,8 @@ export async function generateSeriesStage(
     const focusedStructure = draft && stage === 'script' && structureIssues?.some(issue => issue.kind === 'ungrounded_object');
     const focusedShotCount = draft && stage === 'script' && shotCount !== undefined;
     const focusedContinuation = draft && stage === 'script' && incompleteShots?.length && incompleteShots.length < project.shotCount;
+    if (continuationDraft && !focusedDialogue && !focusedStructure)
+      throw new ScriptRecoveryStoppedError(`镜头已补齐，但当前问题不能安全局部修复；完整镜头及原稿均已保留。${problem}`);
     const ownership = focusedDialogue && dialogueIssues!.some(issue => issue.reason === 'ownership');
     const ownershipContext = ownership ? dialogueIssues!.map(issue => {
       const shot = project.episodes.find(e => e.id === episodeId)?.script?.[issue.index] || extractJson(draft!).shots[issue.index];
@@ -181,21 +222,11 @@ export async function generateSeriesStage(
     }
     await deps.saveState?.(state);
     if (focusedContinuation) {
-      try {
-        const candidate = JSON.stringify(appendScriptContinuation(incompleteShots!, response, project.shotCount));
-        // Validate without another model repair. Failed continuations remain
-        // in the sidecar, never replacing the original or rewriting its shots.
-        const result = parse(candidate);
-        await deps.save?.(candidate);
-        state.recovery!.status = 'completed';
-        await deps.saveState?.(state);
-        return result;
-      } catch (error) {
-        const detail = safeProviderDetail(error instanceof Error ? error.message : String(error));
-        state.recovery = { ...state.recovery!, status: 'failed', error: detail };
-        await deps.saveState?.(state);
-        throw new ScriptRecoveryStoppedError(`自动补镜已尝试一次但未通过校验；原稿已保留，不会重复提交。${detail}`);
-      }
+      await retainContinuation(incompleteShots!, response);
+      try { return await accept(draft!); }
+      catch (error) { rememberProblem(error); }
+      attempt--; // The one-time continuation does not consume the local-repair budget.
+      continue;
     }
     if (focused || focusedDialogue || focusedStructure || focusedShotCount) {
       try {
@@ -274,8 +305,13 @@ export async function generateSeriesStage(
     // Persist before parsing: an invalid response remains available for targeted
     // repair after a restart; a valid response is reused after checkpoint loss.
     await deps.save?.(draft);
-    try { return parse(draft); }
+    try { return await accept(draft); }
     catch (error) { rememberProblem(error); }
+  }
+  if (continuationDraft && state.recovery) {
+    state.recovery.status = 'validating';
+    state.recovery.error = problem;
+    await deps.saveState?.(state);
   }
   throw new Error(`本次编剧及修稿未通过校验：${problem}。${deps.save ? '原稿已保留，重试将接着修稿；' : ''}已保存分集不会重写。`);
 }

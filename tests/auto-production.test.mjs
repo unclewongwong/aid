@@ -46,6 +46,26 @@ const shot = (sceneNumber, extra = {}) => ({
   ...extra,
 });
 
+test('series purchases exactly one image per missing approved shot, without padding a partial batch', () => {
+  for (const count of [3, 6, 10, 17]) {
+    const boards = Array.from({ length: count }, (_, i) => shot(i + 1));
+    const ids = [];
+    for (let i = 0; i < boards.length; i += 4) {
+      const plan = planAutoImageBatch(boards.slice(i, i + 4), 'gpt-image-2', 'single');
+      assert.equal(plan.kind, 'generate-missing');
+      ids.push(...plan.storyboardIds);
+    }
+    assert.deepEqual(ids, boards.map(s => s.id));
+    boards[0].imageUrl = 'https://example.com/already-paid.png';
+    assert.deepEqual(planAutoImageBatch(boards, 'gpt-image-2', 'single').storyboardIds, boards.slice(1).map(s => s.id));
+  }
+});
+
+test('switching series to single images still resumes an accepted old grid task', () => {
+  const boards = [shot(1, { taskId: 'paid-grid', imageTaskMode: 'grid', imageGridSize: 2 }), shot(2, { taskId: 'paid-grid', imageTaskMode: 'grid', imageGridSize: 2 })];
+  assert.deepEqual(planAutoImageBatch(boards, 'gpt-image-2', 'single'), { kind: 'resume-grid', taskId: 'paid-grid' });
+});
+
 test('treats an existing image as completed even when its stale UI status disagrees', () => {
   const normalized = normalizeStoryboardImageArtifact(shot(1, {
     imageUrl: 'https://example.com/scene-1.webp',

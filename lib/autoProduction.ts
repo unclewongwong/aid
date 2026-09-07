@@ -88,7 +88,7 @@ export function planAutoVideoBatches(groups: Storyboard[][], maxConcurrency = 2)
  * while a partially completed batch repairs only its missing cards so already
  * delivered storyboards are never purchased or replaced again.
  */
-export function planAutoImageBatch(group: Storyboard[], model = ''): AutoImageBatchPlan {
+export function planAutoImageBatch(group: Storyboard[], model = '', mode?: 'single'): AutoImageBatchPlan {
   const missing = group.filter(storyboard => !hasUsableStoryboardImage(storyboard));
   if (!missing.length) return { kind: 'skip' };
   if (storyboardImageMode(model) === 'single') return { kind: 'generate-missing', storyboardIds: missing.map(s => s.id) };
@@ -104,6 +104,9 @@ export function planAutoImageBatch(group: Storyboard[], model = ''): AutoImageBa
     return { kind: 'await-legacy-grid', taskId: recoverableTaskIds[0] };
   }
   if (recoverableTaskIds.length === 1) return { kind: 'resume-grid', taskId: recoverableTaskIds[0] };
+  // New series work is one task per approved shot. Existing paid grid tasks
+  // above must finish through their original recovery path, never be rebought.
+  if (mode === 'single') return { kind: 'generate-missing', storyboardIds: missing.map(s => s.id) };
   if (missing.length === group.length) return { kind: 'generate-grid' };
   return { kind: 'generate-missing', storyboardIds: missing.map(storyboard => storyboard.id) };
 }

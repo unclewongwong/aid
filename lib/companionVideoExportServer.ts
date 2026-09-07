@@ -50,6 +50,9 @@ const activeJobs = new Map<string, Promise<void>>();
 const MAX_JOB_ATTEMPTS = 3;
 const COMMAND_ATTEMPTS = 3;
 const COMMAND_TIMEOUT_MS = 20 * 60 * 1000;
+// One 24 fps frame plus AAC rounding. Larger per-clip deficits accumulate
+// past the final duration tolerance and must be repaired before concatenation.
+const NORMALIZED_DURATION_TOLERANCE = 0.05;
 
 function exportRoot(): string {
   return path.join(
@@ -382,8 +385,11 @@ async function transcodeClip(
     filters.push('[v0]null[vpaced]');
     filters.push('[a0]anull[apaced]');
   }
-  filters.push(`[vpaced]${videoFilter}[vout]`);
-  filters.push(`[apaced]apad=pad_dur=0.100,atrim=end=${outputDuration.toFixed(3)},afade=t=out:st=${Math.max(0, outputDuration - STORY_AUDIO_TAIL_FADE_SECONDS).toFixed(3)}:d=${STORY_AUDIO_TAIL_FADE_SECONDS.toFixed(3)}[aout]`);
+  // API MP4 audio can outlast the last video frame. atempo also rounds its
+  // tail. Pad both streams to the planned endpoint before -t/-shortest so
+  // neither track silently shortens every clip in the finished film.
+  filters.push(`[vpaced]${videoFilter},tpad=stop_mode=clone:stop_duration=${outputDuration.toFixed(3)}[vout]`);
+  filters.push(`[apaced]apad=whole_dur=${outputDuration.toFixed(3)},atrim=end=${outputDuration.toFixed(3)},afade=t=out:st=${Math.max(0, outputDuration - STORY_AUDIO_TAIL_FADE_SECONDS).toFixed(3)}:d=${STORY_AUDIO_TAIL_FADE_SECONDS.toFixed(3)}[aout]`);
   args.push(
     '-filter_complex', filters.join(';'),
     '-map', '[vout]',
@@ -415,12 +421,12 @@ async function runExportOnce(job: CompanionExportJob): Promise<void> {
     job.progress = 12 + Math.round((index / job.clips.length) * 68);
     job.stage = `本机处理片段 ${index + 1}/${job.clips.length}`;
     await saveJob(job);
-    if (await isValidVideo(output, pacedDuration(job.clips[index]))) continue;
+    if (await isValidVideo(output, pacedDuration(job.clips[index]), NORMALIZED_DURATION_TOLERANCE)) continue;
     await retryCommand(`片段 ${index + 1} 转码`, async () => {
       const temporary = `${output}.${randomUUID()}.part.mp4`;
       try {
         await transcodeClip(inputs[index], temporary, job.clips[index], target);
-        if (!(await isValidVideo(temporary, pacedDuration(job.clips[index])))) throw new Error('转码结果解码或时长校验失败');
+        if (!(await isValidVideo(temporary, pacedDuration(job.clips[index]), NORMALIZED_DURATION_TOLERANCE))) throw new Error('转码结果解码或时长校验失败');
         await rename(temporary, output);
       } finally { await rm(temporary, { force: true }).catch(() => undefined); }
     });
