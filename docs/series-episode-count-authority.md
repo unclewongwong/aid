@@ -1,6 +1,6 @@
 # 连续剧集数以界面设置为准
 
-2026-09-07，本地修复及验证完成，尚未发布或更新 Companion。
+2026-09-07，已随0.1.202发布网站并更新本机Companion。
 
 用户确认：上传的裴慎之/白玉杯故事正文没有集数。五十二岁、二十年、两百年前、五贯/八百贯/一千二百贯都是故事事实，不能成为集数。此前“把镜头编号当集数”是根据错误生成范围的推断，不是用户原文包含这些集号。
 
@@ -17,8 +17,18 @@
 - 全部 `tests/series*.test.mjs`：168/168通过，包括新增8项范围/缓存/免重试测试及导演成稿集数回归。
 - Next.js生产构建（含类型检查）通过。
 - 对本机最近3份真实错误草稿只读调用修复后parseOutline，均通过；所有原阶段目标/转折和结局保留。实际草稿：`fdf5de0c2a…`、`9d81c303f8…`、`c0b413d5b2…`，位于 `~/Library/Application Support/aid-companion/series-drafts/`。
-- 未请求模型、未写入生产项目、未发布、未重启或更新Companion。
+- 验证未请求模型、未写入生产项目；随后按用户授权发布并更新Companion。
 
 ## 生效范围
 
 这次与Seedance Mini纯网站API改动不同：连续剧总纲由网页请求本机Companion的 `/api/series/generate`。实际修复需要网站更新及Companion后端更新；单独部署网站不会替换安装包内的校验/提示词/草稿恢复逻辑。
+
+## 0.1.202 发布验收
+
+业务提交 `dee7af56b257b0327b864ed0476c785b63e39a3f` 已推送，Netlify生产部署 `6a9e85675c1ae732f4ed1b53`。正式网站Series页面200，12个脚本逐字节匹配本次构建，集数提示及Companion能力门槛存在。本机3018版本0.1.202，`seriesEpisodeCountAuthority=true`，正式域名CORS通过。
+
+隔离运行真实构建后端，复制三份旧草稿到临时目录后通过旧缓存迁移调用 `/api/series/generate`，三份均200，4–16ms完成，保留所有阶段目标/转折和结局，未调用付费模型。原生产草稿只读。
+
+无活动任务时替换应用。覆盖复制首次签名验证失败，改用全新目录复制后签名验证通过并成功启动；原0.1.201应用保留在 `out/releases/v0.1.202/AID Companion-0.1.201-installed.app`。生产草稿和视频全量文件哈希未变；Series目录只有 `index.json` 哈希变化，未保存其前后全文，不能宣称已证明仅心跳字段变化。
+
+回执：`out/releases/v0.1.202/release-verification.json`、`outline-api-verification.json`。
