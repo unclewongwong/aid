@@ -11,3 +11,11 @@
 154项Series回归及完整发布测试通过。对真实《侯府》成稿执行模型修稿与独立原意复核，镜头2由约19.71秒降至14.32秒，镜头5由17.76秒降至13.95秒；六镜完整制作预检通过，其他镜头不变，原始brief不修改。已审核结果进入原稿专属缓存供任务恢复复用。验证回执 `out/verification/authored-timing/result.json`。
 
 实测中修正逐句字数配额过硬的问题：各句可在整镜时长和字符预算内调配，原意审核允许语境明确的冗余称呼/重复语句压缩，但仍保留具体指认、信息来源、动作提示及产品事实。
+
+## 发布与运行验收
+
+业务提交37107d221afcc8e1df97b787f7518170bc6fbab4、标签companion-v0.1.205；Netlify部署6a9eb44980b393b481d96257。正式域名Series12与Story16个脚本逐字节匹配构建。Actions34124509135三个平台与Release全部成功，latest三个下载均HEAD200。Apple Silicon云端依赖安装较慢，最终恢复并完成全部测试、构建及发布。
+
+本机已安装并运行0.1.205，authoredDialogueTimingRepair与seriesConcurrentJobs=true，CORS与签名验证通过。旧应用备份out/releases/v0.1.205/AID Companion-0.1.204-installed.app；替换期间项目、草稿、导出文件全量哈希不变。安装后真实API48ms复用已审核短台词，原失败侯府任务实际保存修稿记录、通过原预检并进入分镜生图；最后核验已生成4张分镜图，保留6镜，未声称整集视频交付完成。原其他制作任务按已有任务号恢复。
+
+最终回执out/releases/v0.1.205/release-verification.json；25组524项发布测试通过。

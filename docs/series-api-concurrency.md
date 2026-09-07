@@ -1,6 +1,6 @@
 # API 并发与 ComfyUI 队列
 
-2026-09-07，本地实现，尚未发布。用户要求 API 任务无需等待，只有 ComfyUI GPU 工作排队。
+2026-09-07，已随0.1.204发布，0.1.205继续包含此改动。用户要求 API 任务无需等待，只有 ComfyUI GPU 工作排队。
 
 原问题是 Series 后台只要发现一个 running 就拒绝所有 claim，worker 也等待完整任务结束才继续领取。因此编剧/API 生图被另一集的视频生成阻塞。
 
@@ -20,4 +20,4 @@
 
 Series 全套152项通过；Next生产构建通过。测试使用模拟API，没有调用真实付费模型。
 
-本次修改包括 Companion 内运行的 worker 和本机 Series API，生效需要网站与 Companion 同步发布。能力标志 `seriesConcurrentJobs=true`。当前已安装/线上版本仍为0.1.203，本次未发布、未安装或重启服务。
+本次修改包括 Companion 内运行的 worker 和本机 Series API，生效需要网站与 Companion 同步发布。能力标志 `seriesConcurrentJobs=true`。0.1.204已发布并安装，随后0.1.205追加成稿台词超时修复。各版回执见out/releases/对应版本目录。
