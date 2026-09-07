@@ -20,3 +20,5 @@
 - npm run test:local-export 共6项通过，含真实六段15秒音视频尾部不同步、旧短缓存自动恢复和终态轮询不空等。TypeScript、diff检查通过。
 - 使用 `outputs/houfu-export-recovery-20260907/recover.mjs` 在原导出磁盘租约下运行新服务端源码，未重启Companion、未触碰其他任务。原网页轮询自动收到完成并正常写交付。23:02:27本机时间生产job-183c88b7-5bc6-4421-900a-7d2892b653c6为completed/已完成，episodeVersion7交付“侯府-第01集.mp4”，55,992,155字节、720×1280、81.07秒。
 - 回执 export-before.json、export-result.json；本次恢复已生效，但网页与Companion的通用代码修复仍待发布。最终视频在 Companion video-exports 对应原job目录的final.mp4。
+
+统一发布状态更新：上述通用源码修改已随完整0.1.207发布网站及三平台Companion，并已安装完整本机版本；早先未发布/临时包描述为历史阶段。最终验收见 [release-0.1.207.md](release-0.1.207.md)。
