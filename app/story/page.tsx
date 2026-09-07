@@ -2896,6 +2896,7 @@ export default function StoryPage() {
             </div>
             <div className="flex items-center justify-between mb-4">
               <StepIndicator
+                className="mb-0"
                 currentStep={currentStep}
                 steps={['角色', '故事', '剧本', '图片', '视频', '导出']}
               />

@@ -1,11 +1,12 @@
 interface StepIndicatorProps {
   currentStep: number;
   steps: string[];
+  className?: string;
 }
 
-export default function StepIndicator({ currentStep, steps }: StepIndicatorProps) {
+export default function StepIndicator({ currentStep, steps, className = 'mb-5 md:mb-7' }: StepIndicatorProps) {
   return (
-    <nav aria-label="故事创作进度" className="mb-5 min-w-0 overflow-x-auto rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-2 md:mb-7 md:p-3">
+    <nav aria-label="故事创作进度" className={`${className} min-w-0 overflow-x-auto rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-2 md:p-3`}>
       <div className="flex min-w-max items-center px-1">
         {steps.map((step, index) => (
           <div key={index} className="flex shrink-0 items-center">
