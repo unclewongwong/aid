@@ -32,3 +32,5 @@
 无活动任务时替换应用。覆盖复制首次签名验证失败，改用全新目录复制后签名验证通过并成功启动；原0.1.201应用保留在 `out/releases/v0.1.202/AID Companion-0.1.201-installed.app`。生产草稿和视频全量文件哈希未变；Series目录只有 `index.json` 哈希变化，未保存其前后全文，不能宣称已证明仅心跳字段变化。
 
 回执：`out/releases/v0.1.202/release-verification.json`、`outline-api-verification.json`。
+
+三平台发布收尾：Actions `34106875517` 四个job全部success，GitHub latest为 `companion-v0.1.202`，Apple Silicon/Intel/Windows三下载均200。
