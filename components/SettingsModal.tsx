@@ -375,9 +375,7 @@ export default function SettingsModal({
               <option value="minimax/h3-max/image-to-video">MiniMax H3 Max · fal (5–15s, 480P/768P, native audio)</option>
               <option value="grok-imagine-1.5-video-apimart">Grok Imagine 1.5 (6-30s, 480p/720p)</option>
               <option value="Omni-Flash-Ext">Omni-Flash-Ext (4/6/8/10s, 720p/1080p/4k)</option>
-              <option value="doubao-seedance-2.0">doubao-seedance-2.0</option>
-              <option value="doubao-seedance-2.0-fast">doubao-seedance-2.0-fast</option>
-              <option value="doubao-seedance-1-5-pro">doubao-seedance-1-5-pro</option>
+              <option value="seedance-2.0-mini">Seedance 2.0 Mini · APIMart (4–15s, 480p/720p)</option>
               <option value="happyhorse-1.0">happyhorse-1.0</option>
               <option value="veo3.1-fast">veo3.1-fast (Fast)</option>
               <option value="veo3.1-quality">veo3.1-quality</option>

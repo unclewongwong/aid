@@ -13,14 +13,14 @@ export async function POST(request: NextRequest) {
       prompt,
       imageUrl ? [imageUrl] : [],
       apiKey,
-      'doubao-seedance-2.0',
+      'seedance-2.0-mini',
       '16:9'
     );
 
     return NextResponse.json({
       success: true,
       taskId,
-      message: 'Doubao Seedance 2.0 任务已创建'
+      message: 'Seedance 2.0 Mini 任务已创建'
     });
   } catch (error) {
     console.error('Test doubao error:', error);

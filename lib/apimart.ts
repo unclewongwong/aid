@@ -22,6 +22,8 @@ import {
 } from './midjourney';
 import type { CapturePreset, VisualStyle } from '@/types';
 
+import { normalizeVideoModel } from './videoModels';
+
 const APIMART_BASE_URL = 'https://api.apimart.ai/v1';
 let preferSystemNetworkStack = false;
 
@@ -347,7 +349,7 @@ function ensureCloudinaryAudioDuration(url: string): string {
  * 将期望时长（秒）对齐到指定模型允许的最近合法值。
  */
 export function snapDurationToModel(desiredSeconds: number, model: string): number {
-  const m = model.toLowerCase();
+  const m = normalizeVideoModel(model).toLowerCase();
   if (m.includes('omni-flash-ext')) {
     const steps = [4, 6, 8, 10];
     return steps.reduce((prev, cur) =>
@@ -406,6 +408,7 @@ export async function createVideoTask(
 ): Promise<string> {
   try {
     console.log('=== Video Generation Debug ===');
+    model = normalizeVideoModel(model);
     console.log('Model:', model);
     console.log('Model includes doubao:', model.includes('doubao'));
     console.log('Model includes seedance:', model.includes('seedance'));
@@ -422,6 +425,7 @@ export async function createVideoTask(
     const isGrokImagine = model.toLowerCase().includes('grok-imagine');
     const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
     const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
+    const isSeedanceMini = model === 'seedance-2.0-mini';
 
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
     if (isGrokImagine) {
@@ -560,6 +564,33 @@ export async function createVideoTask(
     if (isSeedance15 && options?.audioUrls === undefined) {
       // seedance-1-5-pro 在没有指定自定义音频时可开启AI自动配音（可选）
       // requestBody.audio = true; // 如需自动配音可取消注释
+    }
+
+    // APIMart Seedance 2.0 Mini contract: validate before the billable POST.
+    // Other video families keep their existing payloads.
+    if (isSeedanceMini) {
+      const duration = options?.duration ?? 5;
+      if (!Number.isFinite(duration)) throw new Error('Seedance 2.0 Mini 时长必须是有效秒数');
+      requestBody.duration = snapDurationToModel(duration, model);
+      const resolution = (options?.resolution ?? options?.quality ?? '720p').toLowerCase();
+      if (!['480p', '720p'].includes(resolution)) {
+        throw new Error('Seedance 2.0 Mini 仅支持 480p 或 720p');
+      }
+      requestBody.resolution = resolution;
+      requestBody.generate_audio = options?.generateAudio ?? true;
+      const audios = options?.audioUrls ?? [];
+      const videos = options?.videoUrls ?? [];
+      const roles = options?.imageRoles ?? [];
+      if (referenceImageUrls.length > 9 || roles.length > 9) throw new Error('Seedance 2.0 Mini 最多支持 9 张参考图');
+      if (audios.length > 3 || videos.length > 3) throw new Error('Seedance 2.0 Mini 最多支持 3 个参考音频和 3 个参考视频');
+      if (roles.length && (audios.length || videos.length)) {
+        throw new Error('Seedance 2.0 Mini 首尾帧模式不能同时使用参考音频或参考视频；请移除尾帧或参考音视频');
+      }
+      if (audios.length && !referenceImageUrls.length && !videos.length) {
+        throw new Error('Seedance 2.0 Mini 参考音频需要与参考图片或参考视频一起使用');
+      }
+      // Audio generation and voice references are independent settings.
+      if (audios.length) requestBody.audio_urls = audios;
     }
 
     console.log('=== Video Generation Request ===');

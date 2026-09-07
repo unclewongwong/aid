@@ -84,6 +84,7 @@ export default function ImageToVideoPage() {
   const modelName = settings.videoModel?.toLowerCase() || '';
   const isOmniFlashExt = !isComfyUI && !isFal && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && !isFal && modelName.includes('grok-imagine');
+  const isSeedanceMini = !isComfyUI && !isFal && modelName === 'seedance-2.0-mini';
   const isMiniMaxH3 = isComfyUI || isFal || modelName.includes('minimax-h3');
   const supportsH3VoiceReference = isComfyUI || (!isFal && modelName.includes('minimax-h3'));
 
@@ -106,7 +107,7 @@ export default function ImageToVideoPage() {
       : isGrokImagine
         ? 'reference'
         : 'none';
-  const durationMin = isComfyUI ? 2 : (isOmniFlashExt ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
+  const durationMin = isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
   const durationMax = isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine ? 30 : 15);
   const durationOptions = isDirector ? DIRECTOR_DURATIONS : isOmniFlashExt ? [4, 6, 8, 10] : undefined;
 
@@ -415,7 +416,7 @@ export default function ImageToVideoPage() {
           prompt: fullPrompt,
           aspectRatio,
           duration,
-          quality: isGrokImagine || isFal ? quality : undefined,
+          quality: isGrokImagine || isFal || isSeedanceMini ? quality : undefined,
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,
           scriptProvider: settings.scriptProvider,
@@ -749,8 +750,8 @@ export default function ImageToVideoPage() {
                 </div>
               </div>
 
-              {/* Quality - Grok Imagine / fal H3 Max */}
-              {(isGrokImagine || isFal) && (
+              {/* Quality - Grok Imagine / fal H3 Max / Seedance Mini */}
+              {(isGrokImagine || isFal || isSeedanceMini) && (
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Quality</h2>
                   <div className="grid grid-cols-2 gap-2">
@@ -876,6 +877,7 @@ export default function ImageToVideoPage() {
               {!isComfyUI && settings.videoModel?.includes('seedance-2') && (
                 <div className="space-y-4 p-4 border border-[var(--border-color)] rounded-lg bg-[var(--bg-secondary)]">
                   <h2 className="text-sm font-mono text-[var(--accent-green)]">Seedance 2.0 Enhanced Features</h2>
+                  {isSeedanceMini && <p className="text-xs text-[var(--text-secondary)]">使用尾帧时，请移除参考音频和参考视频；参考图模式最多支持 9 张图片、3 个视频和 3 个音频。</p>}
 
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">

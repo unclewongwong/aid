@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { AppSettings } from '@/types';
 import { SEEDREAM_5_PRO } from '@/lib/imageModels';
 import { storyStorageKeys } from '@/lib/series/storageScope';
+import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiProvider: 'apimart',
@@ -13,7 +14,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   imageModel: SEEDREAM_5_PRO,
   midjourneyProfileEnabled: true,
   midjourneyProfile: 'votj2t8',
-  videoModel: 'doubao-seedance-1-5-pro',
+  videoModel: SEEDANCE_MINI,
   videoProvider: 'apimart',
   fal: {
     apiKey: '',
@@ -49,7 +50,7 @@ const LEGACY_IMAGE_MODEL_MAP: Record<string, string> = {
 };
 
 function migrateSettings(settings: AppSettings): AppSettings {
-  const migratedVideoModel = LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel;
+  const migratedVideoModel = normalizeVideoModel(LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel || DEFAULT_SETTINGS.videoModel);
   const migratedImageModel = LEGACY_IMAGE_MODEL_MAP[settings.imageModel] || settings.imageModel;
   const legacyComfyUI = settings.comfyui as (AppSettings['comfyui'] & {
     sshPrivateKey?: string;
