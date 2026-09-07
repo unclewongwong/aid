@@ -26,6 +26,7 @@ import {
 import {
   CONTINUITY_HANDOFF_LEAD_SECONDS,
   CONTINUITY_HEAD_TRIM_SECONDS,
+  defaultVideoHeadTrim,
   previousSegmentTailSource,
   hasLegacyAutomaticContinuity,
 } from '../lib/videoContinuity.ts';
@@ -427,6 +428,15 @@ test('uses a moving continuity handoff and trims the H3 restart', () => {
   assert.equal(CONTINUITY_HEAD_TRIM_SECONDS, CONTINUITY_HANDOFF_LEAD_SECONDS);
   assert.ok(CONTINUITY_HANDOFF_LEAD_SECONDS <= 0.3);
   assert.ok(CONTINUITY_HEAD_TRIM_SECONDS >= 0.12);
+});
+
+test('independent first and later clips get opening cleanup without continuity flags', () => {
+  for (const board of [shot(1, { continuousFromPrev: false }), shot(2)]) {
+    assert.equal(defaultVideoHeadTrim(8, board), 0.24);
+  }
+  assert.equal(defaultVideoHeadTrim(8, shot(1, { videoContinuitySegmentIndex: 0 })), 0.24);
+  assert.equal(defaultVideoHeadTrim(8, shot(2, { videoContinuitySegmentIndex: 1 })), 0);
+  assert.ok(Math.abs(defaultVideoHeadTrim(0.2, shot(1)) - 0.1) < 1e-9);
 });
 
 

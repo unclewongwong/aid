@@ -9,7 +9,7 @@ import { Play, Pause, Download } from 'lucide-react';
 import { exportVideo } from '@/lib/video-exporter';
 import { exportVideoWithCompanion, hasPendingNativeExport } from '@/lib/companionVideoExporter';
 import type { AppSettings } from '@/types';
-import { CONTINUITY_HANDOFF_LEAD_SECONDS, CONTINUITY_HEAD_TRIM_SECONDS } from '@/lib/videoContinuity';
+import { CONTINUITY_HANDOFF_LEAD_SECONDS, defaultVideoHeadTrim } from '@/lib/videoContinuity';
 import type { StoryAspectRatio } from '@/lib/storyAspectRatio';
 import type { Storyboard } from '@/types';
 import {
@@ -101,9 +101,7 @@ export default function VideoEditor({
             video.onloadedmetadata = () => resolve(video.duration);
             video.onerror = () => reject(new Error(`Scene ${i + 1} metadata 加载失败`));
           });
-          const trimStart = continuityFlags[i]
-            ? Math.min(CONTINUITY_HEAD_TRIM_SECONDS, Math.max(0, duration - 0.1))
-            : 0;
+          const trimStart = defaultVideoHeadTrim(duration, storyboardGroups[i]?.[0]);
 
           loadedClips.push({
             id: `clip-${i}`,
@@ -111,9 +109,8 @@ export default function VideoEditor({
             name: `Scene ${i + 1}`,
             duration,
             startTime,
-            // A continuity-generated clip intentionally starts on the previous
-            // clip's final still. Remove a few duplicated opening frames so the
-            // hard join carries motion forward instead of visibly pausing.
+            // Remove the opening ramp from every generated clip, independently
+            // of whether it borrows the previous clip's ending frame.
             trimStart,
             trimEnd: 0,
             pacingSections: buildSmartPacingSections(storyboardGroups[i] || [], duration, pacingModeRef.current),

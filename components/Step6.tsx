@@ -84,7 +84,7 @@ export default function Step6({
           <span className="text-[var(--text-secondary)]">06.</span> Edit & Export
         </h2>
         <p className="text-[var(--text-secondary)] font-mono text-sm">
-          Edit, trim, and export your final video. 连贯镜头会在运动中交接，并自动裁掉上一段静止尾部与下一段起步帧。
+          Edit, trim, and export your final video. 每段默认裁掉开头 0.24 秒，已在生成时裁过的接续片段不重复裁切；可在时间线上调整。
         </p>
         {productionTiming && (
           <p className="mt-2 font-mono text-xs text-emerald-300">

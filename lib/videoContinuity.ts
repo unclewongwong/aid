@@ -9,6 +9,14 @@ export const CONTINUITY_HANDOFF_LEAD_SECONDS = 0.24;
 // this short head interval keeps the join moving without hiding meaningful action.
 export const CONTINUITY_HEAD_TRIM_SECONDS = 0.24;
 
+/** Opening cleanup applies to independent clips too, including the first shot. */
+export function defaultVideoHeadTrim(duration: number, storyboard?: Storyboard): number {
+  // Motion Context removes the reconstructed audiovisual head in the workflow.
+  // Do not cut its already-trimmed continuation a second time.
+  if ((storyboard?.videoContinuitySegmentIndex ?? 0) > 0) return 0;
+  return Math.min(CONTINUITY_HEAD_TRIM_SECONDS, Math.max(0, duration - 0.1));
+}
+
 /** Narrative continuity is not permission to replace a selected first frame. */
 export function previousSegmentTailSource(storyboards: Storyboard[], leader: Storyboard): Storyboard | undefined {
   if (leader.videoStartMode !== 'previous-segment-tail') return undefined;
