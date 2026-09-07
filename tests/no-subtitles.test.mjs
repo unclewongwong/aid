@@ -63,6 +63,6 @@ test('automatic production relies on the prompt instead of blocking on visual qu
   assert.doesNotMatch(source, /\/api\/series\/audit-video-duplicates/);
   assert.doesNotMatch(source, /\/api\/series\/audit-images/);
   assert.doesNotMatch(source, /检查重复角色与烧录字幕|核验分镜角色与固定道具一致性/);
-  assert.match(source, /planAutoVideoBatches\(videoGroups\)/);
+  assert.match(source, /planAutoVideoBatches\(videoGroups, videoProvider === 'comfyui' \? 2 : videoGroups\.length\)/);
   assert.match(source, /await Promise\.allSettled\(batch\.map\(completeVideoGroup\)\)/);
 });
