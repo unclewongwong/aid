@@ -524,9 +524,9 @@ export async function executeSeriesClaim(
     Object.assign(episode, repairEpisodeDialogue(project, episode, result.script));
     await save(`第${episode.number}集台词归属已修正，仅重制受影响片段`);
   }
-  if (project.sourceMode !== 'authored_screenplay' && !episode.deliveries.some(d => d.episodeVersion === episode.version) && scriptTimingIssues(episode.script, project.language).length) {
+  if (!episode.deliveries.some(d => d.episodeVersion === episode.version) && scriptTimingIssues(episode.script, project.language).length) {
     await save(`第${episode.number}集检测到台词超时，正在保留原意压缩并复核`);
-    const result = await generate<{ script: NonNullable<SeriesEpisode["script"]> }>("script", project, episode.id);
+    const result = await generate<{ script: NonNullable<SeriesEpisode["script"]> }>(project.sourceMode === 'authored_screenplay' ? "dialogue-timing" : "script", project, episode.id);
     Object.assign(episode, repairEpisodeDialogue(project, episode, result.script, 'timing'));
     await save(`第${episode.number}集超时台词已压缩并保存原稿，继续制作`);
   }

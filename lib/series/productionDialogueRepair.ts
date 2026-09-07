@@ -6,7 +6,6 @@ import { authorSegmentSpeech } from '@/lib/videoSegments';
 
 export function repairEpisodeDialogue(project: SeriesProject, episode: SeriesEpisode, repaired: SeriesShot[], reason: 'ownership' | 'timing' = 'ownership'): SeriesEpisode {
   if (!episode.script || episode.deliveries.some(d => d.episodeVersion === episode.version)) throw new Error('已交付或没有剧本的分集不能自动替换台词');
-  if (reason === 'timing' && project.sourceMode === 'authored_screenplay') throw new Error('逐字保留的原稿不能自动缩短台词');
   const allowed = new Set(reason === 'timing' ? scriptTimingIssues(episode.script, project.language).map(issue => episode.script![issue.index].number) : copiedDialogueShotNumbers(episode.script));
   const structure = (shots: SeriesShot[]) => JSON.stringify(shots.map(s => ({ ...s, ...(reason === 'timing' ? { seconds: 0 } : {}), dialogue: s.dialogue.map(d => ({ ...d, text: '' })) })));
   if (!allowed.size || structure(episode.script) !== structure(repaired)) throw new Error('自动修稿只能修改指定台词，不得改变镜头、角色、动作或时长');

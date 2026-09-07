@@ -41,14 +41,14 @@ test('meaning rejection or unavailable review never replaces original; retries a
  assert.equal(saves,0);assert.equal(calls,6);
  }
 });
-test('timing patches preserve images and unrelated paid media, refusing affected paid clips and authored scripts',()=>{
+test('timing patches preserve images and unrelated paid media, refusing affected paid clips and supporting authored production copies',()=>{
  const p=fixture(),e=p.episodes[0];p.characters.forEach(c=>c.voiceId='voice');
  e.production={storyboards:e.script.map(s=>({id:`s${s.number}`,sceneNumber:s.number,imageUrl:`image${s.number}`,videoUrl:s.number===1?'paid-video':undefined,speech:s.dialogue.map(d=>({character:p.characters.find(c=>c.id===d.characterId).name,voiceId:'voice',exactLine:d.text}))}))};
  const repaired=structuredClone(e.script);for(const i of [1,4])repaired[i].dialogue[0].text=patch.repairs[0].value;
  const next=repairEpisodeDialogue(p,e,repaired,'timing');assert.equal(next.production.storyboards[0].videoUrl,'paid-video');assert.equal(next.production.storyboards[1].imageUrl,'image2');assert.equal(next.production.storyboards[1].speech[0].exactLine,patch.repairs[0].value);
  e.production.storyboards[0].videoSegmentId='legacy';e.production.storyboards[1].videoSegmentId='legacy';assert.throws(()=>repairEpisodeDialogue(p,e,repaired,'timing'),/已有视频/);delete e.production.storyboards[0].videoSegmentId;delete e.production.storyboards[1].videoSegmentId;
  e.production.storyboards[1].videoTaskId='submitted';assert.throws(()=>repairEpisodeDialogue(p,e,repaired,'timing'),/已有视频/);
- p.sourceMode='authored_screenplay';assert.throws(()=>repairEpisodeDialogue(p,e,repaired,'timing'),/不能自动缩短/);
+ delete e.production.storyboards[1].videoTaskId;p.sourceMode='authored_screenplay';assert.equal(repairEpisodeDialogue(p,e,repaired,'timing').script[1].dialogue[0].text,patch.repairs[0].value);
 });
 test('runner checks a saved current-fingerprint script before handing it to Story',async()=>{
  const p=fixture(),e=p.episodes[0];
@@ -57,5 +57,26 @@ test('runner checks a saved current-fingerprint script before handing it to Stor
  const previous=globalThis.fetch;let requests=0;const stages=[];
  globalThis.fetch=async(url,init)=>{if(url==='/api/companion/status')return Response.json({ok:false});if(url==='/api/series/generate'){requests++;return Response.json({script:result});}if(url==='/api/companion/series'){const body=JSON.parse(init.body);stages.push(body.stage);return Response.json({revision:body.project.revision+1});}throw new Error(`Unexpected ${url}`);};
  try {await executeSeriesClaim({project:p,job:{id:'j',episodeId:e.id,kind:'script',lease:'test'},settings:{apiKey:'test'}},new AbortController().signal,()=>{});assert.equal(requests,1);assert.ok(stages.some(s=>s?.includes('台词超时')));assert.equal(e.dialogueRepairs.length,1);checkScriptDialogue(e.script,'en');}
+ finally{globalThis.fetch=previous;}
+});
+
+test('authored timing repair uses focused patches, checks meaning and reuses only reviewed cache', async () => {
+ const {generateDialogueTimingRepair}=await import('../lib/series/dialogueTimingGeneration.ts');
+ const p=fixture();p.sourceMode='authored_screenplay';const original=structuredClone(p);let saved,calls=0;
+ const result=await generateDialogueTimingRepair(p,p.episodes[0].id,{save:async raw=>{saved=raw},chat:async prompt=>{calls++;return JSON.stringify(prompt.startsWith('DIALOGUE_MEANING_REVIEW')?review(true):patch)}});
+ assert.equal(calls,2);assert.deepEqual(p,original);checkScriptDialogue(result.script,p.language);
+ assert.deepEqual(await generateDialogueTimingRepair(p,p.episodes[0].id,{read:async()=>saved,chat:async()=>assert.fail('reuse reviewed result')}),result);
+ let saves=0;
+ await assert.rejects(generateDialogueTimingRepair(p,p.episodes[0].id,{save:async()=>saves++,chat:async prompt=>JSON.stringify(prompt.startsWith('DIALOGUE_MEANING_REVIEW')?review(false):patch)}),/原稿已保留/);
+ assert.equal(saves,0);
+});
+
+test('authored saved-script runner enters dedicated timing repair before Story', async () => {
+ const p=fixture(),e=p.episodes[0];p.sourceMode='authored_screenplay';
+ p.characters.forEach((c,i)=>Object.assign(c,{locked:true,bibleUrl:`https://example.com/${i}.png`,voiceId:`voice${i}`,voiceReferenceUrl:`https://example.com/${i}.mp3`}));p.locations.forEach(l=>l.imageUrl='https://example.com/location.png');e.scriptAssetFingerprint=seriesScriptAssetFingerprint(p,e);
+ const result=structuredClone(e.script);for(const i of [1,4])result[i].dialogue[0].text=patch.repairs[0].value;
+ const previous=globalThis.fetch;const requested=[];
+ globalThis.fetch=async(url,init)=>{if(url==='/api/companion/status')return Response.json({ok:false});const body=JSON.parse(init.body);if(url==='/api/series/generate'){requested.push(body.stage);return Response.json({script:result})}if(url==='/api/companion/series')return Response.json({revision:body.project.revision+1});throw new Error(`Unexpected ${url}`)};
+ try {await executeSeriesClaim({project:p,job:{id:'j',episodeId:e.id,kind:'script',lease:'test'},settings:{apiKey:'test'}},new AbortController().signal,()=>{});assert.deepEqual(requested,['dialogue-timing']);assert.equal(e.dialogueRepairs.length,1);checkScriptDialogue(e.script,'en');}
  finally{globalThis.fetch=previous;}
 });

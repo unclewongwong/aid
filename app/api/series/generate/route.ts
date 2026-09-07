@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatOnceResult } from "@/lib/pipeline/llm";
 import { streamingJsonResponse } from "@/lib/streamingJsonResponse";
 import { seriesPrompt, legacySeriesPrompt } from "@/lib/series/prompts";
+import { generateDialogueTimingRepair } from '@/lib/series/dialogueTimingGeneration';
 import { generateSeriesStage } from '@/lib/series/generation';
 import { createHash } from 'node:crypto';
 import { createSeriesGenerationCache, migrateSeriesOutlineCache } from '@/lib/series/generationCache';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const { stage, project, episodeId, settings } = await request.json();
     if (
-      !["outline", "episodes", "script"].includes(stage) ||
+      !["outline", "episodes", "script", "dialogue-timing"].includes(stage) ||
       !project?.brief ||
       !settings
     )
@@ -27,11 +28,12 @@ export async function POST(request: NextRequest) {
     )
       return NextResponse.json({ error: "集数需为1–100" }, { status: 400 });
     const series = project as SeriesProject;
-    const prompt = seriesPrompt(stage, series, episodeId);
+    const timing = stage === 'dialogue-timing';
+    const prompt = timing ? `authored-dialogue-timing-v1:${episodeId}` : seriesPrompt(stage, series, episodeId);
     return streamingJsonResponse(async () => {
       const root = process.env.AID_COMPANION_DATA_DIR;
       const identity: unknown[] = [series.id, prompt, settings.scriptProvider, settings.scriptModel, settings.apiKey, settings.dmxApiKey];
-      const savedScript = stage === 'script' ? series.episodes.find(e => e.id === episodeId)?.script : undefined;
+      const savedScript = stage === 'script' || timing ? series.episodes.find(e => e.id === episodeId)?.script : undefined;
       if (savedScript) identity.push('dialogue-source-v2', savedScript);
       const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
       const cache = !root ? {} : stage === 'outline'
@@ -40,9 +42,9 @@ export async function POST(request: NextRequest) {
             settings.scriptModel, settings.apiKey, settings.dmxApiKey,
           ])).digest('hex'))
         : createSeriesGenerationCache(root, key);
-      return generateSeriesStage(stage, series, episodeId, {
+      const deps = {
         ...cache,
-        chat: (input, options) => chatOnceResult(input, {
+        chat: (input: string, options?: { singleAttempt?: boolean }) => chatOnceResult(input, {
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,
           provider: settings.scriptProvider,
@@ -50,7 +52,8 @@ export async function POST(request: NextRequest) {
           maxOutputTokens: stage === "outline" ? 9000 : stage === 'episodes' ? 3500 : 7000,
           singleAttempt: options?.singleAttempt,
         }),
-      });
+      };
+      return timing ? generateDialogueTimingRepair(series, episodeId, deps) : generateSeriesStage(stage, series, episodeId, deps);
     });
   } catch (error) {
     return NextResponse.json(
