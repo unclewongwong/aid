@@ -1,6 +1,6 @@
 # 连续剧台词超时自动压缩
 
-2026-09-07，本地完成，尚未发布。
+2026-09-07，已随0.1.203发布网站及本机Companion，跨平台回执见 `docs/release-0.1.203.md`。
 
 ## 问题
 
@@ -21,10 +21,10 @@
 - 连续剧、H3音频与视频分段回归243/243通过；最后补充历史共用片段保护断言后，受影响测试再次通过。
 - 新增`tests/series-timing-autorepair.test.mjs`覆盖旧预算漏检、旧稿自动恢复、原意复核成功/失败/网络错误、有限重试、不覆盖原稿、留档、图片/付费片段保护、固定素材指纹旧稿仍能修复。
 - 更新原有局部修稿测试，要求独立原意复核后才能接受新台词。生产构建通过。
-- 没有调用真实文本/媒体模型、没有重试用户的生产任务、没有发布。
+- 开发验证未调用真实模型；发布更新时安全暂停队列、安装后恢复原有制作任务，没有额外发起测试生成。
 
 修改入口：`lib/series/scriptRepair.ts`、`generation.ts`、`productionDialogueRepair.ts`、`runner.ts`和共享`speechAudioContract.ts`。
 
 ## 发布依赖核对
 
-本次需要同步更新网站与Companion。`app/series/page.tsx` 从`${base}/series/worker`启动执行器，`runner.ts`在Companion同源调用`/api/series/generate`；自动压缩、原意复核和旧稿预检都必须进入Companion安装包。只更新网页不能使当前本机执行器获得新逻辑。与前一轮Wan/API/Fish查询的网站发布范围不同。2026-09-07因用户询问实际调用链核验，尚未发布。
+本次需要同步更新网站与Companion。`app/series/page.tsx` 从`${base}/series/worker`启动执行器，`runner.ts`在Companion同源调用`/api/series/generate`；自动压缩、原意复核和旧稿预检都必须进入Companion安装包。只更新网页不能使当前本机执行器获得新逻辑。与前一轮Wan/API/Fish查询的网站发布范围不同。2026-09-07因用户询问实际调用链核验，随后按用户指示同步发布。
