@@ -715,6 +715,7 @@ export async function generateStoryboardVideo(
   generateAudio?: boolean,
   language?: 'zh' | 'en',
   isFilmEnding = false,
+  referenceAudioNames: string[] = [],
 ): Promise<string> {
   // 确保有生成的图片
   if (!storyboard.imageUrl) {
@@ -726,7 +727,8 @@ export async function generateStoryboardVideo(
     throw new Error(`Scene ${storyboard.sceneNumber} image is not a public URL. Please regenerate the image individually first.`);
   }
 
-  const videoPrompt = buildStoryboardVideoPrompt(storyboard, characterAudios, firstFrameUrl, language, isFilmEnding);
+  const voiceBinding = referenceAudioNames.length ? '\n音色参考对应关系（仅参考音色，不复述样本内容）：' + referenceAudioNames.map((name, index) => `${name} = 音频 ${index + 1} <Audio ${index + 1}>`).join('；') : '';
+  const videoPrompt = buildStoryboardVideoPrompt(storyboard, characterAudios, firstFrameUrl, language, isFilmEnding) + voiceBinding;
 
 
   console.log(`Creating video task for storyboard scene ${storyboard.sceneNumber}`);
@@ -751,9 +753,9 @@ export async function generateStoryboardVideo(
     {
       duration: storyboard.videoDuration,
       quality: isGrokImagine ? '480p' : undefined,
-      // Don't pass audio when using firstFrame/lastFrame continuity mode (API limitation)
-      audioUrls: firstFrameUrl ? [] : audioFiles,
-      generateAudio: !firstFrameUrl && generateAudio,
+      // Let the model adapter reject incompatible frame/reference combinations.
+      audioUrls: audioFiles,
+      generateAudio: generateAudio ?? true,
       imageRoles
     }
   );

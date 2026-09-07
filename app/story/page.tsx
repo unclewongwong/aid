@@ -9,6 +9,7 @@ import StepIndicator from '@/components/StepIndicator';
 import Step1 from '@/components/Step1';
 import { scriptGenerationPhaseLabel, type ScriptGenerationPhase } from '@/components/ScriptThinkingPanel';
 import Step2 from '@/components/Step2';
+import { videoAudioCapability } from '@/lib/videoCapabilities';
 import Step3, { type VoiceCastPatch } from '@/components/Step3';
 import Step4 from '@/components/Step4';
 import Step5 from '@/components/Step5';
@@ -1972,6 +1973,8 @@ export default function StoryPage() {
       if (!res.ok) throw new Error((await res.json()).error || 'Failed');
       const { url } = await res.json();
       if (generationProjectId !== projectIdRef.current) return;
+      const latestCharacter = characterIdentityIndex(effectiveStoryCast(charactersRef.current, storyPlanRef.current?.characters)).resolve(characterName);
+      if (latestCharacter?.voiceId !== character.voiceId) throw new Error('角色音色已更换，已忽略旧音色返回的参考音频，请用新音色重试');
       const nextVoiceReferences = characterAliasValues({ ...(voiceReferencesRef.current || {}), [character.name]: url }, voiceCast);
       voiceReferencesRef.current = nextVoiceReferences;
       setVoiceReferences(nextVoiceReferences);
@@ -2197,14 +2200,16 @@ export default function StoryPage() {
       // timbre. Older projects may have the voiceId but no current calibration
       // artifact, so create it lazily instead of presenting an enabled button
       // that fails after the user clicks it.
-      if (videoProvider === 'comfyui') {
+      const timbreCapability = videoAudioCapability(videoProvider, activeSettings.videoModel);
+      if (timbreCapability.kind === 'timbre' && speakingCharacters.length > timbreCapability.max) throw new Error(`当前模型最多支持 ${timbreCapability.max} 个说话角色音色，请拆分片段`);
+      if (timbreCapability.kind === 'timbre') {
         for (const character of speakingCharacters) {
           if (!currentCastVoiceReferences()[character]) {
             await handleGenerateVoiceReference(character, { throwOnError: true });
           }
         }
       }
-      const missingVoiceReference = videoProvider === 'comfyui'
+      const missingVoiceReference = timbreCapability.kind === 'timbre'
         ? speakingCharacters.find(character => !currentCastVoiceReferences()[character])
         : undefined;
       if (missingVoiceReference) {
@@ -2243,7 +2248,7 @@ export default function StoryPage() {
       const response = await fetch(generationUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ styleReference: styleReferenceRef.current, storyboard: storyboardForRequest, segmentStoryboards: portableSegment, isFilmEnding: finalSegment, language: projectLanguageRef.current, apiKey: activeSettings.apiKey, dmxApiKey: activeSettings.dmxApiKey, scriptProvider: activeSettings.scriptProvider || 'auto', scriptModel: activeSettings.scriptModel || 'gpt-4o', videoModel: activeSettings.videoModel, aspectRatio: projectAspectRatioRef.current, firstFrameUrl, motionContext, subtitleRemovalSourceTaskId, voiceReferences: videoProvider === 'comfyui' ? portableVoiceReferences : (voiceReferencesRef.current || {}), voiceProfiles: videoProvider === 'fal' ? voiceProfiles : {}, videoProvider, fal: activeSettings.fal, comfyui: localComfyUISettings(activeSettings.comfyui) })
+        body: JSON.stringify({ styleReference: styleReferenceRef.current, storyboard: storyboardForRequest, segmentStoryboards: portableSegment, isFilmEnding: finalSegment, language: projectLanguageRef.current, apiKey: activeSettings.apiKey, dmxApiKey: activeSettings.dmxApiKey, scriptProvider: activeSettings.scriptProvider || 'auto', scriptModel: activeSettings.scriptModel || 'gpt-4o', videoModel: activeSettings.videoModel, aspectRatio: projectAspectRatioRef.current, firstFrameUrl, motionContext, subtitleRemovalSourceTaskId, voiceReferences: videoProvider === 'comfyui' ? portableVoiceReferences : currentCastVoiceReferences(), voiceProfiles: videoProvider === 'fal' ? voiceProfiles : {}, videoProvider, fal: activeSettings.fal, comfyui: localComfyUISettings(activeSettings.comfyui) })
       });
       const data = await readApiJson<{ taskId: string; videoPrompt?: string }>(response, '视频任务创建失败');
       submittedTaskId = data.taskId;
@@ -2564,10 +2569,10 @@ export default function StoryPage() {
         if (autoAbortRef.current) return;
         const speaks = storyboardsRef.current.some(storyboard => storyboardSpeech(storyboard).some(line => identities.resolve(line.character) === character));
         const autoVideoProvider = settingsRef.current.videoProvider || 'apimart';
-        if (speaks && autoVideoProvider !== 'fal' && !character.voiceId) {
+        if (speaks && videoAudioCapability(autoVideoProvider, settingsRef.current.videoModel).kind === 'timbre' && !character.voiceId) {
           throw new Error(`${character.name} 有台词但尚未确认性别与 Fish Audio 音色；请在第 3 步“全片音色选角”中确认`);
         }
-        if (speaks && autoVideoProvider !== 'fal' && settingsRef.current.fishAudioKey && !currentCastVoiceReferences()[character.name]) {
+        if (speaks && videoAudioCapability(autoVideoProvider, settingsRef.current.videoModel).kind === 'timbre' && settingsRef.current.fishAudioKey && !currentCastVoiceReferences()[character.name]) {
           await retryUntilCompleted(`生成 ${character.name} 音色参考`, async () => {
             await handleGenerateVoiceReference(character.name, { throwOnError: true });
             if (!currentCastVoiceReferences()[character.name]) throw new Error('任务结束但没有返回音色参考');
@@ -2961,6 +2966,10 @@ export default function StoryPage() {
             )}
             {currentStep === 3 && (
               <Step3
+                fishAudioKey={settings.fishAudioKey || ''}
+                language={projectLanguageRef.current}
+                videoProvider={settings.videoProvider}
+                videoModel={settings.videoModel}
                 storyPlan={storyPlan}
                 storyboards={storyboards}
                 characters={characters}

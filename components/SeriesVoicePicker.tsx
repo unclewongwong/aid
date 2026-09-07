@@ -7,8 +7,9 @@ import type { SeriesCharacter } from '@/lib/series/types';
 
 const button = 'inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--border-color)] px-3 py-2 text-xs disabled:opacity-40 hover:border-[#a78bfa]';
 const field = 'rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-2 text-sm';
-export default function SeriesVoicePicker({ character, base, fishAudioKey, language, usedVoices, onClose, onSelect }: {
-  character: SeriesCharacter; base: string; fishAudioKey: string; language: 'en' | 'zh';
+export default function SeriesVoicePicker({ character, base, fishAudioKey, language, usedVoices, onClose, onSelect, context = 'series' }: {
+  context?: 'series' | 'story';
+  character: Pick<SeriesCharacter, 'name' | 'voiceBrief'>; base: string; fishAudioKey: string; language: 'en' | 'zh';
   usedVoices: Record<string, string>; onClose: () => void;
   onSelect: (voice: FishCatalogVoice) => Promise<void>;
 }) {
@@ -51,7 +52,7 @@ export default function SeriesVoicePicker({ character, base, fishAudioKey, langu
         <input aria-label="搜索音色名称" className={`${field} min-w-48 flex-1`} placeholder="搜索音色名称；留空浏览，不搜角色名字" value={query} onChange={e => setQuery(e.target.value)}/>
         <button className={button} disabled={loading || saving}><Search size={14}/>搜索</button>
       </form>
-      <p className="px-5 pb-3 text-xs text-[var(--text-secondary)]">下方试听使用 Fish 已发布样本，不提交新合成。公共可见不等于平台已授权；请确认使用权。选定后续跑会生成并校验本剧语言试读，按 Fish 设置计费。</p>
+      <p className="px-5 pb-3 text-xs text-[var(--text-secondary)]">下方试听使用 Fish 已发布样本，不提交新合成。公共可见不等于平台已授权；请确认使用权。{context === 'series' ? '选定后续跑会生成并校验本剧语言试读，按 Fish 设置计费。' : '选定后锁定角色音色；生成参考音频时按 Fish 设置计费。'}</p>
       {error && <p role="alert" className="px-5 pb-3 text-sm text-red-300">{error}</p>}
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
         {loading ? <p className="flex gap-2 py-8"><Loader2 size={16} className="animate-spin"/>正在读取 Fish 音色库…</p> : !items.length ? <p className="py-8 text-sm">没有可用结果，请换关键词或语言范围后搜索。</p> : <div className="grid gap-3 md:grid-cols-2">{items.map(voice => <article key={voice.id} className={`rounded-lg border p-4 ${selected?.id === voice.id ? 'border-[#a78bfa]' : 'border-[var(--border-color)]'}`}>

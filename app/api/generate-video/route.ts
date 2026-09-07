@@ -1,3 +1,4 @@
+import { apiVoiceReferenceUrls, selectVideoVoiceReferences } from '@/lib/videoCapabilities';
 import { NextRequest, NextResponse } from 'next/server';
 import { applyFilmEndingPrompt, applySeriesVideoStyle, applyVideoDuplicateRepairPrompt, buildStoryboardVideoPrompt, buildVideoSegmentPrompt, generateStoryboardVideo } from '@/lib/videoGenerator';
 import { snapDurationToModel } from '@/lib/apimart';
@@ -182,14 +183,8 @@ export async function POST(request: NextRequest) {
         end: line.end,
       }));
       const referenceAudioNames: string[] = [];
-      const referenceAudios = speakingCharacters
-        // Fish Audio is a one-time character timbre reference only. H3 remains
-        // the sole generator of this segment's dialogue, lip sync and complete
-        // soundtrack from the <d> lines below.
-        .map((name) => ({ name, url: voiceReferences[name] }))
-        .filter((x): x is { name: string; url: string } => Boolean(x.url))
-        .slice(0, 3)
-        .map((x) => { referenceAudioNames.push(x.name); return x.url; });
+      const referenceAudios = selectVideoVoiceReferences('comfyui', 'MiniMax-H3', speakingCharacters, voiceReferences)
+        .map(x => { referenceAudioNames.push(x.name); return x.url; });
       // createComfyUIVideoTask materializes URL/data URL locally and then
       // uploads that exact file into ComfyUI/input over SSH. Do not insert a
       // Cloudinary hop here: it is unnecessary and can drop a valid data URL
@@ -261,35 +256,9 @@ export async function POST(request: NextRequest) {
     console.log('Starting video generation for scene:', storyboard.sceneNumber);
     console.log('Using model:', videoModel || 'sora-2');
 
-    const m = (videoModel || '').toLowerCase();
-    const isSeedance20 = m.includes('seedance-2') || m.includes('seedance-4') || m.includes('seedance-5');
-    const isWanAudio   = m.includes('wan2.6') || m.includes('wan2.7') || m.includes('wan 2.6') || m.includes('wan 2.7');
-    const isMiniMaxH3  = m.includes('minimax-h3');
-
-    // 声音参考模式（Seedance 2.0 / MiniMax-H3）：只取当前分镜实际说话角色的声音参考 URL。
-    // 这样也避免 MiniMax H3 因未说话角色的参考音频累计超过 15 秒。
-    const storyboardChars: string[] = storyboard.characters || [];
-    const speakingChars = speakingCharacterNames(storyboard);
-    const voiceRefUrls: string[] = (isSeedance20 || isMiniMaxH3)
-      ? speakingChars
-          .map((name: string) => voiceReferences[name])
-          .filter(Boolean)
-          .slice(0, 3)  // 最多 3 个
-      : [];
-
-    // Wan 系列：取第一个角色的声音参考作为 audio_url（单轨）
-    const singleVoiceRef = isWanAudio
-      ? storyboardChars.map((name: string) => voiceReferences[name]).find(Boolean)
-      : undefined;
-
-    const audioUrls = voiceRefUrls.length > 0
-      ? voiceRefUrls
-      : singleVoiceRef
-        ? [singleVoiceRef]
-        : [];
-
-    // 有声音参考 → 用参考音色让模型自己生成音频；无参考 → 模型自动配音
-    const useGenerateAudio = audioUrls.length === 0;
+    const selectedReferences = selectVideoVoiceReferences('apimart', videoModel || '', speakingCharacterNames(storyboard), voiceReferences);
+    const audioUrls = apiVoiceReferenceUrls(selectedReferences);
+    const useGenerateAudio = true;
 
     // 有声音参考时，将视频时长对齐到合法值（避免模型默认5s拉伸）
     let effectiveStoryboard = storyboard;
@@ -307,6 +276,7 @@ export async function POST(request: NextRequest) {
       useGenerateAudio,
       language === 'en' ? 'en' : 'zh',
       isFilmEnding === true,
+      selectedReferences.map(ref => ref.name),
     );
 
     console.log('Video task created, ID:', taskId);

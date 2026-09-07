@@ -1,3 +1,4 @@
+import { videoAudioCapability } from './videoCapabilities';
 import axios from 'axios';
 import { assertProviderAccepted, chatInputContent, extractProviderText, ProviderModelRefusalError, providerPayloadSummary, providerResponseMetadata, type ProviderTextResult } from './pipeline/providerPayload';
 import type { ApiMartChatResponse, ApiMartImageTaskResponse, ApiMartImageStatusResponse, ApiMartVideoStatusResponse } from '@/types';
@@ -350,6 +351,7 @@ function ensureCloudinaryAudioDuration(url: string): string {
  */
 export function snapDurationToModel(desiredSeconds: number, model: string): number {
   const m = normalizeVideoModel(model).toLowerCase();
+  if (m === 'wan3.0-video') return desiredSeconds === -1 ? -1 : Math.min(30, Math.max(2, Math.round(desiredSeconds)));
   if (m.includes('omni-flash-ext')) {
     const steps = [4, 6, 8, 10];
     return steps.reduce((prev, cur) =>
@@ -401,9 +403,10 @@ export async function createVideoTask(
     videoUrls?: string[];
     audioUrls?: string[];
     generateAudio?: boolean;
-    imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' }>;
-    resolution?: '720P' | '1080P';
-    quality?: '480p' | '720p';
+    imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' | 'reference_image' }>;
+    resolution?: '480P' | '720P' | '1080P';
+    generationType?: 'frame' | 'reference';
+    quality?: '480p' | '720p' | '1080p';
   }
 ): Promise<string> {
   try {
@@ -414,6 +417,8 @@ export async function createVideoTask(
     console.log('Model includes seedance:', model.includes('seedance'));
     console.log('==============================');
 
+    const audioCapability = videoAudioCapability('apimart', model);
+    if ((options?.audioUrls?.length ?? 0) > audioCapability.max) throw new Error(`当前模型最多接受 ${audioCapability.max} 个音频输入，无法使用这些参考音频`);
     const requestBody: any = {
       model,
       prompt,
@@ -474,7 +479,7 @@ export async function createVideoTask(
       if (referenceImageUrls.length > 0 && referenceImageUrls.length !== 2) {
         requestBody.image_urls = referenceImageUrls;
       }
-      // 2 张图片不被支持，会返回错误
+      if (referenceImageUrls.length === 2 || referenceImageUrls.length > 3) throw new Error('Omni-Flash-Ext 仅支持 1 或 3 张参考图');
     } else if (isHappyHorse) {
       // HappyHorse 只支持 first_frame_image（无尾帧参数），且与 image_urls 互斥
       if (options?.imageRoles && options.imageRoles.length > 0) {
@@ -487,27 +492,24 @@ export async function createVideoTask(
         requestBody.image_urls = referenceImageUrls.slice(0, 9);
       }
     } else if (isMiniMaxH3) {
-      // MiniMax-H3: I2V 和 R2V 模式严格互斥
-      // 有音频 → R2V 模式（image_with_roles / image_urls + audio_urls）
-      // 无音频 → I2V 模式（first_frame_image / last_frame_image）
-      const hasAudio = options?.audioUrls && options.audioUrls.length > 0;
-      if (hasAudio) {
-        // R2V 模式：image_with_roles 同样支持 first_frame / last_frame 角色
-        if (options?.imageRoles && options.imageRoles.length > 0) {
-          requestBody.image_with_roles = options.imageRoles;
-        } else if (referenceImageUrls.length > 0) {
-          requestBody.image_urls = referenceImageUrls.slice(0, 9);
-        }
-        requestBody.audio_urls = options.audioUrls!.slice(0, 3);
-        if (options?.imageRoles && options.imageRoles.length > 0) {
-          const firstFrame = options.imageRoles.find(r => r.role === 'first_frame');
-          const lastFrame = options.imageRoles.find(r => r.role === 'last_frame');
-          if (firstFrame) requestBody.first_frame_image = firstFrame.url;
-          if (lastFrame) requestBody.last_frame_image = lastFrame.url;
-        } else if (referenceImageUrls.length > 0) {
-          requestBody.first_frame_image = referenceImageUrls[0];
-        }
+      const roles = options?.imageRoles ?? [];
+      const audios = options?.audioUrls ?? [];
+      const videos = options?.videoUrls ?? [];
+      const frames = roles.filter(r => r.role !== 'reference_image');
+      if (frames.length && (audios.length || videos.length || referenceImageUrls.length || roles.some(r => r.role === 'reference_image'))) {
+        throw new Error('MiniMax-H3 首尾帧与参考图、参考音视频不能混用');
       }
+      if (referenceImageUrls.length + roles.filter(r => r.role === 'reference_image').length > 9 || audios.length > 3 || videos.length > 3) throw new Error('MiniMax-H3 最多支持 9 张参考图、3 个音频和 3 个视频');
+      if (audios.length && !referenceImageUrls.length && !roles.length && !videos.length) throw new Error('MiniMax-H3 音色参考需要搭配参考图或视频');
+      if (roles.length) requestBody.image_with_roles = roles;
+      if (referenceImageUrls.length) {
+        if (options?.generationType === 'frame') {
+          if (audios.length || videos.length || referenceImageUrls.length > 2) throw new Error('MiniMax-H3 首尾帧与参考音视频不能混用');
+          requestBody.first_frame_image = referenceImageUrls[0];
+          if (referenceImageUrls[1]) requestBody.last_frame_image = referenceImageUrls[1];
+        } else requestBody.image_urls = referenceImageUrls;
+      }
+      if (audios.length) requestBody.audio_urls = audios;
     } else if (options?.imageRoles && options.imageRoles.length > 0) {
       const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
       const lastFrame = options.imageRoles.find(img => img.role === 'last_frame');
@@ -566,6 +568,8 @@ export async function createVideoTask(
       // requestBody.audio = true; // 如需自动配音可取消注释
     }
 
+    if ((isWan26 || isWan27) && options?.audioUrls?.length) requestBody.audio_url = options.audioUrls[0];
+
     // APIMart Seedance 2.0 Mini contract: validate before the billable POST.
     // Other video families keep their existing payloads.
     if (isSeedanceMini) {
@@ -583,13 +587,36 @@ export async function createVideoTask(
       const roles = options?.imageRoles ?? [];
       if (referenceImageUrls.length > 9 || roles.length > 9) throw new Error('Seedance 2.0 Mini 最多支持 9 张参考图');
       if (audios.length > 3 || videos.length > 3) throw new Error('Seedance 2.0 Mini 最多支持 3 个参考音频和 3 个参考视频');
-      if (roles.length && (audios.length || videos.length)) {
+      if (roles.some(r => r.role !== 'reference_image') && (audios.length || videos.length)) {
         throw new Error('Seedance 2.0 Mini 首尾帧模式不能同时使用参考音频或参考视频；请移除尾帧或参考音视频');
       }
-      if (audios.length && !referenceImageUrls.length && !videos.length) {
+      if (audios.length && !referenceImageUrls.length && !roles.some(r => r.role === 'reference_image') && !videos.length) {
         throw new Error('Seedance 2.0 Mini 参考音频需要与参考图片或参考视频一起使用');
       }
       // Audio generation and voice references are independent settings.
+      if (audios.length) requestBody.audio_urls = audios;
+    }
+
+    if (model === 'wan3.0-video') {
+      if (prompt.length > 20_000) throw new Error('Wan 3.0 提示词不能超过 20000 字符');
+      const duration = options?.duration ?? 5;
+      if (!Number.isFinite(duration)) throw new Error('Wan 3.0 时长必须是有效秒数');
+      requestBody.duration = snapDurationToModel(duration, model);
+      delete requestBody.aspect_ratio;
+      requestBody.size = aspectRatio;
+      requestBody.resolution = (options?.resolution ?? options?.quality ?? '720P').toUpperCase();
+      if (!['480P', '720P', '1080P'].includes(requestBody.resolution)) throw new Error('Wan 3.0 支持 480P、720P、1080P');
+      requestBody.audio = options?.generateAudio ?? true;
+      const audios = options?.audioUrls ?? [];
+      const videos = options?.videoUrls ?? [];
+      const roles = options?.imageRoles ?? [];
+      const frames = roles.filter(r => r.role !== 'reference_image');
+      const refs = roles.filter(r => r.role === 'reference_image');
+      const mode = options?.generationType ?? (refs.length || audios.length || videos.length || referenceImageUrls.length > 2 ? 'reference' : 'frame');
+      if ((frames.length && mode === 'reference') || (mode === 'frame' && (refs.length || audios.length || videos.length))) throw new Error('Wan 3.0 首尾帧与参考图、参考音视频不能混用；请切换参考图模式或移除参考音视频');
+      if (frames.filter(r => r.role === 'first_frame').length > 1 || frames.filter(r => r.role === 'last_frame').length > 1 || (frames.length && referenceImageUrls.length)) throw new Error('Wan 3.0 首帧和尾帧各限一张，请勿重复传图');
+      if (referenceImageUrls.length + roles.length > (mode === 'frame' ? 2 : 10) || audios.length > 5 || videos.length > 5) throw new Error('Wan 3.0 最多 2 张首尾帧或 10 张参考图、5 个音频、5 个视频');
+      requestBody.generation_type = mode;
       if (audios.length) requestBody.audio_urls = audios;
     }
 

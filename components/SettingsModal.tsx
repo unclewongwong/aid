@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { videoVoiceNotice } from '@/lib/videoCapabilities';
 import { AppSettings } from '@/types';
 import { Check, Copy, X } from 'lucide-react';
 import { comfyUIApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
@@ -379,8 +380,10 @@ export default function SettingsModal({
               <option value="happyhorse-1.0">happyhorse-1.0</option>
               <option value="veo3.1-fast">veo3.1-fast (Fast)</option>
               <option value="veo3.1-quality">veo3.1-quality</option>
+              <option value="wan3.0-video">Wan 3.0 · APIMart (2–30s, 480P/720P/1080P)</option>
               <option value="wan2.7">wan2.7</option>
             </select>
+            <p className="mt-2 text-xs text-[var(--text-secondary)]">{videoVoiceNotice(localSettings.videoProvider, localSettings.videoModel)}</p>
             {(localSettings.videoProvider || 'apimart') === 'comfyui' && (
               <p className="mt-2 text-xs font-mono text-[var(--text-secondary)]">
                 ComfyUI 通道固定使用仙宫云 MiniMax H3：单图参考、多图参考或首尾帧，并原生生成同步音视频；声音参考为可选项。

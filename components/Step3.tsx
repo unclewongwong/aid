@@ -1,5 +1,7 @@
 'use client';
 
+import SeriesVoicePicker from './SeriesVoicePicker';
+import { videoAudioCapability, videoVoiceNotice } from '@/lib/videoCapabilities';
 import { useState } from 'react';
 import { Storyboard, Character, ObjectItem, type VoiceAgeGroup, type VoiceGender } from '@/types';
 import type { PlannedCharacter, StoryPlan } from '@/lib/pipeline/types';
@@ -10,6 +12,10 @@ import { characterIdentityIndex } from '@/lib/characterIdentity';
 export type VoiceCastPatch = Partial<Pick<PlannedCharacter, 'gender' | 'ageGroup' | 'voiceId' | 'voiceProfile' | 'voiceSource'>>;
 
 interface Step3Props {
+  fishAudioKey?: string;
+  language?: 'zh' | 'en';
+  videoProvider?: string;
+  videoModel?: string;
   storyPlan?: StoryPlan;
   storyboards: Storyboard[];
   characters: Character[];
@@ -69,7 +75,9 @@ function ImageThumb({ src, label, generating, onGenerate, onClear }: {
   );
 }
 
-export default function Step3({ storyPlan, storyboards, characters, objects, costumeImages, costumeGenerating, sceneImages, sceneGenerating, voiceReferences, voiceGenerating, onBack, onNext, onUpdate, onGenerateCostume, onClearCostumeImage, onClearSceneImage, onGenerateVoiceReference, onClearVoiceReference, onVoiceCastChange }: Step3Props) {
+export default function Step3({ fishAudioKey = '', language = 'zh', videoProvider = 'apimart', videoModel = '', storyPlan, storyboards, characters, objects, costumeImages, costumeGenerating, sceneImages, sceneGenerating, voiceReferences, voiceGenerating, onBack, onNext, onUpdate, onGenerateCostume, onClearCostumeImage, onClearSceneImage, onGenerateVoiceReference, onClearVoiceReference, onVoiceCastChange }: Step3Props) {
+  const [voicePickerName, setVoicePickerName] = useState<string>();
+  const supportsTimbre = videoAudioCapability(videoProvider, videoModel).kind === 'timbre';
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedPrompt, setEditedPrompt] = useState('');
   const [draggingScene, setDraggingScene] = useState<string | null>(null);
@@ -84,11 +92,13 @@ export default function Step3({ storyPlan, storyboards, characters, objects, cos
   const voiceCast = referenceCast.map(character => ({ ...character, role: plannedByName.get(character.name)?.role || '上传角色' }));
   const speakingNames = new Set(storyboards.flatMap(storyboard => (storyboard.speech || [])
     .map(line => identities.resolve(line.character)?.name || line.character)));
-  const unresolvedSpeakingVoices = voiceCast.filter(character => speakingNames.has(character.name)
+  const unresolvedSpeakingVoices = voiceCast.filter(character => supportsTimbre && speakingNames.has(character.name)
     && (!character.voiceId || !character.gender || character.gender === 'unknown'));
 
   return (
     <div className="space-y-6">
+      {voicePickerName && <SeriesVoicePicker character={{ name: voicePickerName, voiceBrief: voiceCast.find(c => c.name === voicePickerName)?.voiceProfile || '' }} base="" fishAudioKey={fishAudioKey} language={language} usedVoices={{}} context="story" onClose={() => setVoicePickerName(undefined)} onSelect={async voice => { onVoiceCastChange?.(voicePickerName, { voiceId: voice.id, voiceSource: 'user', voiceProfile: voice.title }); }} />}
+      <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, videoModel)}</p>
       <div className="border-l-4 border-[var(--accent-orange)] pl-4 mb-6">
         <h2 className="text-2xl font-mono text-[var(--accent-green)] mb-2">
           <span className="text-[var(--text-secondary)]">03.</span> Shot Script
@@ -199,7 +209,7 @@ export default function Step3({ storyPlan, storyboards, characters, objects, cos
         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div><p className="text-xs font-mono text-[var(--text-secondary)]">全片音色选角</p><p className="mt-1 text-[10px] text-[var(--text-secondary)] opacity-70">主角、剧本新增配角均在分镜生成前锁定；自定义 Fish ID 永远优先，自动选声按性别、年龄和身份匹配。</p></div>
-            <span className={`rounded border px-2 py-1 text-[9px] font-mono ${unresolvedSpeakingVoices.length ? 'border-amber-400/40 text-amber-300' : 'border-emerald-400/30 text-emerald-300'}`}>{unresolvedSpeakingVoices.length ? `${unresolvedSpeakingVoices.length} 个发声角色待确认` : '全部发声角色已锁定'}</span>
+            <span className={`rounded border px-2 py-1 text-[9px] font-mono ${unresolvedSpeakingVoices.length ? 'border-amber-400/40 text-amber-300' : 'border-emerald-400/30 text-emerald-300'}`}>{unresolvedSpeakingVoices.length ? `${unresolvedSpeakingVoices.length} 个发声角色待确认` : supportsTimbre ? '全部发声角色已锁定' : '当前模型自动配音'}</span>
           </div>
           <div className="mt-3 overflow-x-auto rounded-lg border border-white/5">
             <div className="min-w-[1020px] divide-y divide-white/5">
@@ -216,10 +226,10 @@ export default function Step3({ storyPlan, storyboards, characters, objects, cos
                   <select value={(char.ageGroup || 'unknown') as VoiceAgeGroup} onChange={event => onVoiceCastChange?.(char.name, { ageGroup: event.target.value as VoiceAgeGroup, voiceId: undefined, voiceSource: 'auto' })} className="rounded border border-[var(--border-color)] bg-[var(--bg-primary)] px-2 py-2 text-[10px] text-white">
                     <option value="unknown">年龄待确认</option><option value="child">儿童</option><option value="young_adult">青年</option><option value="adult">成年</option><option value="senior">老年</option>
                   </select>
-                  <div><div className="flex gap-2"><input value={char.voiceId || ''} onChange={event => onVoiceCastChange?.(char.name, { voiceId: event.target.value, voiceSource: 'user', voiceProfile: '用户指定音色' })} placeholder="Fish Audio reference_id" className={`min-w-0 flex-1 rounded border bg-[var(--bg-primary)] px-2 py-2 font-mono text-[10px] text-white ${isSpeaking && !char.voiceId ? 'border-amber-400/60' : 'border-[var(--border-color)]'}`} /><button onClick={() => onVoiceCastChange?.(char.name, { voiceId: undefined, voiceSource: 'auto' })} title="按角色资料重新自动选声" className="rounded border border-[var(--border-color)] px-2 text-[var(--text-secondary)] hover:text-white"><RotateCcw size={13} /></button></div><p className="mt-1 truncate text-[9px] text-[var(--text-muted)]">{char.voiceSource === 'user' ? '自定义锁定' : `自动 · ${char.voiceProfile || '待匹配'}`}</p></div>
+                  <div><button type="button" disabled={!fishAudioKey} title={!fishAudioKey ? '请先在设置中填写 Fish Audio API Key' : undefined} onClick={() => setVoicePickerName(char.name)} className="mb-2 rounded border border-[var(--border-color)] px-2 py-1 text-xs disabled:opacity-40">从 Fish 搜索 / 试听音色</button><div className="flex gap-2"><input value={char.voiceId || ''} onChange={event => onVoiceCastChange?.(char.name, { voiceId: event.target.value, voiceSource: 'user', voiceProfile: '用户指定音色' })} placeholder="Fish Audio reference_id" className={`min-w-0 flex-1 rounded border bg-[var(--bg-primary)] px-2 py-2 font-mono text-[10px] text-white ${isSpeaking && !char.voiceId ? 'border-amber-400/60' : 'border-[var(--border-color)]'}`} /><button onClick={() => onVoiceCastChange?.(char.name, { voiceId: undefined, voiceSource: 'auto' })} title="按角色资料重新自动选声" className="rounded border border-[var(--border-color)] px-2 text-[var(--text-secondary)] hover:text-white"><RotateCcw size={13} /></button></div><p className="mt-1 truncate text-[9px] text-[var(--text-muted)]">{char.voiceSource === 'user' ? '自定义锁定' : `自动 · ${char.voiceProfile || '待匹配'}`}</p></div>
                   <div className="flex items-center justify-end gap-2">
                     {hasRef && <audio src={voiceReferences[char.name]} controls className="h-7 w-40 shrink-0" />}
-                    <button disabled={isGenerating || !char.voiceId} onClick={() => onGenerateVoiceReference?.(char.name)} className="inline-flex items-center gap-1 rounded border border-[var(--border-color)] px-2 py-2 text-[9px] text-[var(--text-secondary)] hover:text-white disabled:opacity-30">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : hasRef ? <RefreshCw size={12} /> : <MicOff size={12} />}{hasRef ? '重做' : '试听'}</button>
+                    <button disabled={!supportsTimbre || isGenerating || !char.voiceId} onClick={() => onGenerateVoiceReference?.(char.name)} className="inline-flex items-center gap-1 rounded border border-[var(--border-color)] px-2 py-2 text-[9px] text-[var(--text-secondary)] hover:text-white disabled:opacity-30">{isGenerating ? <Loader2 size={12} className="animate-spin" /> : hasRef ? <RefreshCw size={12} /> : <MicOff size={12} />}{hasRef ? '重做' : '试听'}</button>
                     {hasRef && <button onClick={() => onClearVoiceReference?.(char.name)} title="删除试听" className="text-[var(--text-muted)] hover:text-red-300"><X size={12} /></button>}
                   </div>
                 </div>

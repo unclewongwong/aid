@@ -51,7 +51,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:image-upload": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/image-upload.test.mjs tests/generated-image-persistence.test.mjs tests/story-image-request.test.mjs tests/api-response.test.mjs",
-    "test:pipeline-recovery": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/pipeline-recovery.test.mjs"
+    "test:pipeline-recovery": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/pipeline-recovery.test.mjs",
+    "test:wan3-video": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/wan3-video-references.test.mjs"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",

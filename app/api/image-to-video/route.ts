@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       aspectRatio = '16:9',
       duration,
       quality,
+      generationType,
       apiKey,
       dmxApiKey,
       scriptProvider,
@@ -175,6 +176,8 @@ export async function POST(request: NextRequest) {
           ]
         : [];
 
+    if (effectiveImageRoles.length && refImageUrls.length > 1) throw new Error('首尾帧模式只能使用一张首帧与一张尾帧，请移除额外参考图');
+
     // 上传视频文件
     const uploadedVideoUrls = [...videoUrls];
     for (let i = 0; i < videoFiles.length; i++) {
@@ -207,13 +210,14 @@ export async function POST(request: NextRequest) {
 
     const taskId = await createVideoTask(
       enhancedPrompt,
-      allImageUrls,
+      effectiveImageRoles.length ? [] : allImageUrls,
       apiKey,
       videoModel,
       aspectRatio,
       {
         duration,
         quality,
+        generationType,
         videoUrls: uploadedVideoUrls,
         audioUrls: uploadedAudioUrls,
         imageRoles: effectiveImageRoles.length > 0 ? effectiveImageRoles : undefined

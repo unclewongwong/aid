@@ -1,5 +1,6 @@
 'use client';
 
+import { videoAudioCapability, videoVoiceNotice } from '@/lib/videoCapabilities';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Upload, Video, X, Settings, Home, ChevronDown, ChevronUp, Edit, Clock3, Volume2, Layers3 } from 'lucide-react';
 import Link from 'next/link';
@@ -35,7 +36,7 @@ export default function ImageToVideoPage() {
   const [cameraParams, setCameraParams] = useState('');
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
   const [duration, setDuration] = useState(5);
-  const [quality, setQuality] = useState<'480p' | '720p'>('480p');
+  const [quality, setQuality] = useState<'480p' | '720p' | '1080p'>('480p');
   const [comfyWorkflowMode, setComfyWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last' | 'director_continuous'>('single_reference');
   const [isGenerating, setIsGenerating] = useState(false);
   const [directorPlan, setDirectorPlan] = useState<DirectorPlan | null>(null);
@@ -85,8 +86,15 @@ export default function ImageToVideoPage() {
   const isOmniFlashExt = !isComfyUI && !isFal && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && !isFal && modelName.includes('grok-imagine');
   const isSeedanceMini = !isComfyUI && !isFal && modelName === 'seedance-2.0-mini';
+  const isWan3 = !isComfyUI && !isFal && modelName === 'wan3.0-video';
+  const [referenceMode, setReferenceMode] = useState<'frame' | 'reference'>('reference');
+  const supportsReferenceMode = isWan3 || isSeedanceMini || (!isComfyUI && !isFal && modelName.includes('minimax-h3'));
   const isMiniMaxH3 = isComfyUI || isFal || modelName.includes('minimax-h3');
   const supportsH3VoiceReference = isComfyUI || (!isFal && modelName.includes('minimax-h3'));
+
+  useLayoutEffect(() => {
+    setQuality(previous => isWan3 ? '720p' : previous === '1080p' ? '720p' : previous);
+  }, [isWan3]);
 
   useLayoutEffect(() => {
     if (isFal) setQuality(settings.fal?.resolution === '480P' ? '480p' : '720p');
@@ -97,7 +105,7 @@ export default function ImageToVideoPage() {
   // - grok-imagine 只有参考图概念 → reference
   // - sora-2 最多 1 张图、omni-flash-ext 不支持 2 张图、happyhorse 首帧与参考图互斥 → none
   const secondImageMode: 'last_frame' | 'reference' | 'none' =
-    isComfyUI
+    supportsReferenceMode && referenceMode === 'reference' ? 'reference' : isComfyUI
       ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
       : isFal
         ? 'last_frame'
@@ -107,8 +115,8 @@ export default function ImageToVideoPage() {
       : isGrokImagine
         ? 'reference'
         : 'none';
-  const durationMin = isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
-  const durationMax = isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine ? 30 : 15);
+  const durationMin = isWan3 ? 2 : isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
+  const durationMax = isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine || isWan3 ? 30 : 15);
   const durationOptions = isDirector ? DIRECTOR_DURATIONS : isOmniFlashExt ? [4, 6, 8, 10] : undefined;
 
   // 当切换到 Omni-Flash-Ext 时，自动调整 duration
@@ -198,15 +206,16 @@ export default function ImageToVideoPage() {
     const input = e.currentTarget;
     try {
       const files = Array.from(input.files || []);
-      if (isComfyUI) {
-        const available = 3 - audioFiles.length;
-        if (available <= 0) throw new Error('MiniMax H3 最多使用 3 条参考音频');
+      const capability = videoAudioCapability(videoProvider, settings.videoModel);
+      if (capability.kind === 'timbre') {
+        const available = capability.max - audioFiles.length - audioUrls.length;
+        if (available <= 0) throw new Error(`当前模型最多使用 ${capability.max} 条参考音频`);
         if (files.length > available) throw new Error(`最多还能添加 ${available} 条参考音频`);
-        const oversized = files.find(file => file.size > 20 * 1024 * 1024);
-        if (oversized) throw new Error(`${oversized.name} 超过 20MB`);
+        const oversized = files.find(file => file.size > 15 * 1024 * 1024);
+        if (oversized) throw new Error(`${oversized.name} 超过 15MB`);
       }
 
-      const durations = isComfyUI
+      const durations = capability.kind === 'timbre'
         ? await Promise.all(files.map(file => new Promise<number>((resolve, reject) => {
             const url = URL.createObjectURL(file);
             const audio = document.createElement('audio');
@@ -224,9 +233,9 @@ export default function ImageToVideoPage() {
           })))
         : [];
 
-      if (isComfyUI) {
-        const invalidIndex = durations.findIndex(value => value < 2 || value > 15.05);
-        if (invalidIndex >= 0) throw new Error(`${files[invalidIndex].name} 时长需在 2–15 秒之间`);
+      if (capability.kind === 'timbre') {
+        const invalidIndex = durations.findIndex(value => value < (isWan3 ? 1 : 2) || value > 15.05);
+        if (invalidIndex >= 0) throw new Error(`${files[invalidIndex].name} 时长需在 ${isWan3 ? 1 : 2}–15 秒之间`);
         const total = [...audioDurations, ...durations].reduce((sum, value) => sum + value, 0);
         if (total > 15.05) throw new Error(`参考音频总长 ${total.toFixed(1)} 秒，不能超过 15 秒`);
       }
@@ -352,6 +361,10 @@ export default function ImageToVideoPage() {
 
   const handleGenerate = async () => {
     if (isGenerating || isPlanning) return;
+    const audioCapability = videoAudioCapability(videoProvider, settings.videoModel);
+    const audioCount = audioFiles.length + audioUrls.length;
+    if (audioCount > audioCapability.max) { alert(`当前模型最多接受 ${audioCapability.max} 个音频输入，请移除多余音频`); return; }
+    if (supportsReferenceMode && referenceMode === 'frame' && (audioCount || videoFiles.length || videoUrls.length)) { alert('首尾帧模式不能搭配参考音视频，请切换参考图模式或移除参考音视频'); return; }
     if (activeTask?.state === 'pending') {
       alert('已有任务编号，请先继续查询。若要另起任务，请明确清除记录；清除记录不会取消后台任务。');
       return;
@@ -416,7 +429,8 @@ export default function ImageToVideoPage() {
           prompt: fullPrompt,
           aspectRatio,
           duration,
-          quality: isGrokImagine || isFal || isSeedanceMini ? quality : undefined,
+          generationType: supportsReferenceMode ? referenceMode : undefined,
+          quality: isGrokImagine || isFal || isSeedanceMini || isWan3 ? quality : undefined,
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,
           scriptProvider: settings.scriptProvider,
@@ -750,14 +764,19 @@ export default function ImageToVideoPage() {
                 </div>
               </div>
 
+              <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, settings.videoModel)}</p>
+              {(audioFiles.length > 0 || audioUrls.length > 0) && <button className="text-xs text-red-300" onClick={() => { setAudioFiles([]); setAudioUrls([]); setAudioDurations([]); }}>清除参考音频（{audioFiles.length + audioUrls.length}）</button>}
+              {(videoFiles.length > 0 || videoUrls.length > 0) && <button className="text-xs text-red-300" onClick={() => { setVideoFiles([]); setVideoUrls([]); }}>清除参考视频（{videoFiles.length + videoUrls.length}）</button>}
+              {supportsReferenceMode && <label className="block text-sm">图片用途<select className="ml-3 rounded bg-[var(--bg-secondary)] p-2" value={referenceMode} onChange={e => setReferenceMode(e.target.value as 'frame' | 'reference')}><option value="reference">参考图 · 可搭配音色参考</option><option value="frame">首尾帧 · 不可搭配参考音视频</option></select></label>}
               {/* Quality - Grok Imagine / fal H3 Max / Seedance Mini */}
-              {(isGrokImagine || isFal || isSeedanceMini) && (
+              {(isGrokImagine || isFal || isSeedanceMini || isWan3) && (
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Quality</h2>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { value: '480p' as const, label: '480p (Default)' },
-                      { value: '720p' as const, label: isFal ? '768P · 推荐' : '720p' }
+                      { value: '720p' as const, label: isFal ? '768P · 推荐' : '720p' },
+                      ...(isWan3 ? [{ value: '1080p' as const, label: '1080P' }] : [])
                     ].map((q) => (
                       <button
                         key={q.value}
@@ -835,7 +854,7 @@ export default function ImageToVideoPage() {
                   </p>
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">
-                      {isComfyUI ? 'Voice / Sound References (Optional, Max 3)' : 'Reference Audio (Max 3, Total ≤15s)'}
+                      {isComfyUI ? 'Voice / Sound References (Optional, Max 3)' : 'Reference Audio (Max {isWan3 ? 5 : 3}, Total ≤15s)'}
                     </label>
                     <input
                       type="file"
@@ -874,14 +893,14 @@ export default function ImageToVideoPage() {
               )}
 
               {/* Seedance 2.0 Enhanced Features */}
-              {!isComfyUI && settings.videoModel?.includes('seedance-2') && (
+              {!isComfyUI && !isFal && (settings.videoModel?.includes('seedance-2') || isWan3) && (
                 <div className="space-y-4 p-4 border border-[var(--border-color)] rounded-lg bg-[var(--bg-secondary)]">
-                  <h2 className="text-sm font-mono text-[var(--accent-green)]">Seedance 2.0 Enhanced Features</h2>
+                  <h2 className="text-sm font-mono text-[var(--accent-green)]">{isWan3 ? 'Wan 3.0 多模态参考' : 'Seedance Mini 多模态参考'}</h2>
                   {isSeedanceMini && <p className="text-xs text-[var(--text-secondary)]">使用尾帧时，请移除参考音频和参考视频；参考图模式最多支持 9 张图片、3 个视频和 3 个音频。</p>}
 
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">
-                      Reference Videos (Max 3, Total ≤15s)
+                      Reference Videos (Max {isWan3 ? 5 : 3}, Total ≤15s)
                     </label>
                     <input
                       type="file"
@@ -901,7 +920,7 @@ export default function ImageToVideoPage() {
 
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">
-                      Reference Audio (Max 3, Total ≤15s)
+                      Reference Audio (Max {isWan3 ? 5 : 3}, Total ≤15s)
                     </label>
                     <input
                       type="file"

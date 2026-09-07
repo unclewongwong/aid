@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { videoVoiceNotice } from '@/lib/videoCapabilities';
 import { Character, ProjectProductionTiming, Storyboard } from '@/types';
 import {
   ArrowLeft,
@@ -184,6 +185,7 @@ export default function Step5({
   if (!isH3SegmentProvider) {
     return (
       <div className="space-y-5">
+        <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, videoModel)}</p>
         <div className="border-l-4 border-[var(--accent-purple)] pl-4"><h2 className="text-2xl font-mono text-[var(--accent-green)]"><span className="text-[var(--text-secondary)]">05.</span> Generate Videos</h2><p className="mt-2 text-sm text-[var(--text-secondary)]">每张分镜图独立生成一个镜头，再按剧情顺序剪辑成片。</p></div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{withImages.map(item => <article key={item.id} className="overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)]"><img src={item.imageUrl} alt={`镜 ${item.sceneNumber}`} className={`${storyAspectClass(item.aspectRatio || aspectRatio)} w-full object-cover`} /><div className="p-3"><p className="text-xs text-[var(--text-secondary)]">镜 {String(item.sceneNumber).padStart(2, '0')}</p><button onClick={() => onGenerateVideo(item)} className="mt-3 w-full rounded-lg bg-[var(--accent-purple)] px-3 py-2 text-xs text-white">{item.videoStatus === 'generating' ? '生成中…' : '生成视频'}</button></div></article>)}</div>
         <div className="flex justify-between border-t border-[var(--border-color)] pt-4"><button onClick={onBack} className="rounded-lg border border-[var(--border-color)] px-5 py-2 text-sm">返回</button><button onClick={onNext} disabled={!completedCount} className="rounded-lg bg-[var(--accent-green)] px-5 py-2 text-sm text-black disabled:opacity-40">下一步：导出</button></div>
@@ -193,6 +195,7 @@ export default function Step5({
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, videoModel)}</p>
       <header className="flex flex-col gap-4 border-l-2 border-[var(--workspace-accent)] pl-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--workspace-accent)]">05 · Segment edit</p>
@@ -254,7 +257,7 @@ export default function Step5({
 
               <div className="mt-4 rounded-lg border border-[var(--border-color)] bg-black/10 p-3 text-[10px]">
                 <p className="font-semibold text-white">片段级台词与声音白名单</p>
-                {activeSpeech.length ? activeSpeech.map(line => { const hasVoice = Boolean(line.voiceId || voiceReferences[line.character]); return <div key={`${line.speakerId}-${line.exactLine}`} className="mt-2 rounded border border-white/5 p-2"><div className="flex justify-between gap-2"><span className="text-[var(--workspace-accent)]">{line.speakerId} · {line.character}</span><span className={hasVoice ? 'text-emerald-300' : 'text-amber-300'}>{hasVoice ? '音色已绑定' : '未绑定角色音色'}</span></div><p className="mt-1 leading-5 text-white">“{line.exactLine}”</p><p className="mt-1 text-[var(--text-muted)]">仅该角色按上方文字发声一次</p></div>; }) : <p className="mt-2 text-[var(--text-secondary)]">本片段没有授权台词。</p>}
+                {activeSpeech.length ? activeSpeech.map(line => { const hasVoice = isComfyUI && Boolean(voiceReferences[line.character]); return <div key={`${line.speakerId}-${line.exactLine}`} className="mt-2 rounded border border-white/5 p-2"><div className="flex justify-between gap-2"><span className="text-[var(--workspace-accent)]">{line.speakerId} · {line.character}</span><span className={hasVoice ? 'text-emerald-300' : 'text-amber-300'}>{videoProvider === 'fal' ? '模型自动配音 · 无法指定音色' : hasVoice ? '音色参考已就绪' : line.voiceId ? '已选音色 · 待生成参考' : '未绑定角色音色'}</span></div><p className="mt-1 leading-5 text-white">“{line.exactLine}”</p><p className="mt-1 text-[var(--text-muted)]">仅该角色按上方文字发声一次</p></div>; }) : <p className="mt-2 text-[var(--text-secondary)]">本片段没有授权台词。</p>}
                 {activeSpeechWarnings.length > 0 && <div className="mt-2 rounded border border-amber-300/20 bg-amber-300/5 px-2 py-1.5 text-amber-200">{[...new Set(activeSpeechWarnings)].join('；')}</div>}
                 <div className="mt-3 space-y-1 text-[var(--text-secondary)]"><p>背景人声：{allowsBackgroundHuman ? '仅不可辨识的非语言存在感' : '禁止'}</p><p>环境声：{activeEnvironment.length ? activeEnvironment.join('、') : '仅安静场底'}</p><p>拟音：{activeFoley.length ? activeFoley.join('、') : '仅画面接触声'}</p><p>音乐：{activeGroup.some(item => storyboardAudioPlan(item).music !== 'none') ? '按剧本指定' : '禁止'}</p></div>
               </div>
