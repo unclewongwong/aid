@@ -10,4 +10,4 @@
 
 证据与旧成片备份：`outputs/halo-headtrim-20260908/`，含 `reexport.mjs`、`trim-result.json`、`episode-before-trim.json`、`episode1-before-trim.mp4`。
 
-当前成片已更新；通用自动裁切源码尚未发布到网站或 Companion。
+随后用户授权发布：0.1.208 已同步网站和本机 Companion，三平台安装包已发布，详见 `docs/release-0.1.208.md`。第二集正常生成完成后也复用原 16 段完成同样裁切，117.859 秒 / 54,854,224 字节，原交付已更新；证据和旧片备份在上述目录的 `episode2/` 子目录。
