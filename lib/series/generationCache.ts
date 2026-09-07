@@ -49,3 +49,17 @@ export function createSeriesGenerationCache(root: string, key: string) {
     },
   };
 }
+
+/** Copy an exact matching old outline into the new prompt cache, leaving its
+ * source untouched. A prompt correction must not purchase another outline. */
+export async function migrateSeriesOutlineCache(root: string, key: string, legacyKey: string) {
+  const cache = createSeriesGenerationCache(root, key);
+  if (key === legacyKey || await cache.read() !== undefined) return cache;
+  const legacy = createSeriesGenerationCache(root, legacyKey);
+  const draft = await legacy.read();
+  if (draft === undefined) return cache;
+  const state = await legacy.readState();
+  if (state) await cache.saveState(state);
+  await cache.save(draft);
+  return cache;
+}

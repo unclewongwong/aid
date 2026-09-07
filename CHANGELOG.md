@@ -1,3 +1,8 @@
+## 0.1.202 - 2026-09-07
+
+- Make configured episode count authoritative; source screenplay recognition no longer overrides it. Use count-specific outline examples and recover single-episode phase/foreshadowing indices without changing the retained story or purchasing another repair. Reuse exact legacy outline caches after the prompt change.
+- Require the matching Companion capability for story development. Keep Seedance Mini website integration in the synchronized build.
+
 ## 0.1.199 - 2026-09-06
 
 - Allow visual redo when an approved episode screenplay survives but its director draft is missing or incomplete. Rebuild that draft after new masters are ready, preserving scripts, voices, references and historical deliveries. Require the matching Companion recovery capability.

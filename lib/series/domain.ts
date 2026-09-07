@@ -16,6 +16,7 @@ import {
   type ScriptStructureIssue,
 } from './scriptStructureRepair';
 import { parseAuthoredScreenplay } from './authoredScreenplay';
+import { normalizeSingleEpisodeOutline } from './outlineSchedule';
 
 export function seriesId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -53,10 +54,12 @@ export function generatedCharacterAppearance(c: { appearance?: unknown; descript
 
 export function createSeries(input: Partial<SeriesProject>): SeriesProject {
   const language = input.language === "en" ? "en" : "zh";
-  const authored = parseAuthoredScreenplay(input.brief, language);
   const count = Number(input.episodeCount ?? 12);
   if (!Number.isInteger(count) || count < 1 || count > 100)
     throw new Error("集数需为 1–100 的整数");
+  // Exact per-shot preservation applies to a single supplied screenplay.
+  // Multi-episode projects follow the configured count, never force one episode.
+  const authored = count === 1 ? parseAuthoredScreenplay(input.brief, language) : undefined;
   const now = new Date().toISOString();
   return {
     id: seriesId("series"),
@@ -65,7 +68,7 @@ export function createSeries(input: Partial<SeriesProject>): SeriesProject {
     brief: required(input.brief, "故事创意"),
     genre: text(input.genre) || "悬疑",
     sourceMode: authored ? "authored_screenplay" : undefined,
-    episodeCount: authored ? 1 : count,
+    episodeCount: count,
     shotCount: authored?.shots.length || 16,
     durationSeconds: authored?.durationSeconds || 120,
     language,
@@ -85,6 +88,7 @@ export function parseOutline(
   raw: any,
   project: SeriesProject,
 ): Pick<SeriesProject, "bible" | "characters" | "locations" | "objects"> {
+  raw = normalizeSingleEpisodeOutline(raw, project.episodeCount);
   const b = raw?.bible;
   if (
     !b ||
@@ -138,11 +142,11 @@ export function parseOutline(
       arc.end < arc.start ||
       arc.end > project.episodeCount
     )
-      throw new Error("阶段故事必须连续覆盖整季");
+      throw new Error(`阶段故事必须连续覆盖整季：界面设定共${project.episodeCount}集，本阶段应从第${next}集开始，实际为${arc.start}–${arc.end}；这些字段是集号，不是镜号，不得更改设定集数`);
     next = arc.end + 1;
   }
   if (next !== project.episodeCount + 1)
-    throw new Error("阶段故事未覆盖全部集数");
+    throw new Error(`阶段故事未覆盖全部集数：界面设定共${project.episodeCount}集，当前仅覆盖到第${next - 1}集，必须连续覆盖至第${project.episodeCount}集`);
   const promises = (Array.isArray(b.promises) ? b.promises : []).map(
     (p: any, i: number) => {
       const plantedIn = Number(p.plantedIn),
@@ -154,7 +158,7 @@ export function parseOutline(
         payoffIn < plantedIn ||
         payoffIn > project.episodeCount
       )
-        throw new Error("伏笔埋设／回收集数无效");
+        throw new Error(`伏笔埋设／回收集数无效：界面设定共${project.episodeCount}集，第${i + 1}条伏笔实际为${plantedIn}→${payoffIn}，必须满足1≤埋设集≤回收集≤${project.episodeCount}；不得使用镜头编号`);
       return {
         id: `p${i + 1}`,
         question: required(p.question, "伏笔问题"),

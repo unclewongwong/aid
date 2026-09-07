@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatOnceResult } from "@/lib/pipeline/llm";
 import { streamingJsonResponse } from "@/lib/streamingJsonResponse";
-import { seriesPrompt } from "@/lib/series/prompts";
+import { seriesPrompt, legacySeriesPrompt } from "@/lib/series/prompts";
 import { generateSeriesStage } from '@/lib/series/generation';
 import { createHash } from 'node:crypto';
-import { createSeriesGenerationCache } from '@/lib/series/generationCache';
+import { createSeriesGenerationCache, migrateSeriesOutlineCache } from '@/lib/series/generationCache';
 import type { SeriesProject } from "@/lib/series/types";
 
 export const maxDuration = 300;
@@ -34,8 +34,14 @@ export async function POST(request: NextRequest) {
       const savedScript = stage === 'script' ? series.episodes.find(e => e.id === episodeId)?.script : undefined;
       if (savedScript) identity.push('dialogue-source-v2', savedScript);
       const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
+      const cache = !root ? {} : stage === 'outline'
+        ? await migrateSeriesOutlineCache(root, key, createHash('sha256').update(JSON.stringify([
+            series.id, legacySeriesPrompt(stage, series, episodeId), settings.scriptProvider,
+            settings.scriptModel, settings.apiKey, settings.dmxApiKey,
+          ])).digest('hex'))
+        : createSeriesGenerationCache(root, key);
       return generateSeriesStage(stage, series, episodeId, {
-        ...(root ? createSeriesGenerationCache(root, key) : {}),
+        ...cache,
         chat: (input, options) => chatOnceResult(input, {
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,

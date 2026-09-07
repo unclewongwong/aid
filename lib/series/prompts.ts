@@ -2,8 +2,10 @@ import { CINEMATIC_STORY_CONTRACT } from '../pipeline/cinematicStoryContract';
 import { episodeContext, seriesEpisodeObjectIds } from "./domain";
 import type { SeriesProject } from "./types";
 import { parseAuthoredScreenplay } from './authoredScreenplay';
+import { outlineEpisodeContract } from './outlineSchedule';
 
-export function seriesPrompt(
+// Kept byte-for-byte for locating drafts written before the schedule fix.
+export function legacySeriesPrompt(
   stage: "outline" | "episodes" | "script",
   project: SeriesProject,
   episodeId?: string,
@@ -53,4 +55,19 @@ ${pendingNarrativeObjects.length ? `新增固定道具写入任务：${JSON.stri
 已登记objects是跨集固定道具。逐镜判断它是否真实出现在画面、被人物持有/使用，或其状态变化是否是本镜叙事信息；只有确实出现的镜头才把ID写入objectIds，并在visual/action中使用同一正名。不得因为它是“全剧固定道具”就给每一镜批量添加，也不得另起别名或重新设计。没有命中的固定道具则objectIds=[]。
 ${episodeNarrativeObjects.length ? `本集必须落实的新增固定道具：${JSON.stringify(episodeNarrativeObjects.map(({ id, name, aliases, description }) => ({ id, name, aliases, description })))}。每件至少进入一个真实使用它的镜头，在 objectIds 登记对应ID，并在 visual/action 中明确可见；不能只提名字。` : ''}
 返回：{"shots":[{"number":1,"seconds":3,"locationId":"l1","characterIds":["c1"],"objectIds":["o1"],"shotSize":"原稿景别","visual":"原稿AI生图提示词","imagePrompt":"原稿AI生图提示词","action":"原稿动作","camera":"原稿运镜","atmosphere":"原稿氛围","dialogue":[{"characterId":"c1","text":"原稿逐字台词","emotion":"表演语气"}],"sound":"环境/音效，不含新增对白","purpose":"此镜造成的信息/关系/局面变化"}]}`;
+}
+
+export function seriesPrompt(
+  stage: 'outline' | 'episodes' | 'script',
+  project: SeriesProject,
+  episodeId?: string,
+): string {
+  const original = legacySeriesPrompt(stage, project, episodeId);
+  // Other stages keep their cache identity; only the outline schema changes.
+  if (stage !== 'outline') return original;
+  return `${outlineEpisodeContract(project.episodeCount)}\n${original
+    .replace('"start":1,"end":3,"goal"', `"start":1,"end":${project.episodeCount},"goal"`)
+    .replace('"plantedIn":1,"payoffIn":3,"answer"', `"plantedIn":1,"payoffIn":${project.episodeCount},"answer"`)
+    .replace('本项目只有原稿这一集；arcs只能覆盖第1集，promises须在第1集内埋设并回收，ending必须是原稿末镜而不是新结局。',
+      project.episodeCount === 1 ? '本项目只有原稿这一集；arcs只能覆盖第1集，promises须在第1集内埋设并回收，ending必须是原稿末镜而不是新结局。' : `本项目按界面设定共${project.episodeCount}集；所有集号字段按该范围组织，不得把镜号当作集号。`)}\n${outlineEpisodeContract(project.episodeCount)}`;
 }

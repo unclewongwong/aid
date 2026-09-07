@@ -1104,6 +1104,17 @@ export default function SeriesPage() {
     finally { setBusy(false); }
   };
   const enqueue = async (kind: SeriesJobKind, episodeIds?: string[], assetId?: string) => {
+    if (kind === 'develop') {
+      if (base === undefined) return;
+      try {
+        const response = await fetch(`${base}/api/companion/status`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+        const status = await readApiJson<{ seriesEpisodeCountAuthority?: boolean }>(response, '无法检查集数设置支持');
+        if (!status.seriesEpisodeCountAuthority) throw new Error('按设定集数开发故事及恢复旧总纲需要 Companion v0.1.202 或更新版本，请更新后重新连接。');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '无法检查集数设置支持');
+        return;
+      }
+    }
     if (["prepare", "script", "produce"].includes(kind)) {
       if (base === undefined || (!assetId && prepareBlocker) || (assetId && (!connected || !project?.bible))) return;
       try {
@@ -2336,7 +2347,7 @@ export default function SeriesPage() {
                 <Labeled label="题材">
                   <input name="genre" className={field} defaultValue="悬疑" />
                 </Labeled>
-                <Labeled label="计划集数 · 支持单集；粘贴带镜号成稿时自动按原稿">
+                <Labeled label="计划集数 · 仅以此处设置为准，原文不改变集数">
                   <input
                     name="episodeCount"
                     type="number"

@@ -33,6 +33,7 @@ export async function GET() {
     h3DasiwaCheckpointPair: true,
     seriesFlexibleDeliveryDuration: true,
     seriesRecovery: true,
+    seriesEpisodeCountAuthority: true,
     seriesCrossLanguageVoices: true,
     sshDirectHost: process.env.COMFYUI_SSH_DIRECT_HOST || '',
     sshTransport: process.env.AID_COMPANION_SYSTEM_SSH === '1' ? 'system' : 'embedded',

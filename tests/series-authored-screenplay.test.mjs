@@ -22,7 +22,7 @@ test('recognizes a formed screenplay and keeps its shot count instead of expandi
   assert.deepEqual(authored?.shots[0].dialogueLines, ['这块表，我见过。', '你不该看见它。']);
   assert.ok(authored.shots[0].seconds > authored.shots[0].sourceSeconds);
 
-  const project = createSeries({ name: '已有成稿', brief: authoredBrief, episodeCount: 12 });
+  const project = createSeries({ name: '已有成稿', brief: authoredBrief, episodeCount: 1 });
   assert.equal(project.sourceMode, 'authored_screenplay');
   assert.equal(project.episodeCount, 1);
   assert.equal(project.shotCount, 2);
@@ -36,7 +36,7 @@ test('allows a one-episode project even when the brief is not a formed screenpla
 });
 
 test('authored screenplay prompt locks action, camera, image prompt and exact dialogue', () => {
-  const project = createSeries({ name: '已有成稿', brief: authoredBrief, episodeCount: 12 });
+  const project = createSeries({ name: '已有成稿', brief: authoredBrief, episodeCount: 1 });
   Object.assign(project, parseOutline({
     ...outlineFixture(),
     bible: { ...outlineFixture().bible, arcs: [{ start: 1, end: 1, goal: '查明照片真相', reversal: '陈叔暴露反应' }], promises: [{ question: '照片是什么？', plantedIn: 1, payoffIn: 1, answer: '照片留下手表线索' }] },
@@ -141,4 +141,13 @@ test('a user-added prop may minimally extend a formed screenplay without replaci
   const rewritten = structuredClone(raw);
   rewritten.shots[0].visual = '林知夏拿着银针改做另一件事。';
   assert.throws(() => parseScript(rewritten, project, project.episodes[0]), /必须完整保留用户原稿/);
+});
+
+
+test('authored text cannot override the configured multi-episode count', () => {
+  const project = createSeries({ name: '按设定分集', brief: authoredBrief, episodeCount: 12 });
+  assert.equal(project.episodeCount, 12);
+  assert.equal(project.sourceMode, undefined);
+  assert.equal(project.shotCount, 16);
+  assert.doesNotMatch(seriesPrompt('outline', project), /本项目只有原稿这一集/);
 });
