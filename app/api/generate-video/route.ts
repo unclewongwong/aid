@@ -1,3 +1,4 @@
+import { recoverApiVoiceReferences, publicAudioAvailable } from '@/lib/apiVoiceReferenceRecovery';
 import { apiVoiceReferenceUrls, selectVideoVoiceReferences } from '@/lib/videoCapabilities';
 import { NextRequest, NextResponse } from 'next/server';
 import { applyFilmEndingPrompt, applySeriesVideoStyle, applyVideoDuplicateRepairPrompt, buildStoryboardVideoPrompt, buildVideoSegmentPrompt, generateStoryboardVideo } from '@/lib/videoGenerator';
@@ -256,8 +257,12 @@ export async function POST(request: NextRequest) {
     console.log('Starting video generation for scene:', storyboard.sceneNumber);
     console.log('Using model:', videoModel || 'sora-2');
 
-    const selectedReferences = selectVideoVoiceReferences('apimart', videoModel || '', speakingCharacterNames(storyboard), voiceReferences);
+    const selectedReferences = await recoverApiVoiceReferences(selectVideoVoiceReferences('apimart', videoModel || '', speakingCharacterNames(storyboard), voiceReferences));
     const audioUrls = apiVoiceReferenceUrls(selectedReferences);
+    for (let index = 0; index < audioUrls.length; index++) {
+      if (audioUrls[index] !== selectedReferences[index].url && !await publicAudioAvailable(audioUrls[index]))
+        throw new Error(`角色“${selectedReferences[index].name}”的裁切音色链接不可读取；未提交新的视频生成。`);
+    }
     const useGenerateAudio = true;
 
     // 有声音参考时，将视频时长对齐到合法值（避免模型默认5s拉伸）
