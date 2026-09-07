@@ -126,6 +126,14 @@ export function speechSeconds(text: string): number {
   return Math.max(0.8, han / 4.2 + words / 2.4 + punctuation * 0.08);
 }
 
+/** Shared planning and production clock, including pauses and head/tail picture. */
+export function speechRuntimeSeconds(texts: string[], lead = H3_MIN_LEAD_SECONDS, tail = H3_MIN_TAIL_SECONDS): number {
+  if (!texts.length) return 0;
+  return texts.reduce((sum, text) => sum + speechSeconds(text), 0)
+    + Math.max(0, texts.length - 1) * H3_SPEAKER_HANDOFF_SECONDS
+    + Math.max(H3_MIN_LEAD_SECONDS, lead) + Math.max(H3_MIN_TAIL_SECONDS, tail);
+}
+
 export function storyboardSpeech(storyboard: Storyboard): StorySpeechLine[] {
   const visible = new Set(storyboard.characters || []);
   const seen = new Set<string>();
@@ -316,10 +324,9 @@ export function validateSpeechContract(storyboards: Storyboard[]): string | unde
   if (speakers.size > MAX_H3_REFERENCE_SPEAKERS) return `一个 H3 片段最多绑定 ${MAX_H3_REFERENCE_SPEAKERS} 个说话角色，请拆成独立片段`;
   const overlong = lines.find(line => speechSeconds(line.exactLine) > H3_MAX_SPEECH_SECONDS);
   if (overlong) return `角色“${overlong.character}”的连续台词过长，无法在 15 秒内完整说完并保留首尾画面，请缩短或拆分片段`;
-  const required = lines.reduce((sum, line) => sum + speechSeconds(line.exactLine), 0)
-    + Math.max(0, lines.length - 1) * H3_SPEAKER_HANDOFF_SECONDS
-    + (lines.length ? Math.max(H3_MIN_LEAD_SECONDS, storyboardAudioPlan(storyboards[lines[0].storyboardIndex]).silenceBefore) : 0)
-    + (lines.length ? Math.max(H3_MIN_TAIL_SECONDS, storyboardAudioPlan(storyboards[lines[lines.length - 1].storyboardIndex]).silenceAfter) : 0);
+  const required = speechRuntimeSeconds(lines.map(line => line.exactLine),
+    lines.length ? storyboardAudioPlan(storyboards[lines[0].storyboardIndex]).silenceBefore : 0,
+    lines.length ? storyboardAudioPlan(storyboards[lines[lines.length - 1].storyboardIndex]).silenceAfter : 0);
   if (required > 15) return `该 H3 片段的连续台词至少需要 ${required.toFixed(1)} 秒，超过 15 秒；请缩短台词或拆分片段`;
   return undefined;
 }

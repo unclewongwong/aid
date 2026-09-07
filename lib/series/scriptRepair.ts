@@ -1,5 +1,5 @@
 import type { SeriesShot } from './types';
-import { speechSeconds } from '../speechAudioContract';
+import { speechSeconds, speechRuntimeSeconds } from '../speechAudioContract';
 
 /** Planning correction, not media QC. Preserve speech/actions and extend a
  * short estimate within the existing single-clip limit before shortening text. */
@@ -12,7 +12,7 @@ export function fitScriptDialogueDurations(raw: any, language: string) {
     const lines = shot.dialogue.map((line: any) => typeof line?.text === 'string' ? line.text : '').filter(Boolean);
     if (!lines.length) continue;
     const units = lines.reduce((sum: number, line: string) => sum + (language === 'zh' ? line.length : line.trim().split(/\s+/).length), 0);
-    const estimated = lines.reduce((sum: number, line: string) => sum + speechSeconds(line), 0) + 1.8 + Math.max(0, lines.length - 1) * 0.12;
+    const estimated = speechRuntimeSeconds(lines);
     const seconds = Math.min(15, Math.ceil(Math.max(estimated, units / (language === 'zh' ? 4.2 : 2.4) + 0.8)));
     if (seconds > previous) {
       shot.seconds = seconds;
@@ -41,7 +41,7 @@ export class ScriptDialogueError extends Error {
   }
 }
 
-export function checkScriptDialogue(shots: SeriesShot[], language: string): void {
+export function scriptTimingIssues(shots: SeriesShot[], language: string): DialogueIssue[] {
   const rate = language === 'zh' ? 4.2 : 2.4;
   const units = (text: string) => language === 'zh' ? text.length : text.trim().split(/\s+/).length;
   const issues: DialogueIssue[] = [];
@@ -49,10 +49,15 @@ export function checkScriptDialogue(shots: SeriesShot[], language: string): void
     const counts = shot.dialogue.map(d => units(d.text));
     const total = counts.reduce((sum, n) => sum + n, 0);
     const budget = Math.floor((shot.seconds - 0.8) * rate);
-    if (total <= budget) return;
-    if (budget < counts.length) throw new Error(`第 ${index + 1} 镜台词轮次过多，需调整镜头时长与对白`);
+    const runtime = speechRuntimeSeconds(shot.dialogue.map(d => d.text));
+    if (total <= budget && runtime <= Math.min(15, shot.seconds)) return;
+    const availableSpeech = Math.min(15, shot.seconds) - 1.8 - Math.max(0, counts.length - 1) * 0.12;
+    const spokenSeconds = shot.dialogue.reduce((sum, d) => sum + speechSeconds(d.text), 0);
+    const runtimeBudget = Math.floor(total * Math.max(0, availableSpeech) / Math.max(0.8, spokenSeconds) * 0.95);
+    const safeBudget = Math.min(budget, runtimeBudget);
+    if (safeBudget < counts.length) throw new Error(`第 ${index + 1} 镜台词轮次过多，需调整镜头时长与对白`);
     // Reserve at least one unit per line, then distribute the remaining budget.
-    const extra = budget - counts.length;
+    const extra = safeBudget - counts.length;
     shot.dialogue.forEach((_line, line) => issues.push({
       index, line, path: `shots[${index}].dialogue[${line}].text`, shotNumber: shot.number,
       characterId: _line.characterId, originalText: _line.text, reason: 'timing',
@@ -60,6 +65,11 @@ export function checkScriptDialogue(shots: SeriesShot[], language: string): void
       unit: language === 'zh' ? '字（含标点）' : '个英文词',
     }));
   });
+  return issues;
+}
+
+export function checkScriptDialogue(shots: SeriesShot[], language: string): void {
+  const issues = scriptTimingIssues(shots, language);
   if (issues.length) throw new ScriptDialogueError(issues);
   checkDialogueOwnership(shots, language);
 }
@@ -76,6 +86,8 @@ export function applyDialogueRepairs(raw: any, reply: any, issues: DialogueIssue
     const issue = allowed.get(repair?.path);
     if (!issue || typeof repair.value !== 'string' || !repair.value.trim())
       throw new Error('仅可缩短指定台词，不得重复、删除台词或改动其他字段');
+    const count = issue.unit.startsWith('字') ? repair.value.length : repair.value.trim().split(/\s+/).length;
+    if (count > issue.maxUnits) throw new Error(`${issue.path} 仍超过 ${issue.maxUnits}${issue.unit}，原稿已保留`);
     if (issue.reason === 'ownership') {
       const source = dialogueWords(issue.originalText || ''), proposed = dialogueWords(repair.value);
       const shared = source.filter(word => proposed.includes(word)).length;

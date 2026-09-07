@@ -569,10 +569,11 @@ test('script repair lists dialogue beyond the 15s limit and preserves speakers a
     read: async () => draft, save: async value => { draft = value; }, chat: async prompt => {
       calls++;
       for (const i of [3, 6, 15]) assert.ok(prompt.includes(`shots[${i}].dialogue[0].text`));
+      if (prompt.startsWith('DIALOGUE_MEANING_REVIEW')) return JSON.stringify({ checks: [3, 6, 15].map(i => ({ path: `shots[${i}].dialogue[0].text`, preservesMeaning: true, reason: 'fixture review' })) });
       return JSON.stringify({ repairs: [3, 6, 15].map(i => ({ path: `shots[${i}].dialogue[0].text`, value: 'I need to know the truth.' })) });
     },
   });
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
   assert.equal(result.script.length, 16);
   const expected = structuredClone(raw);
   for (const i of [3, 6, 15]) expected.shots[i].dialogue[0].text = 'I need to know the truth.';
@@ -667,8 +668,8 @@ test('dialogue repair rejects unsafe patches and cannot bypass timing or 16-shot
   assert.throws(() => checkScriptDialogue(raw.shots, 'en'), error => { issues = error.issues; return error instanceof ScriptDialogueError; });
   assert.equal(issues.length, 2); assert.ok(issues.reduce((n, i) => n + i.maxUnits, 0) <= 17);
   assert.throws(() => applyDialogueRepairs(raw, { repairs: [{ path: 'shots[0].seconds', value: '15' }, { path: issues[1].path, value: 'Fine.' }] }, issues), /仅可缩短/);
-  const unchanged = applyDialogueRepairs(raw, { shots: raw.shots }, issues);
-  assert.throws(() => parseScript(unchanged, p, p.episodes[0]), /台词超时/);
+  assert.throws(() => applyDialogueRepairs(raw, { shots: raw.shots }, issues), /仍超过/);
+  assert.throws(() => parseScript(raw, p, p.episodes[0]), /台词超时/);
   assert.throws(() => parseScript({ shots: raw.shots.slice(1) }, p, p.episodes[0]), /16镜/);
   let saves = 0, calls = 0;
   await assert.rejects(generateSeriesStage('script', p, p.episodes[0].id, {

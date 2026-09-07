@@ -1,21 +1,41 @@
 import type { SeriesEpisode, SeriesProject, SeriesShot } from './types';
 import { episodeScreenplay } from './domain';
-import { checkScriptDialogue, copiedDialogueShotNumbers } from './scriptRepair';
+import { checkScriptDialogue, copiedDialogueShotNumbers, scriptTimingIssues } from './scriptRepair';
 import type { Storyboard } from '@/types';
 import { authorSegmentSpeech } from '@/lib/videoSegments';
 
-export function repairEpisodeDialogue(project: SeriesProject, episode: SeriesEpisode, repaired: SeriesShot[]): SeriesEpisode {
+export function repairEpisodeDialogue(project: SeriesProject, episode: SeriesEpisode, repaired: SeriesShot[], reason: 'ownership' | 'timing' = 'ownership'): SeriesEpisode {
   if (!episode.script || episode.deliveries.some(d => d.episodeVersion === episode.version)) throw new Error('已交付或没有剧本的分集不能自动替换台词');
-  const allowed = new Set(copiedDialogueShotNumbers(episode.script));
-  const structure = (shots: SeriesShot[]) => JSON.stringify(shots.map(s => ({ ...s, dialogue: s.dialogue.map(d => ({ ...d, text: '' })) })));
-  if (!allowed.size || structure(episode.script) !== structure(repaired)) throw new Error('自动修稿只能修改串镜台词，不得改变镜头、角色、动作或时长');
+  if (reason === 'timing' && project.sourceMode === 'authored_screenplay') throw new Error('逐字保留的原稿不能自动缩短台词');
+  const allowed = new Set(reason === 'timing' ? scriptTimingIssues(episode.script, project.language).map(issue => episode.script![issue.index].number) : copiedDialogueShotNumbers(episode.script));
+  const structure = (shots: SeriesShot[]) => JSON.stringify(shots.map(s => ({ ...s, ...(reason === 'timing' ? { seconds: 0 } : {}), dialogue: s.dialogue.map(d => ({ ...d, text: '' })) })));
+  if (!allowed.size || structure(episode.script) !== structure(repaired)) throw new Error('自动修稿只能修改指定台词，不得改变镜头、角色、动作或时长');
+  if (reason === 'timing' && repaired.some((s, i) => !Number.isFinite(s.seconds) || s.seconds < episode.script![i].seconds || s.seconds > 15)) throw new Error('修稿只能在15秒上限内延长原镜头，不能缩短已定时长');
   checkScriptDialogue(repaired, project.language);
   const changed = repaired.filter((s, i) => JSON.stringify(s.dialogue) !== JSON.stringify(episode.script![i].dialogue)).map(s => s.number);
   if (changed.some(n => !allowed.has(n))) throw new Error('自动修稿改动了未授权的正确台词');
+  if (reason === 'timing') {
+    const affectedIds = new Set((episode.production?.storyboards || []).filter(b => changed.includes(b.sceneNumber) || repaired[b.sceneNumber - 1]?.seconds !== episode.script![b.sceneNumber - 1]?.seconds).map(b => b.id));
+    for (const segment of episode.production?.videoSegmentPlan?.segments || []) {
+      if (segment.storyboardIds.some(id => affectedIds.has(id))) segment.storyboardIds.forEach(id => affectedIds.add(id));
+    }
+    const paidGroups = new Set((episode.production?.storyboards || []).filter(b => affectedIds.has(b.id)).map(b => b.videoSegmentId).filter(Boolean));
+    for (const board of episode.production?.storyboards || []) if (board.videoSegmentId && paidGroups.has(board.videoSegmentId)) affectedIds.add(board.id);
+    if (episode.production?.storyboards.some(b => affectedIds.has(b.id) && (b.videoTaskId || b.videoUrl || b.videoSourceUrl || b.videoCacheKey))) throw new Error('超时镜头已有视频任务或素材，已保留；请先明确重做该片段再修改台词');
+  }
+  const affected = [...new Set([...changed, ...repaired.filter((s, i) => s.seconds !== episode.script![i].seconds).map(s => s.number)])];
   const next = structuredClone(episode);
   next.script = repaired;
-  updateProductionDialogue(project, next, repaired, changed);
-  next.dialogueRepairs = [...(next.dialogueRepairs || []), { at: new Date().toISOString(), shots: changed, reason: '自动纠正邻镜台词串到不同角色', before: episode.script.filter(s => changed.includes(s.number)).map(s => ({ number: s.number, dialogue: s.dialogue })), after: repaired.filter(s => changed.includes(s.number)).map(s => ({ number: s.number, dialogue: s.dialogue })) }];
+  updateProductionDialogue(project, next, repaired, affected);
+  if (reason === 'timing' && next.production) {
+    for (const board of next.production.storyboards) if (affected.includes(board.sceneNumber)) board.videoDuration = repaired[board.sceneNumber - 1].seconds;
+    if (next.production.storyPlan) {
+      for (const seq of next.production.storyPlan.sequences) for (const beat of seq.beats) if (affected.includes(beat.index)) beat.durationHint = repaired[beat.index - 1].seconds;
+      next.production.storyPlan.estimatedDurationSeconds = repaired.reduce((sum, shot) => sum + shot.seconds, 0);
+      next.production.storyPlan.targetDurationSeconds = next.production.storyPlan.estimatedDurationSeconds;
+    }
+  }
+  next.dialogueRepairs = [...(next.dialogueRepairs || []), { at: new Date().toISOString(), shots: changed, reason: reason === 'timing' ? '自动压缩超时台词并复核原意' : '自动纠正邻镜台词串到不同角色', before: episode.script.filter(s => changed.includes(s.number)).map(s => ({ number: s.number, dialogue: s.dialogue })), after: repaired.filter(s => changed.includes(s.number)).map(s => ({ number: s.number, dialogue: s.dialogue })) }];
   return next;
 }
 

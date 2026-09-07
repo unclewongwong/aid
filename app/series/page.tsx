@@ -1129,10 +1129,13 @@ export default function SeriesPage() {
           seriesAssetScriptReconciliation?: boolean;
           storySingleImageShots?: boolean;
           h3DasiwaCheckpointPair?: boolean;
+          seriesDialogueTimingRepair?: boolean;
           seriesObjectEvidenceRepair?: boolean;
         }>(response, "无法检查定稿支持");
         if (["script", "produce"].includes(kind) && (!status.storySingleImageShots || !status.seriesObjectEvidenceRepair || !status.h3DasiwaCheckpointPair))
           throw new Error('逐镜制作与新版剧本修稿需要 Companion v0.1.201 或更新版本，请更新后重新连接。');
+        if (["script", "produce"].includes(kind) && !status.seriesDialogueTimingRepair)
+          throw new Error('台词超时自动压缩与原意复核需要 Companion v0.1.203 或更新版本，请更新后重新连接。');
         if (kind === 'prepare' && !status.seriesIndependentPreparation)
           throw new Error("独立角色场景定稿需要 Companion v0.1.105 或更新版本，请更新后重新连接。");
         if (kind === 'prepare' && assetId && !status.seriesIndividualAssetJobs)
