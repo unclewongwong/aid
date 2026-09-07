@@ -2682,10 +2682,9 @@ export default function StoryPage() {
         }
       };
 
-      // Keep at most two independent paid renders in flight. The local H3 GPU
-      // still executes its queue safely, while reference preparation, upload,
-      // polling, download and cache writes overlap. Each new render uses its own image.
-      for (const batch of planAutoVideoBatches(videoGroups)) {
+      // ComfyUI serializes GPU work. Independent API renders can all start;
+      // previous-tail dependencies still form separate waves.
+      for (const batch of planAutoVideoBatches(videoGroups, videoProvider === 'comfyui' ? 2 : videoGroups.length)) {
         if (autoAbortRef.current) return;
         const results = await Promise.allSettled(batch.map(completeVideoGroup));
         const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');

@@ -9,7 +9,9 @@ export default function SeriesWorkerPage() {
   const [stage, setStage] = useState("正在连接连续剧队列");
   useEffect(() => {
     let stopped = false;
-    let active: AbortController | undefined;
+    const running = new Map<string, AbortController>();
+    const stages = new Map<string, string>();
+    const report = () => setStage(stages.size ? `同时执行 ${stages.size} 项任务：${[...stages.values()].join("；")}` : "执行器在线，等待任务");
     let timer: ReturnType<typeof setTimeout> | undefined;
     const workerId = `worker-${crypto.randomUUID()}`;
     const mode =
@@ -17,6 +19,7 @@ export default function SeriesWorkerPage() {
         ? "companion"
         : "page";
     const tick = async () => {
+      let nextPoll = 3000;
       try {
         const { claim } = await seriesRequest<{ claim: SeriesClaim | null }>({
           action: "claim",
@@ -33,71 +36,80 @@ export default function SeriesWorkerPage() {
           return;
         }
         if (claim) {
-          active = new AbortController();
-          let missed = 0,
-            heartbeatBusy = false;
-          const heartbeat = setInterval(async () => {
-            if (heartbeatBusy) return;
-            heartbeatBusy = true;
-            try {
-              const result = await seriesRequest<{ continue: boolean }>(
-                {
-                  action: "heartbeat",
-                  jobId: claim.job.id,
-                  lease: claim.job.lease,
-                  mode,
-                },
-                "",
-                AbortSignal.timeout(8000),
-              );
-              missed = 0;
-              if (!result.continue) active?.abort("requested-pause");
-            } catch {
-              if (++missed >= 3) active?.abort("connection-lost");
-            } finally {
+          nextPoll = 100;
+          const active = new AbortController();
+          running.set(claim.job.id, active);
+          stages.set(claim.job.id, "正在准备");
+          report();
+          const run = async () => {
+            let missed = 0,
               heartbeatBusy = false;
+            const heartbeat = setInterval(async () => {
+              if (heartbeatBusy) return;
+              heartbeatBusy = true;
+              try {
+                const result = await seriesRequest<{ continue: boolean }>(
+                  {
+                    action: "heartbeat",
+                    jobId: claim.job.id,
+                    lease: claim.job.lease,
+                    mode,
+                  },
+                  "",
+                  AbortSignal.timeout(8000),
+                );
+                missed = 0;
+                if (!result.continue) active?.abort("requested-pause");
+              } catch {
+                if (++missed >= 3) active?.abort("connection-lost");
+              } finally {
+                heartbeatBusy = false;
+              }
+            }, 5000);
+            try {
+              await executeSeriesClaim(claim, active.signal, stage => { stages.set(claim.job.id, stage); report(); });
+              await seriesRequest({
+                action: "finish",
+                jobId: claim.job.id,
+                lease: claim.job.lease,
+              });
+            } catch (error) {
+              const message = error instanceof Error ? error.message : "生产失败";
+              setStage(message);
+              await seriesRequest({
+                action: "finish",
+                jobId: claim.job.id,
+                lease: claim.job.lease,
+                paused:
+                  active.signal.aborted &&
+                  active.signal.reason === "requested-pause",
+                interrupted:
+                  active.signal.aborted &&
+                  active.signal.reason !== "requested-pause",
+                error: message,
+                errorCode: error instanceof ApiResponseError ? error.code : undefined,
+              }).catch(() => undefined);
+            } finally {
+              clearInterval(heartbeat);
+              running.delete(claim.job.id);
+              stages.delete(claim.job.id);
+              if (!stopped) report();
             }
-          }, 5000);
-          try {
-            await executeSeriesClaim(claim, active.signal, setStage);
-            await seriesRequest({
-              action: "finish",
-              jobId: claim.job.id,
-              lease: claim.job.lease,
-            });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : "生产失败";
-            setStage(message);
-            await seriesRequest({
-              action: "finish",
-              jobId: claim.job.id,
-              lease: claim.job.lease,
-              paused:
-                active.signal.aborted &&
-                active.signal.reason === "requested-pause",
-              interrupted:
-                active.signal.aborted &&
-                active.signal.reason !== "requested-pause",
-              error: message,
-              errorCode: error instanceof ApiResponseError ? error.code : undefined,
-            }).catch(() => undefined);
-          } finally {
-            clearInterval(heartbeat);
-            active = undefined;
-          }
-        } else setStage("执行器在线，等待任务");
+          };
+          void run();
+        } else if (!running.size) report();
       } catch (error) {
         setStage(
           error instanceof Error ? error.message : "连接中断，将自动重连",
         );
       }
-      if (!stopped) timer = setTimeout(tick, 3000);
+      if (!stopped) timer = setTimeout(tick, nextPoll);
     };
     void tick();
     return () => {
       stopped = true;
       if (timer) clearTimeout(timer);
-      active?.abort("worker-unmounted");
+      for (const active of running.values()) active.abort("worker-unmounted");
     };
   }, []);
   return (

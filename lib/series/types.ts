@@ -215,6 +215,9 @@ export interface SeriesJob {
   finishedAt?: string;
   lease?: string;
   workerId?: string;
+  /** Persisted ownership for concurrent checkpoint writes. */
+  writeScope?: string;
+  checkpointRevision?: number;
   heartbeatAt?: number;
   /** Earliest epoch milliseconds at which a recoverable queued job may be claimed again. */
   resumeAfter?: number;

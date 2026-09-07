@@ -1,3 +1,4 @@
+import { seriesJobScope, seriesJobsConflict, mergeSeriesCheckpoint } from '@/lib/series/concurrency';
 import { NextRequest, NextResponse } from "next/server";
 import { recordSeriesInterruption, seriesCheckpointAdvanced } from '@/lib/series/interruption';
 import { seriesRetryBlocker } from '@/lib/series/jobHistory';
@@ -680,8 +681,6 @@ export async function POST(request: NextRequest) {
           )) {
             recordSeriesInterruption(job, Boolean(job.cancelRequested || db.projects.find(p => p.id === job.seriesId)?.paused));
           }
-          if (db.jobs.some((j) => j.status === "running"))
-            return { claim: null };
           if (
             body.mode !== "companion" &&
             Object.values(db.workers).some(
@@ -693,6 +692,11 @@ export async function POST(request: NextRequest) {
             const owner = db.projects.find((p) => p.id === j.seriesId);
             if (j.status !== "queued" || !owner || owner.paused || owner.deletedAt) return false;
             if (j.resumeAfter && j.resumeAfter > Date.now()) return false;
+            const scope = seriesJobScope(j, owner);
+            if (db.jobs.some(other => other.status === 'running' && seriesJobsConflict(j, scope, other))) return false;
+            if ((j.kind === 'script' || j.kind === 'produce') && db.jobs.some(other =>
+              other.id !== j.id && other.seriesId === j.seriesId && other.kind === 'prepare'
+              && ['queued', 'running'].includes(other.status))) return false;
             if (j.kind === 'produce') {
               const episode = owner.episodes.find(item => item.id === j.episodeId);
               // A visual redo may not skip past the shared-master stage while
@@ -720,6 +724,8 @@ export async function POST(request: NextRequest) {
             job.updatedAt = now;
             return { claim: null };
           }
+          job.writeScope = seriesJobScope(job, owner);
+          job.checkpointRevision = owner.revision;
           job.status = "running";
           job.error = undefined;
           job.resumeAfter = undefined;
@@ -760,14 +766,10 @@ export async function POST(request: NextRequest) {
           const owner = db.projects.find((p) => p.id === job.seriesId)!;
           if (body.project) {
             const incoming = body.project as SeriesProject;
-            if (
-              incoming.id !== owner.id ||
-              incoming.revision !== owner.revision
-            )
-              throw new Error("生产快照版本冲突，拒绝覆盖");
-            const replacement = { ...incoming, paused: owner.paused, deletedAt: owner.deletedAt };
+            const replacement = mergeSeriesCheckpoint(owner, incoming, job);
             if (seriesCheckpointAdvanced(owner, replacement)) job.consecutiveInterruptions = 0;
             touchProject(replacement);
+            job.checkpointRevision = replacement.revision;
             db.projects[db.projects.indexOf(owner)] = replacement;
           }
           job.stage = text(body.stage, 500) || job.stage;
