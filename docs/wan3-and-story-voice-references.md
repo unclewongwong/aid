@@ -1,6 +1,6 @@
 # Wan 3.0 与 Story 音色参考
 
-2026-09-07，本地实现，尚未发布。生产仍为此前发布版本。
+2026-09-07，网站前后端已发布至 https://pandais.beauty。业务提交 `4787120`；生产部署 `6a9e9ee3773814050befe58e`。
 
 ## 入口与行为
 
@@ -36,7 +36,7 @@
 - `tests/wan3-video-references.test.mjs`：模拟HTTP提交验证 Wan 请求、H3模式、Story声图传递、音色顺序、超额/缺失拒绝与试音时长衍生地址。
 - 相关测试70/70；Next.js生产构建通过。
 - 浏览器验收回执与截图：`out/verification/wan3/`，使用隔离浏览器和模拟音色库，不操作真实项目或付费生成。
-- 本次功能入口与 APIMart 提交/Fish 查询在网站前后端。网站用户无需更新 Companion 即可使用 Wan/Fish 搜索；新增 ComfyUI 服务端完整性校验位于共享路由，旧 Companion 的现有素材工作流仍兼容，新校验需后续 Companion 发布才会进入安装包。本轮未发布或重启 Companion。
+- 本次功能入口与 APIMart 提交/Fish 查询在网站前后端。网站用户无需更新 Companion 即可使用 Wan/Fish 搜索；新增 ComfyUI 服务端完整性校验位于共享路由，旧 Companion 的现有素材工作流仍兼容，新校验需后续 Companion 发布才会进入安装包。本轮已发布网站，未发布或重启 Companion。
 
 ## 官方资料（2026-09-07核对）
 
@@ -46,3 +46,9 @@
 - [Wan 2.7](https://docs.apimart.ai/cn/api-reference/videos/wan2.7/generation)
 - [Fish 查询音色](https://docs.fish.audio/api-reference/endpoint/model/list-models)
 - [Cloudinary 音视频时长裁切](https://cloudinary.com/documentation/video_trimming)
+
+### 生产发布验收
+
+用户明确授权“发布更新吧”。Netlify 生产构建、部署成功；正式域名 `/story` 的16个脚本、`/image-to-video` 的9个脚本逐字节匹配本次构建，包含 Wan 模型及 Story Fish 入口。三个接口 `/api/image-to-video`、`/api/generate-video`、`/api/series/voice-catalog` 缺参校验均返回预期JSON 400。没有提交付费生成或修改用户生产项目。
+
+回执：`out/releases/wan3-20260907/verification.json`；部署日志 `out/releases/wan3-20260907/deploy.log`。本次仅网站更新，Companion 仍为0.1.202。
