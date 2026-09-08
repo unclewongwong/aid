@@ -73,6 +73,10 @@ jobs:
       - run: npm run test:video-segments
       - run: npm run test:video-pacing
       - run: npm run test:api-video-references
+      - name: Select host decoder for Windows cross-build tests
+        if: matrix.platform == 'win32'
+        shell: bash
+        run: echo "FFMPEG_PATH=$(command -v ffmpeg)" >> "$GITHUB_ENV"
       - run: npm run test:seedance-mini
       - run: npm run test:wan3-video
       - run: node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/film-ending.test.mjs

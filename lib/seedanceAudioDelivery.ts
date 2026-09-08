@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -48,14 +49,20 @@ export async function decodeSeedanceAudio(bytes: Buffer): Promise<Buffer> {
     const source = path.join(directory, 'source');
     await writeFile(source, bytes);
     return await new Promise<Buffer>((resolve, reject) => {
-      const ffmpeg = process.env.FFMPEG_PATH || (process.env.NETLIFY && process.platform === 'linux'
-        ? path.join(process.cwd(), 'node_modules/aid-netlify-ffmpeg/ffmpeg') : ffmpegStatic || 'ffmpeg');
+      const linuxBinary = path.join(process.cwd(), 'node_modules/aid-netlify-ffmpeg/ffmpeg');
+      // NETLIFY is a build flag, not a reliable runtime flag. Select the bundled
+      // Linux executable by the actual platform and artifact presence.
+      const ffmpeg = process.env.FFMPEG_PATH || (process.platform === 'linux' && existsSync(linuxBinary)
+        ? linuxBinary : ffmpegStatic || 'ffmpeg');
       execFile(ffmpeg, [
         '-hide_banner', '-loglevel', 'error', '-protocol_whitelist', 'file,pipe',
         '-i', source, '-map', '0:a:0', '-vn', '-t', '10.001',
         '-ac', '1', '-ar', String(RATE), '-f', 's16le', 'pipe:1',
-      ], { encoding: 'buffer', timeout: 30000, maxBuffer: 2 * 1024 * 1024 }, (error, stdout) => {
-        if (error) reject(new Error('音色参考无法解码；未提交视频生成'));
+      ], { encoding: 'buffer', timeout: 30000, maxBuffer: 2 * 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('[seedance-audio] decoder failure', { code: error.code, executable: ffmpeg, stderr: stderr.toString().slice(-800) });
+          reject(new Error(`音色参考无法解码（${error.code || 'FFMPEG_ERROR'}）；未提交视频生成`));
+        }
         else if (!stdout.length || stdout.length % 2) reject(new Error('音色参考没有可解码的音频'));
         else resolve(stdout);
       });
