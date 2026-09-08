@@ -25,6 +25,7 @@ export async function GET() {
     seriesIndividualAssetJobs: true,
     seriesAssetScriptReconciliation: true,
     seriesNarrativeObjectInsertion: true,
+    seriesMaterialFacts: true,
     seriesVisualRedo: true,
     seriesVisualPromptRewrite: true,
     seriesVisualRedoRecovery: true,

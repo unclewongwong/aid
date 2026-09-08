@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import MaterialFactsCenter from '@/components/MaterialFactsCenter';
 import RepairCenterLog from '@/components/RepairCenterLog';
 import {
   ArrowLeft,
@@ -2251,6 +2252,22 @@ export default function SeriesPage() {
           )}
         </main>
       </div>
+      {project && <MaterialFactsCenter key={project.id} project={project} locked={busy || editingLocked || !connected || !project.paused}
+        upload={file => uploadSeriesReference(base!, file, '补充照片')}
+        pause={async () => {
+          if (base === undefined) throw new Error('请先连接 Companion');
+          await seriesRequest({ action: 'pause', seriesId: project.id }, base);
+          const updated = await refresh(base);
+          return updated.projects.find(p => p.id === project.id)!;
+        }}
+        save={async (objectId, facts, revision) => {
+          if (base === undefined) throw new Error('请先连接 Companion');
+          const capability = await readApiJson<{ seriesMaterialFacts?: boolean }>(await fetch(`${base}/api/companion/status`, { cache: 'no-store' }), '无法检查素材补充支持');
+          if (!capability.seriesMaterialFacts) throw new Error('请更新 Companion 后使用素材事实修复，填写内容已保留');
+          await seriesRequest({ action: 'supplement-material', seriesId: project.id, objectId, facts, revision }, base);
+          await refresh(base);
+          setNotice('素材事实已保存，相关镜头已标记修复。点击继续制作接续，原图与历史结果已保留。');
+        }} />}
       {project && showVisualRedo && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-4">
           <section

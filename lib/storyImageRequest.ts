@@ -1,3 +1,4 @@
+import { requireMaterialFacts } from './materialFacts';
 import { validMediaUploadTicket, type MediaUploadTicket } from './mediaUploadTicket';
 import type { Character, ObjectItem, Storyboard, VisualStyle, CapturePreset } from '@/types';
 import type { ComfyUIClientSettings } from './comfyui';
@@ -129,6 +130,7 @@ export function createStoryImageRequestPreparer(
   const resolve = createImageReferenceUploader(request, localUpload);
   return async (input: StoryImageRequest): Promise<string> => {
     const board = input.storyboard;
+    requireMaterialFacts(board, input.objects);
     const cast = visibleImageCast(board, input.characters);
     const objects = visibleStoryObjects(board, input.objects);
     const sourceOf = (item: Character | ObjectItem) => remoteImageUrl(item.imageUrl || '')

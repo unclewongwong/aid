@@ -29,7 +29,7 @@ export function mergeResumedSeriesSettings(
   });
 }
 
-function clearVideoArtifact(storyboard: Storyboard): Storyboard {
+export function clearVideoArtifact(storyboard: Storyboard): Storyboard {
   return {
     ...storyboard,
     videoUrl: undefined,

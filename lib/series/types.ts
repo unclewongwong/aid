@@ -171,6 +171,8 @@ export interface SeriesEpisode {
 }
 
 export interface SeriesProject {
+  materialRepairHistory?: Array<{ at: string; objectId: string; before?: import('../materialFacts').MaterialFacts; after: import('../materialFacts').MaterialFacts; productions: Array<{ episodeId: string; version: number; production?: import('@/hooks/useProject').ProjectData }> }>;
+
   styleReference?: ImageStyleReference;
   visualHistory?: Array<{ changedAt: string; reason?: "style_change" | "manual_visual_redo"; visualStyle?: VisualStyle; styleReference?: ImageStyleReference; characters: SeriesCharacter[]; locations: SeriesLocation[]; objects?: ObjectItem[]; productions: Array<{ episodeId: string; version: number; production: ProjectData }> }>;
   id: string;

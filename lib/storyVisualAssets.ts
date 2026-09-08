@@ -3,7 +3,7 @@ import { characterIdentityIndex } from './characterIdentity';
 import { visibleImageCast } from './series/imageCastContract';
 import { currentVideoDirection, videoDirectionSourceKey } from './videoDirection';
 
-export type VisualAsset = Pick<ObjectItem, 'id' | 'name' | 'description' | 'imageUrl' | 'imageBase64' | 'visualIdentity'> & { aliases?: string[] };
+export type VisualAsset = Pick<ObjectItem, 'id' | 'name' | 'description' | 'imageUrl' | 'imageBase64' | 'visualIdentity' | 'materialFacts'> & { aliases?: string[] };
 
 // A browser-safe source fingerprint. Changing the original or user description
 // invalidates the cached understanding; generating a shot never changes it.
@@ -25,8 +25,9 @@ export function currentVisualIdentity(asset: VisualAsset, source?: string): Asse
 
 export function visualAssetDescription(asset: VisualAsset, source?: string): string {
   const identity = currentVisualIdentity(asset, source);
-  if (!identity) return asset.description;
-  return `[${identity.kind}] ${identity.appearance}${identity.scale ? ` Scale: ${identity.scale}` : ''}${identity.states ? ` Allowed states: ${identity.states}` : ''}`;
+  const observed = identity ? `[${identity.kind}] ${identity.appearance}${identity.scale ? ` Scale: ${identity.scale}` : ''}${identity.states ? ` Allowed states: ${identity.states}` : ''}` : '';
+  const facts = asset.materialFacts?.sourceUrl === asset.imageUrl ? asset.materialFacts : undefined;
+  return [asset.description, observed && `Visible original image facts: ${observed}`, facts && `USER CONFIRMED PRODUCT FACTS (override conflicting inferred descriptions; packaging is distinct from contents): ${JSON.stringify({ packaging: facts.packaging, contents: facts.contents, usage: facts.usage })}`].filter(Boolean).join('\n');
 }
 
 export function characterProductionDescription(character: { description: string; visualDescription?: string }): string {

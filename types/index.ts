@@ -39,6 +39,7 @@ export interface Character {
 
 // 物体类型
 export interface ObjectItem {
+  materialFacts?: import("@/lib/materialFacts").MaterialFacts;
   id: string;
   name: string;
   description: string; // 物体详细描述,包括细节、文字等

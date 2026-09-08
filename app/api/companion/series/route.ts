@@ -1,3 +1,4 @@
+import { supplementMaterialFacts } from '@/lib/series/materialRepair';
 import { videoGenerationSelection } from '@/lib/videoGenerationSelection';
 import { rerunChangedEpisodeVideos } from '@/lib/series/videoModelRerun';
 import { seriesJobScope, seriesJobsConflict, mergeSeriesCheckpoint } from '@/lib/series/concurrency';
@@ -90,6 +91,14 @@ export async function POST(request: NextRequest) {
           db.projects.unshift(created);
           return { project: created };
         }
+        case "supplement-material": {
+          if (!project) throw new Error('连续剧不存在');
+          if (busy(project.id)) throw new Error('请先暂停队列，等待当前任务保存断点');
+          const repaired = supplementMaterialFacts(project, body.objectId, body.facts || {}, body.revision);
+          Object.assign(project, repaired);
+          touchProject(project);
+          return { project };
+        }
         case "upsert-object":
         case "delete-object": {
           if (!project) throw new Error("连续剧不存在");
@@ -137,6 +146,7 @@ export async function POST(request: NextRequest) {
             const identityError = fixedObjectIdentityError(project.objects, name, aliases, current?.id);
             if (identityError) throw new Error(identityError);
             const value = {
+              ...current,
               id: current?.id || seriesId('object'), name, aliases, description,
               imageUrl, referenceMode,
               narrativeRequired: current ? current.narrativeRequired : true,

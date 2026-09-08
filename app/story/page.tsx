@@ -1220,7 +1220,7 @@ export default function StoryPage() {
       const source = characterAliasValues(costumeImagesRef.current, voiceLockedCharacters)[name];
       return { id, name, aliases, description, visualDescription: currentVisualIdentity(character, source) ? visualAssetDescription(character, source) : undefined, voiceId, voiceProfile, voiceSource, voiceLocked, gender, ageGroup };
     });
-    const writerObjects = objectsRef.current.map(object => ({ id: object.id, name: object.name, aliases: object.aliases, description: currentVisualIdentity(object) ? `${object.description}\nOriginal image facts (appearance authority): ${visualAssetDescription(object)}` : object.description }));
+    const writerObjects = objectsRef.current.map(object => ({ id: object.id, name: object.name, aliases: object.aliases, description: visualAssetDescription(object) }));
     const activeSettings = settingsRef.current;
     const savedSeriesContract = storyStorageKeys().isolated ? localStorage.getItem(storyStorageKeys().contract) : null;
     // Ordinary stories still need the generic shot-count contract. A series
@@ -1350,9 +1350,7 @@ export default function StoryPage() {
       id: object.id,
       name: object.name,
       aliases: object.aliases,
-      description: currentVisualIdentity(object)
-        ? `${object.description}\nOriginal image facts (appearance authority): ${visualAssetDescription(object)}`
-        : object.description,
+      description: visualAssetDescription(object),
     }));
     const activeSettings = settingsRef.current;
     const savedSeriesContract = storyStorageKeys().isolated

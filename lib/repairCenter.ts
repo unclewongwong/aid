@@ -16,6 +16,8 @@ export interface RepairContext {
 export function diagnoseRepair(error: unknown, context: RepairContext = {}): RepairDecision {
   const message = error instanceof Error ? error.message : String(error || '');
   const decision = (code: string, action: RepairAction, reason: string, automatic = false): RepairDecision => ({ code, action, reason, automatic });
+  if (error instanceof Error && error.name === 'MaterialInformationRequired' || /需要补充素材事实/.test(message))
+    return decision('material-information', 'manual-review', '缺少已确认的素材事实；保留断点，等待用户补充，不自动猜测或重提');
   if (isImageSafetyRejection(error) || /模型拒绝|model.*refus/i.test(message))
     return decision('content-review', 'manual-review', '上游审核拒绝；保留原文与任务，需人工审阅，不自动改写重提');
   if (/invalid_image_file|invalid image file or mode|image size exceeds the limit/i.test(message))
