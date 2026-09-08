@@ -5,6 +5,27 @@ import { buildCharacterBiblePrompt, buildCharacterConceptGridPrompt } from '../l
 import { buildCloudinaryGridCellUrls } from '../lib/gridCloudinary.ts';
 import { buildGptCharacterBiblePrompt, buildGptCharacterConceptPrompt, buildGptSceneReferencePrompt, buildGptCharacterAnchorPrompt } from '../lib/gptImageReferences.ts';
 import { parseImageAppearanceCheck } from '../lib/series/imageAppearanceAudit.ts';
+import { isTransientAutoProductionError } from '../lib/autoProduction.ts';
+
+test('ordinary character portraits preserve the brief without unrelated fitting or creature instructions', () => {
+  const description = '成年女性，妆容精致，身形利落，服装和配饰讲究，常用明亮色或高级感中性色；始终重视名牌包、餐桌摆盘和自拍状态，情绪变化从兴奋张扬到短暂嘴硬、迟疑，最后松弛下来。';
+  const prompt = buildGptCharacterAnchorPrompt({ name: '小雨', description, costumeDesc: '米色外套与耳饰', age: '成年', hasIdentityReference: false });
+  assert.ok(prompt.includes(description));
+  assert.match(prompt, /米色外套与耳饰/);
+  assert.match(prompt, /AGE: 成年/);
+  assert.match(prompt, /retain the specified makeup/);
+  assert.doesNotMatch(prompt, /Image 1|References lock|merfolk|tail|creature|fitting.room|wardrobe fitting|physically present|do not invent.*makeup/i);
+  assert.ok(prompt.length < 1200);
+  assert.equal(isTransientAutoProductionError('The generated content was filtered by the safety system.'), false);
+});
+
+test('portrait reference and authored age remain authoritative without making everyone an adult', () => {
+  const prompt = buildGptCharacterAnchorPrompt({ name: 'Mira', description: 'A young mermaid in a green coat', age: '10', hasIdentityReference: true });
+  assert.match(prompt, /Image 1 defines/);
+  assert.match(prompt, /AGE: 10/);
+  assert.match(prompt, /fish tail/);
+  assert.doesNotMatch(prompt, /adult|over 21|wardrobe fitting/i);
+});
 
 test('photographic anchor keeps merfolk anatomy without requesting a multi-view layout', () => {
   const prompt = buildGptCharacterAnchorPrompt({name:'Luna',description:'A mermaid with a silver hair streak',hasIdentityReference:true});

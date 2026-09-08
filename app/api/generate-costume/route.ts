@@ -11,13 +11,13 @@ import { buildCharacterExtensionPrompt, buildInheritedScenePrompt } from '@/lib/
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, name, description, costumeDesc, sceneStyle, representativeShot, storyCharacterNames, referenceImageUrl, appearanceCorrection, aspectRatio, imageModel, apiKey, visualStyle, styleReference, capturePreset, comfyui = {}, midjourneyProfile = '', midjourneyStyle = {}, imageSubmissionKey } = body;
+    const { type, name, age, role, description, costumeDesc, sceneStyle, representativeShot, storyCharacterNames, referenceImageUrl, appearanceCorrection, aspectRatio, imageModel, apiKey, visualStyle, styleReference, capturePreset, comfyui = {}, midjourneyProfile = '', midjourneyStyle = {}, imageSubmissionKey } = body;
     const selectedModel = imageModel || 'seedream-5-0-pro';
     if (imageModelRequiresApiKey(selectedModel) && !apiKey) return NextResponse.json({ error: 'API Key is required' }, { status: 400 });
 
     let prompt = '';
     if (type === 'costume-anchor' && isGptImage2Model(selectedModel) && usesPhotographicReferences(visualStyle)) {
-      prompt = buildGptCharacterAnchorPrompt({ name, description, costumeDesc, hasIdentityReference: Boolean(referenceImageUrl), visualStyle });
+      prompt = buildGptCharacterAnchorPrompt({ name, age, role, description, costumeDesc, hasIdentityReference: Boolean(referenceImageUrl), visualStyle });
       if (typeof appearanceCorrection === 'string' && appearanceCorrection.trim()) prompt += `\nCorrect these observed rendering defects only; preserve identity, species and costume: ${appearanceCorrection.slice(0, 1400)}`;
     } else if (type === 'costume') {
       prompt = body.inheritReferenceLook && referenceImageUrl

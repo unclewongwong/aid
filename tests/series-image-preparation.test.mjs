@@ -107,3 +107,12 @@ test('a storage outage after provider review retains the original task for anoth
  assert.equal(asset.imageIssue.kind,'review');
  assert.equal(await prepareSeriesImage(asset,ops({...operations,persist:async url=>url})),'approved-result');
 });
+
+
+test('GPT output filtering is a review rejection and queue resume never buys a replacement', async () => {
+ const asset={imageTaskId:'filtered-gpt-task'};let submissions=0;
+ const operations=ops({submit:async()=>{submissions++;return 'unexpected';},poll:async()=>({status:'failed',error:'The generated content was filtered by the safety system.'})});
+ await assert.rejects(prepareSeriesImage(asset,operations),SeriesImagePreparationError);
+ await assert.rejects(prepareSeriesImage(asset,operations),SeriesImagePreparationError);
+ assert.equal(asset.imageIssue.kind,'review');assert.equal(asset.imageTaskId,'filtered-gpt-task');assert.equal(submissions,0);
+});

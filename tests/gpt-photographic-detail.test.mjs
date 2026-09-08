@@ -55,7 +55,7 @@ test('character anchor and sheets retain their different layouts without macro o
   const anchor = buildGptCharacterAnchorPrompt(input);
   const card = buildGptCharacterBiblePrompt(input);
   const casting = buildGptCharacterConceptPrompt({ ...input, candidateCount: 4, hasReferences: true });
-  assert.match(anchor, /live-action wardrobe fitting/);
+  assert.match(anchor, /photorealistic portrait/);
   assert.match(anchor, /Natural skin and hair/);
   assert.doesNotMatch(anchor, /radial iris|microcontrast|highlight roll-off|material response/);
   assert.match(card, /Apply separately at each view/);

@@ -13,14 +13,24 @@ export const PHOTOGRAPHIC_IDENTITY_RULE = 'References lock face/head, age, speci
 const fittingLight = 'For this wardrobe fitting, use broad window daylight from one side with gentle room bounce, natural color and restrained contrast, unless the brief specifies a different light setup.';
 
 export function buildGptCharacterAnchorPrompt(input: Parameters<typeof buildCharacterBiblePrompt>[0]): string {
-  return `A candid photograph of ${input.name || 'the specified character'} during a live-action wardrobe fitting. The performer or practical creature is physically present, quietly occupied rather than posing for publicity.
-${input.hasIdentityReference ? 'Image 1 defines only the recognizable facial/head structure, age, hairstyle, markings and exact costume design. Keep the same character and species.' : 'Establish the character from the written brief, preserving the specified age and species.'}
-${input.description || ''}
-${PHOTOGRAPHIC_IDENTITY_RULE}
-${input.costumeDesc || ''}
-One medium close-up at eye level, with the head and costume readable. Plain fitting-room background. ${fittingLight} Makeup sits on real skin where appropriate; clothing is a sewn garment, not a sculpted surface.
-${buildGptPhotographicDetail({ view: 'portrait' })}
-One photograph only, no character sheet, labels or extra views. Preserve the approved anatomy even where it is outside the crop.`;
+  // Describe the requested portrait, without injecting a changing-room scene or
+  // unrelated creature/body instructions into every human character request.
+  const brief = [input.description, input.costumeDesc, input.role].filter(Boolean).join(' ');
+  const merfolk = /mermaid|merman|merfolk|人鱼|魚人|鱼尾|魚尾/i.test(brief);
+  return [
+    `Create one photorealistic portrait of ${input.name || 'the specified character'} for a story character reference.`,
+    input.hasIdentityReference
+      ? 'Image 1 defines this character’s face or head, age, hairstyle and outfit. Preserve that design in the requested photographic medium.'
+      : 'Create the character from the written brief below; preserve the stated age and appearance.',
+    input.age ? `AGE: ${input.age}` : '',
+    input.role ? `ROLE: ${input.role}` : '',
+    input.description || '',
+    input.costumeDesc ? `OUTFIT: ${input.costumeDesc}` : '',
+    'One eye-level, chest-up portrait against a plain neutral backdrop. The character wears the complete outfit described in the brief, with the face, hairstyle and clothing clearly readable. Use a relaxed, natural expression unless another expression is specified.',
+    'Soft daylight and natural color. Natural skin and hair; retain the specified makeup and distinguishing features. Keep the stated age, proportions and character design.',
+    merfolk ? 'Merfolk retain their fish tail, never human legs or shoes; a tail outside this portrait crop need not be shown.' : '',
+    'One photograph only, no character sheet, labels or extra views.',
+  ].filter(Boolean).join('\n');
 }
 
 export function buildGptCharacterBiblePrompt(input: Parameters<typeof buildCharacterBiblePrompt>[0]): string {
