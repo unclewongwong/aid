@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "node scripts/prepare-netlify-sharp.mjs && npm run build"
   publish = ".next"
 
 [functions]
