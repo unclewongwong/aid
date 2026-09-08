@@ -14,6 +14,7 @@ export function videoAudioCapability(provider = 'apimart', model = '') {
 export function videoVoiceNotice(provider = 'apimart', model = '') {
   const capability = videoAudioCapability(provider, model);
   if (capability.kind !== 'timbre') return '声音将由模型自动生成，无法指定音色。' + (capability.kind === 'driver' ? '此模型的音频输入用于驱动对白或配乐，不能作为 Fish 音色参考。' : '');
+  if (provider === 'apimart' && normalizeVideoModel(model) === 'seedance-2.0-mini') return '支持最多 3 个音色参考，提交副本合计不超过 10 秒，多角色共享额度；原音频保留。请使用参考图模式。';
   return `支持音色参考，每次最多 ${capability.max} 个；音色相似度由模型决定。` + (provider === 'comfyui' ? '' : '首尾帧模式不能同时使用音色参考，请使用参考图模式。');
 }
 
@@ -33,7 +34,8 @@ export function selectVideoVoiceReferences(provider: string, model: string, name
  * Bound each delivery derivative so multiple voices share the API's 15s budget.
  * The original calibration remains intact for ComfyUI and later reuse.
  */
-export function apiVoiceReferenceUrls(references: Array<{ name: string; url: string }>): string[] {
+export function apiVoiceReferenceUrls(references: Array<{ name: string; url: string }>, model = ''): string[] {
+  if (normalizeVideoModel(model) === 'seedance-2.0-mini') return references.map(ref => ref.url);
   const seconds = Math.floor(14.7 / Math.max(1, references.length) * 100) / 100;
   return references.map(({ url }) => {
     if (!/^https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\//.test(url)) return url;

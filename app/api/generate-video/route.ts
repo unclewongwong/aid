@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
     console.log('Using model:', videoModel || 'sora-2');
 
     const selectedReferences = await recoverApiVoiceReferences(selectVideoVoiceReferences('apimart', videoModel || '', speakingCharacterNames(storyboard), voiceReferences));
-    const audioUrls = apiVoiceReferenceUrls(selectedReferences);
+    const audioUrls = apiVoiceReferenceUrls(selectedReferences, videoModel || '');
     for (let index = 0; index < audioUrls.length; index++) {
       if (audioUrls[index] !== selectedReferences[index].url && !await publicAudioAvailable(audioUrls[index]))
         throw new Error(`角色“${selectedReferences[index].name}”的裁切音色链接不可读取；未提交新的视频生成。`);

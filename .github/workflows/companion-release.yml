@@ -73,6 +73,7 @@ jobs:
       - run: npm run test:video-segments
       - run: npm run test:video-pacing
       - run: npm run test:api-video-references
+      - run: npm run test:seedance-mini
       - run: npm run test:wan3-video
       - run: node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/film-ending.test.mjs
       - run: npm run test:project-isolation

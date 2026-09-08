@@ -1,3 +1,4 @@
+import { seedanceAudioDelivery } from '../lib/seedanceAudioDelivery.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import axios from 'axios';
@@ -9,6 +10,7 @@ const audio = 'https://example.com/voice.wav';
 const video = 'https://example.com/reference.mp4';
 
 function capture(t) {
+  t.mock.method(seedanceAudioDelivery, 'prepare', async urls => urls);
   const calls = [];
   t.mock.method(axios, 'post', async (url, body, config) => {
     calls.push({ url, body, config });

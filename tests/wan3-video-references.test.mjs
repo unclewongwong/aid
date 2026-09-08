@@ -1,3 +1,4 @@
+import { seedanceAudioDelivery } from '../lib/seedanceAudioDelivery.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import axios from 'axios';
@@ -6,6 +7,7 @@ import { apiVoiceReferenceUrls, selectVideoVoiceReferences, videoAudioCapability
 import { generateStoryboardVideo } from '../lib/videoGenerator.ts';
 const image = 'https://example.com/frame.png', audio = 'https://example.com/voice.wav';
 function capture(t) {
+  t.mock.method(seedanceAudioDelivery, 'prepare', async urls => urls);
   const calls = [];
   t.mock.method(axios, 'post', async (url, body) => { calls.push(body); return { data: { data: [{ task_id: 'task' }] } }; });
   t.mock.method(console, 'log', () => {}); t.mock.method(console, 'error', () => {});

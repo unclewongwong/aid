@@ -1,3 +1,4 @@
+import { resolvePublicIpv4 } from './publicDns';
 import https from 'node:https';
 import dns from 'node:dns';
 import { BlockList, isIP } from 'node:net';
@@ -23,7 +24,19 @@ const mediaAgent = new https.Agent({ keepAlive: true, lookup(hostname, options, 
   });
 } });
 
-export async function readMediaSource(source: string | Buffer, limit: number): Promise<Buffer> {
+// Desktop VPN DNS may return fake private addresses for a public media host.
+// Resolve through public DNS when explicitly requested, then validate the exact
+// addresses passed to the socket with the same private-network restrictions.
+const publicMediaAgent = new https.Agent({ keepAlive: true, lookup(hostname, options, callback) {
+  resolvePublicIpv4(hostname).then(addresses => {
+    if (!addresses.length || addresses.some(address => !isPublicMediaAddress(address)))
+      throw new Error('媒体地址不能指向本地或内网');
+    if ((options as any).all) (callback as any)(null, addresses.map(address => ({ address, family: 4 })));
+    else (callback as any)(null, addresses[0], 4);
+  }).catch(error => (callback as any)(error));
+} });
+
+export async function readMediaSource(source: string | Buffer, limit: number, publicDns = false): Promise<Buffer> {
   if (Buffer.isBuffer(source)) {
     if (!source.length || source.length > limit) throw new Error('媒体为空或超过大小限制');
     return source;
@@ -38,7 +51,7 @@ export async function readMediaSource(source: string | Buffer, limit: number): P
   if (url.protocol !== 'https:' || url.username || url.password || url.port || (isIP(host) && !isPublicMediaAddress(host)))
     throw new Error('媒体需要公开 HTTPS 地址或图片/音视频数据');
   return new Promise((resolve, reject) => {
-    const request = https.get(url, { agent: mediaAgent, signal: AbortSignal.timeout(120_000), headers: { Referer: 'https://apimart.ai/', Accept: '*/*' } }, response => {
+    const request = https.get(url, { agent: publicDns ? publicMediaAgent : mediaAgent, signal: AbortSignal.timeout(120_000), headers: { Referer: 'https://apimart.ai/', Accept: '*/*' } }, response => {
       if (response.statusCode !== 200) { response.resume(); reject(new Error(`媒体下载失败（${response.statusCode}）`)); return; }
       if (Number(response.headers['content-length']) > limit) { response.destroy(); reject(new Error('媒体超过大小限制')); return; }
       const chunks: Buffer[] = []; let size = 0;

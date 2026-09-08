@@ -1,3 +1,4 @@
+import { seedanceAudioDelivery } from './seedanceAudioDelivery';
 import { videoImageCapability, validateVideoImageCount } from './videoImageCapabilities';
 import { videoAudioCapability } from './videoCapabilities';
 import axios from 'axios';
@@ -341,12 +342,6 @@ function ensureCloudinaryMinHeight(url: string): string {
   return url.replace('/upload/', '/upload/if_h_lt_300/c_scale,h_300/if_end/');
 }
 
-// Seedance/Doubao 要求音频时长在 1.8s–15.2s，对 Cloudinary URL 加条件处理
-function ensureCloudinaryAudioDuration(url: string): string {
-  if (!url.includes('res.cloudinary.com/')) return url;
-  return url.replace('/upload/', '/upload/if_du_lt_1.8/du_1.8/if_end/eo_15.2/');
-}
-
 /**
  * 将期望时长（秒）对齐到指定模型允许的最近合法值。
  */
@@ -630,6 +625,10 @@ export async function createVideoTask(
       if (referenceImageUrls.length + roles.length > (mode === 'frame' ? 2 : 10) || audios.length > 5 || videos.length > 5) throw new Error('Wan 3.0 最多 2 张首尾帧或 10 张参考图、5 个音频、5 个视频');
       requestBody.generation_type = mode;
       if (audios.length) requestBody.audio_urls = audios;
+    }
+
+    if (isSeedanceMini && requestBody.audio_urls?.length) {
+      requestBody.audio_urls = await seedanceAudioDelivery.prepare(requestBody.audio_urls);
     }
 
     console.log('=== Video Generation Request ===');

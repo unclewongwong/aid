@@ -107,6 +107,7 @@ test('media validation uses real formats and only trusts the configured delivery
   for (const address of ['127.0.0.1', '10.0.0.1', '169.254.169.254', '192.168.0.1', '::1', '::ffff:127.0.0.1', 'fe80::1']) assert.equal(isPublicMediaAddress(address), false, address);
   assert.equal(isPublicMediaAddress('1.1.1.1'), true);
   await assert.rejects(readMediaSource('https://127.0.0.1/test', 1000));
+  await assert.rejects(readMediaSource('https://127.0.0.1/test', 1000, true));
   await assert.rejects(readMediaSource(Buffer.alloc(1001), 1000));
 }));
 
