@@ -46,7 +46,7 @@ def _t8_dual_clock_setup(model, latent, steps, scheduler, shift_video, shift_aud
     sampler_class = NODE_CLASS_MAPPINGS.get("MiniMaxH3DualClockSamplerT8")
     if sampler_class is None:
         raise RuntimeError(
-            "AID four-step Director requires MiniMaxH3DualClockSamplerT8 on this older ComfyUI core"
+            "AID 4/8-step Director requires MiniMaxH3DualClockSamplerT8 on this older ComfyUI core"
         )
     package = sampler_class.__module__.rsplit(".", 1)[0]
     sampling = importlib.import_module(f"{package}.sampling")
