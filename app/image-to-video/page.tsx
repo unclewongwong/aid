@@ -12,6 +12,8 @@ import { useSettings } from '@/hooks/useSettings';
 import { assertH3EightTurboSupport, companionVersionAtLeast, comfyUIApiUrl, downloadComfyUIVideo, H3_DIRECTOR_COMPANION_MIN_VERSION, isComfyUIClientTask, localComfyUISettings, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
 import { DIRECTOR_DURATIONS, validateDirectorPlan, type DirectorPlan } from '@/lib/h3Director';
+import { createImageReferenceUploader } from '@/lib/storyImageRequest';
+import { videoImageCapability, validateVideoImageCount } from '@/lib/videoImageCapabilities';
 import { readApiJson } from '@/lib/apiResponse';
 
 const MAX_COMFYUI_REFERENCE_IMAGES = 5;
@@ -24,6 +26,8 @@ export default function ImageToVideoPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(true);
   const [mainImage, setMainImage] = useState<string | null>(null);
+  const imageUploader = useRef<ReturnType<typeof createImageReferenceUploader> | null>(null);
+  const [isReadingImages, setIsReadingImages] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [secondImage, setSecondImage] = useState<string | null>(null);
   const [videoFiles, setVideoFiles] = useState<string[]>([]);
@@ -86,9 +90,16 @@ export default function ImageToVideoPage() {
   const isOmniFlashExt = !isComfyUI && !isFal && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && !isFal && modelName.includes('grok-imagine');
   const isSeedanceMini = !isComfyUI && !isFal && modelName === 'seedance-2.0-mini';
+  const isVeo31 = !isComfyUI && !isFal && ['veo3.1-fast', 'veo3.1-quality'].includes(modelName);
+  useLayoutEffect(() => { if (isVeo31) setDuration(8); }, [isVeo31]);
   const isWan3 = !isComfyUI && !isFal && modelName === 'wan3.0-video';
   const [referenceMode, setReferenceMode] = useState<'frame' | 'reference'>('reference');
-  const supportsReferenceMode = isWan3 || isSeedanceMini || (!isComfyUI && !isFal && modelName.includes('minimax-h3'));
+  const imageCapability = videoImageCapability(videoProvider, settings.videoModel);
+  const supportsReferenceMode = !isComfyUI && imageCapability.referenceImages > 0 && imageCapability.frameImages > 0;
+  const apiReferenceMode = !isComfyUI && imageCapability.referenceImages > 0 && (!imageCapability.frameImages || referenceMode === 'reference');
+  const multiReferenceMode = apiReferenceMode || (isComfyUI && comfyWorkflowMode === 'multi_reference');
+  const maxReferenceImages = isComfyUI ? MAX_COMFYUI_REFERENCE_IMAGES : imageCapability.referenceImages;
+  const firstImageIsReference = apiReferenceMode || (isComfyUI && comfyWorkflowMode !== 'first_last' && !isDirector);
   const isMiniMaxH3 = isComfyUI || isFal || modelName.includes('minimax-h3');
   const supportsH3VoiceReference = isComfyUI || (!isFal && modelName.includes('minimax-h3'));
 
@@ -100,24 +111,31 @@ export default function ImageToVideoPage() {
     if (isFal) setQuality(settings.fal?.resolution === '480P' ? '480p' : '720p');
   }, [isFal, settings.fal?.resolution]);
 
-  // 第二张图的语义按模型区分：
-  // - seedance/doubao/wan/veo 支持首尾帧 → last_frame
-  // - grok-imagine 只有参考图概念 → reference
-  // - sora-2 最多 1 张图、omni-flash-ext 不支持 2 张图、happyhorse 首帧与参考图互斥 → none
-  const secondImageMode: 'last_frame' | 'reference' | 'none' =
-    supportsReferenceMode && referenceMode === 'reference' ? 'reference' : isComfyUI
-      ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
-      : isFal
-        ? 'last_frame'
-      : modelName.includes('seedance') || modelName.includes('doubao') || modelName.includes('wan') ||
-    modelName.includes('veo') || isMiniMaxH3
-      ? 'last_frame'
-      : isGrokImagine
-        ? 'reference'
-        : 'none';
-  const durationMin = isWan3 ? 2 : isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
-  const durationMax = isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine || isWan3 ? 30 : 15);
-  const durationOptions = isDirector ? DIRECTOR_DURATIONS : isOmniFlashExt ? [4, 6, 8, 10] : undefined;
+  const secondImageMode: 'last_frame' | 'reference' | 'none' = isComfyUI
+    ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
+    : !apiReferenceMode && imageCapability.frameImages === 2 ? 'last_frame' : 'none';
+  const durationMin = isVeo31 ? 8 : isWan3 ? 2 : isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
+  const durationMax = isVeo31 ? 8 : isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine || isWan3 ? 30 : 15);
+  const durationOptions = isVeo31 ? [8] : isDirector ? DIRECTOR_DURATIONS : isOmniFlashExt ? [4, 6, 8, 10] : undefined;
+
+  const generationBlockedReason = (() => {
+    if (isGenerating) return '视频任务正在提交或生成，请等待当前任务完成。';
+    if (isPlanning) return '正在整理长视频分段，请稍候。';
+    if (isReadingImages) return '正在读取参考图，请稍候。';
+    if (activeTask?.state === 'pending') return '已有任务编号待查询，请先继续查询已有任务；刷新页面不会取消后台生成。';
+    if (!mainImage) return firstImageIsReference ? '请先上传第一张参考图。' : '请先上传首帧图片。';
+    if (!prompt.trim()) return '请填写视频动作和声音提示词。';
+    if (isDirector && hasDirectorExtraMedia) return '连续长视频只接受一张起始图，请清除额外参考素材。';
+    if (isComfyUI && comfyWorkflowMode === 'first_last' && !secondImage) return '首尾帧模式还需要上传尾帧。';
+    if (isComfyUI && comfyWorkflowMode === 'multi_reference' && !referenceImages.length) return 'ComfyUI 多图参考至少需要两张图，请再添加一张。';
+    if (!multiReferenceMode && referenceImages.length) return '当前模式不使用额外参考图，请移除或切回多图参考。';
+    if (secondImageMode === 'none' && secondImage) return '当前模式不使用尾帧，请移除尾帧或切回首尾帧模式。';
+    if (!isComfyUI) {
+      try { validateVideoImageCount(imageCapability, apiReferenceMode ? 'reference' : 'frame', 1 + (apiReferenceMode ? referenceImages.length : secondImage ? 1 : 0)); }
+      catch (error) { return error instanceof Error ? error.message : '参考图数量不符合模型要求。'; }
+    }
+    return '';
+  })();
 
   // 当切换到 Omni-Flash-Ext 时，自动调整 duration
   if (isOmniFlashExt && ![4, 6, 8, 10].includes(duration)) {
@@ -165,32 +183,25 @@ export default function ImageToVideoPage() {
   };
 
   const handleReferenceImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const available = MAX_COMFYUI_REFERENCE_IMAGES - 1 - referenceImages.length;
-    if (available <= 0) {
-      alert(`MiniMax H3 多图参考最多使用 ${MAX_COMFYUI_REFERENCE_IMAGES} 张图片`);
-      e.target.value = '';
-      return;
+    const input = e.target;
+    const files = Array.from(input.files || []);
+    if (!files.length || isReadingImages) return;
+    const available = maxReferenceImages - 1 - referenceImages.length;
+    if (files.length > available) { alert(`最多还能添加 ${Math.max(0, available)} 张图片（总计上限 ${maxReferenceImages} 张）；本次未添加或截断图片`); input.value = ''; return; }
+    if (files.some(file => !['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 6 * 1024 * 1024)) {
+      alert('请上传小于 6MB 的 PNG、JPEG 或 WebP 图片'); input.value = ''; return;
     }
-    const accepted = files.slice(0, available);
-    if (files.length > available) {
-      alert(`最多还能添加 ${available} 张图片（总计上限 ${MAX_COMFYUI_REFERENCE_IMAGES} 张）`);
-    }
-    const maxSize = 6 * 1024 * 1024;
-    const oversized = accepted.find(file => file.size > maxSize);
-    if (oversized) {
-      alert(`${oversized.name} 超过 6MB，请选择更小的图片`);
-      e.target.value = '';
-      return;
-    }
-    const values = await Promise.all(accepted.map(file => new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = event => resolve(event.target?.result as string);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    })));
-    setReferenceImages(previous => [...previous, ...values].slice(0, MAX_COMFYUI_REFERENCE_IMAGES - 1));
-    e.target.value = '';
+    setIsReadingImages(true);
+    try {
+      const values = await Promise.all(files.map(file => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target?.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      })));
+      setReferenceImages(previous => [...previous, ...values]);
+    } catch { alert('图片读取失败，请重新选择'); }
+    finally { input.value = ''; setIsReadingImages(false); }
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -360,7 +371,13 @@ export default function ImageToVideoPage() {
   };
 
   const handleGenerate = async () => {
-    if (isGenerating || isPlanning) return;
+    if (isGenerating || isPlanning || isReadingImages) return;
+    if (!multiReferenceMode && referenceImages.length) { alert('当前模式不使用这些额外参考图，请先移除或切回多图参考模式'); return; }
+    if (secondImageMode === 'none' && secondImage) { alert('当前模式不使用尾帧，请先移除尾帧或切回首尾帧模式'); return; }
+    if (!isComfyUI) {
+      try { validateVideoImageCount(imageCapability, apiReferenceMode ? 'reference' : 'frame', (mainImage ? 1 : 0) + (apiReferenceMode ? referenceImages.length : secondImage ? 1 : 0)); }
+      catch (error) { alert(error instanceof Error ? error.message : '图片数量不符合模型要求'); return; }
+    }
     const audioCapability = videoAudioCapability(videoProvider, settings.videoModel);
     const audioCount = audioFiles.length + audioUrls.length;
     if (audioCount > audioCapability.max) { alert(`当前模型最多接受 ${audioCapability.max} 个音频输入，请移除多余音频`); return; }
@@ -411,6 +428,9 @@ export default function ImageToVideoPage() {
       }
       setTaskMessage('正在上传素材并提交视频任务…');
 
+      const selectedReferences = multiReferenceMode ? referenceImages : secondImage ? [secondImage] : [];
+      imageUploader.current ||= createImageReferenceUploader();
+      const submittedImages = isComfyUI ? [mainImage, ...selectedReferences] : await Promise.all([mainImage, ...selectedReferences].map(imageUploader.current));
       const generationUrl = videoProvider === 'comfyui'
         ? comfyUIApiUrl('/api/image-to-video', settings.comfyui)
         : '/api/image-to-video';
@@ -418,11 +438,9 @@ export default function ImageToVideoPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mainImage,
-          referenceImages: isComfyUI && comfyWorkflowMode === 'multi_reference'
-            ? referenceImages
-            : secondImage ? [secondImage] : [],
-          secondImageRole: isComfyUI && comfyWorkflowMode === 'multi_reference'
+          mainImage: submittedImages[0],
+          referenceImages: submittedImages.slice(1),
+          secondImageRole: multiReferenceMode
             ? 'reference'
             : secondImage ? secondImageMode : undefined,
           comfyWorkflowMode: isComfyUI ? comfyWorkflowMode : undefined,
@@ -430,7 +448,7 @@ export default function ImageToVideoPage() {
           prompt: fullPrompt,
           aspectRatio,
           duration,
-          generationType: supportsReferenceMode ? referenceMode : undefined,
+          generationType: !isComfyUI ? apiReferenceMode ? 'reference' : 'frame' : undefined,
           quality: isGrokImagine || isFal || isSeedanceMini || isWan3 ? quality : undefined,
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,
@@ -574,12 +592,14 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
+              {secondImage && <button type="button" className="text-xs text-red-300" onClick={() => setSecondImage(null)}>移除尾帧{secondImageMode === 'none' ? '（当前模式不使用）' : ''}</button>}
+              {supportsReferenceMode && <label className="block text-sm">图片用途<select aria-label="图片用途" className="ml-3 rounded bg-[var(--bg-secondary)] p-2" value={referenceMode} onChange={e => setReferenceMode(e.target.value as 'frame' | 'reference')}><option value="reference">多图参考</option><option value="frame">{imageCapability.frameImages === 1 ? '指定首帧' : '指定首尾帧'}</option></select></label>}
               {/* First Frame and Second Image (Last Frame / Reference) */}
               <div className={`grid grid-cols-1 ${secondImageMode !== 'none' ? 'md:grid-cols-2' : ''} gap-4`}>
                 {/* First Frame */}
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">
-                    {isComfyUI && comfyWorkflowMode !== 'first_last' && !isDirector ? 'Reference Image 1' : 'First Frame'}
+                    {firstImageIsReference ? 'Reference Image 1' : 'First Frame'}
                   </h2>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">Image size &lt; 6MB</p>
                   <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center bg-[var(--bg-secondary)]">
@@ -589,13 +609,13 @@ export default function ImageToVideoPage() {
                       <div>
                         <Upload className="w-10 h-10 mx-auto mb-3 text-[var(--text-secondary)]" />
                         <p className="text-[var(--text-secondary)] text-sm mb-3">
-                          {isComfyUI && comfyWorkflowMode !== 'first_last' && !isDirector ? 'Upload reference image' : 'Upload first frame'}
+                          {firstImageIsReference ? 'Upload reference image' : 'Upload first frame'}
                         </p>
                       </div>
                     )}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleMainImageUpload}
                       className="hidden"
                       id="main-image-upload"
@@ -635,7 +655,7 @@ export default function ImageToVideoPage() {
                     )}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleSecondImageUpload}
                       className="hidden"
                       id="second-image-upload"
@@ -651,17 +671,17 @@ export default function ImageToVideoPage() {
                 )}
               </div>
 
-              {isComfyUI && comfyWorkflowMode === 'multi_reference' && (
+              {(multiReferenceMode || referenceImages.length > 0) && (
                 <div className="space-y-3">
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <h2 className="text-sm font-mono text-[var(--text-primary)]">Additional Reference Images</h2>
                       <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                        再添加 1–4 张；与 Reference Image 1 合计 2–5 张，每张小于 6MB
+                        {multiReferenceMode ? `含第一张图片，最多 ${maxReferenceImages} 张；按编号传入，每张小于 6MB。${imageCapability.referenceCounts && !isComfyUI ? '该模型只接受 1 或 3 张。' : ''}` : '这些图片不适用于当前模式，请移除或切回多图参考。'}
                       </p>
                     </div>
                     <span className="shrink-0 text-xs font-mono text-[var(--accent-green)]">
-                      已选择 {(mainImage ? 1 : 0) + referenceImages.length} / {MAX_COMFYUI_REFERENCE_IMAGES}
+                      已选择 {(mainImage ? 1 : 0) + referenceImages.length} / {multiReferenceMode ? maxReferenceImages : '当前模式不适用'}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -681,9 +701,9 @@ export default function ImageToVideoPage() {
                         </button>
                       </div>
                     ))}
-                    {referenceImages.length < MAX_COMFYUI_REFERENCE_IMAGES - 1 && (
+                    {multiReferenceMode && !isReadingImages && referenceImages.length < maxReferenceImages - 1 && (
                       <label
-                        htmlFor="comfyui-reference-images-upload"
+                        htmlFor="reference-images-upload"
                         className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)] text-center hover:border-[var(--accent-blue)]"
                       >
                         <Upload className="mb-2 h-7 w-7 text-[var(--text-secondary)]" />
@@ -693,10 +713,11 @@ export default function ImageToVideoPage() {
                     )}
                   </div>
                   <input
-                    id="comfyui-reference-images-upload"
+                    id="reference-images-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,image/webp"
                     multiple
+                    disabled={isReadingImages || !multiReferenceMode}
                     onChange={handleReferenceImagesUpload}
                     className="hidden"
                   />
@@ -768,7 +789,6 @@ export default function ImageToVideoPage() {
               <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, settings.videoModel)}</p>
               {(audioFiles.length > 0 || audioUrls.length > 0) && <button className="text-xs text-red-300" onClick={() => { setAudioFiles([]); setAudioUrls([]); setAudioDurations([]); }}>清除参考音频（{audioFiles.length + audioUrls.length}）</button>}
               {(videoFiles.length > 0 || videoUrls.length > 0) && <button className="text-xs text-red-300" onClick={() => { setVideoFiles([]); setVideoUrls([]); }}>清除参考视频（{videoFiles.length + videoUrls.length}）</button>}
-              {supportsReferenceMode && <label className="block text-sm">图片用途<select className="ml-3 rounded bg-[var(--bg-secondary)] p-2" value={referenceMode} onChange={e => setReferenceMode(e.target.value as 'frame' | 'reference')}><option value="reference">参考图 · 可搭配音色参考</option><option value="frame">首尾帧 · 不可搭配参考音视频</option></select></label>}
               {/* Quality - Grok Imagine / fal H3 Max / Seedance Mini */}
               {(isGrokImagine || isFal || isSeedanceMini || isWan3) && (
                 <div>
@@ -941,10 +961,16 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
+              {generationBlockedReason && <div id="video-generation-blocker" role="status" className="space-y-2 text-sm text-[var(--text-secondary)]">
+                <p>{generationBlockedReason}</p>
+                {activeTask?.state === 'pending' && !isGenerating && !isPlanning && <button type="button" className="text-[var(--accent-blue)] underline" onClick={() => void pollTaskStatus(activeTask)}>继续查询已有任务</button>}
+              </div>}
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || isPlanning || activeTask?.state === 'pending' || !mainImage || !prompt || (isComfyUI && comfyWorkflowMode === 'first_last' && !secondImage) || (isComfyUI && comfyWorkflowMode === 'multi_reference' && referenceImages.length < 1) || (isDirector && hasDirectorExtraMedia)}
+                disabled={Boolean(generationBlockedReason)}
+                aria-describedby={generationBlockedReason ? "video-generation-blocker" : undefined}
+                title={generationBlockedReason || undefined}
                 className="w-full py-3 bg-[var(--accent-blue)] hover:bg-[#006bb3] disabled:opacity-50 disabled:cursor-not-allowed rounded font-mono text-sm text-white flex items-center justify-center gap-2"
               >
                 <Video className="w-4 h-4" />

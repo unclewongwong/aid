@@ -7,11 +7,15 @@ import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
 import { createFalH3MaxVideoTask } from '@/lib/falVideo';
 import { buildChineseH3RewritePrompt, h3VisualPromptIsChinese, parseChineseH3Rewrite } from '@/lib/h3PromptLanguage';
 import { chatOnce } from '@/lib/pipeline/llm';
+import { videoImageCapability, validateVideoImageCount } from '@/lib/videoImageCapabilities';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 async function uploadBase64ToCloudinary(base64Data: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
+  // Browser uploads use scoped direct storage, keeping multi-image requests
+  // below the website gateway limit. Do not download/re-upload hosted inputs.
+  if (/^https?:\/\//i.test(base64Data)) return base64Data;
   try {
     const result = await uploadToCloudinary(base64Data, {
       folder: 'aid-video',
@@ -54,6 +58,15 @@ export async function POST(request: NextRequest) {
 
     if (!mainImage || !prompt) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+    }
+    if (videoProvider !== 'comfyui') {
+      try {
+        if (!Array.isArray(referenceImages) || referenceImages.some(image => typeof image !== 'string' || !image)) throw new Error('参考图格式无效');
+        if (generationType !== undefined && !['frame', 'reference'].includes(generationType)) throw new Error('图片用途无效');
+        const capability = videoImageCapability(videoProvider, videoModel);
+        const mode = generationType || (secondImageRole === 'last_frame' || imageRoles.some((r: { role: string }) => r.role !== 'reference_image') || !capability.referenceImages ? 'frame' : 'reference');
+        validateVideoImageCount(capability, mode, imageRoles.length || 1 + referenceImages.length);
+      } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : '参考图数量无效' }, { status: 400 }); }
     }
     const isH3Request = videoProvider === 'comfyui' || videoProvider === 'fal' || /minimax[- ]?h3/i.test(String(videoModel || ''));
     let localizedPrompt = String(prompt).trim();

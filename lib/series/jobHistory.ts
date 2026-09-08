@@ -9,6 +9,7 @@ export function partitionSeriesJobs(jobs: SeriesJob[]) {
     Date.parse(b.job.updatedAt || b.job.createdAt) - Date.parse(a.job.updatedAt || a.job.createdAt) || b.index - a.index);
   const latest: SeriesJob[] = [], current: SeriesJob[] = [], history: SeriesJob[] = [];
   for (const { job } of ordered) {
+    if (job.supersededByVideoModel) { history.push(job); continue; }
     const previous = latest.find(other => sameSeriesJobScope(job, other));
     if (!previous || ['queued', 'running', 'paused'].includes(job.status)) current.push(job);
     else history.push(job);
@@ -18,6 +19,7 @@ export function partitionSeriesJobs(jobs: SeriesJob[]) {
 }
 
 export function seriesRetryBlocker(job: SeriesJob, jobs: SeriesJob[]): string {
+  if (job.supersededByVideoModel) return '该任务已由新视频模型接替，请使用当前任务';
   const related = jobs.filter(other => sameSeriesJobScope(job, other));
   if (related.some(other => other.id !== job.id && ['queued', 'running', 'paused'].includes(other.status))) return '同一阶段已有排队、执行或暂停的任务，请使用现有任务，避免重复制作';
   if (partitionSeriesJobs(related).history.some(other => other.id === job.id)) return '这是历史任务，已有较新的执行记录；请从当前任务重试';

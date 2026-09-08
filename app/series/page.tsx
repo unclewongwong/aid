@@ -955,8 +955,9 @@ export default function SeriesPage() {
       }
       if (body.settings && ['enqueue', 'resume', 'retry'].includes(String(body.action))) {
         if (!videoChoice.ready) throw new Error('视频模型选择正在加载，请稍后重试');
-        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean; h3Dasiwa8Turbo?: boolean; seriesVisualStyleSelection?: boolean }>(
+        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean; h3Dasiwa8Turbo?: boolean; seriesVisualStyleSelection?: boolean; seriesVideoModelRerun?: boolean }>(
           await fetch(`${base}/api/companion/status`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }), '无法检查视频模型选择支持');
+        if (body.rerunChangedVideoModel && !status.seriesVideoModelRerun) throw new Error('切换模型后重做视频需要更新 Companion，请更新后再制作。');
         if (!status.seriesVideoModelSelection) throw new Error('请更新 Companion 后再开始制作，旧版会覆盖所选视频模型。');
         if (productionSettings.videoProvider === 'comfyui' && !status.h3Dasiwa8Turbo) throw new Error('请更新 Companion 后开始 H3 制作，新版统一使用 DaSiWa 8Turbo。');
         if (!status.seriesVisualStyleSelection) throw new Error('请更新 Companion 后开始制作，以便使用所选全剧视觉风格。');
@@ -973,6 +974,7 @@ export default function SeriesPage() {
       const result = await seriesRequest<{
         project?: SeriesProject;
         added?: number;
+        rerun?: number;
       }>({ seriesId: selectedId, ...body }, base);
       await refresh(base);
       if (result.project && body.action === "create") {
@@ -981,7 +983,9 @@ export default function SeriesPage() {
         setTab("outline");
       }
       setNotice(
-        result.added === 0
+        result.rerun
+          ? `已按新视频模型重做 ${result.rerun} 集，复用剧本与参考图，旧成片已保留。`
+          : result.added === 0
           ? "没有新的待执行内容；已有任务或成片不会重复生成。"
           : success,
       );
@@ -1185,7 +1189,7 @@ export default function SeriesPage() {
         || (project.objects || []).find(item => item.id === assetId)
       : undefined;
     await action(
-      { action: "enqueue", kind, episodeIds, assetId, manualImageRetry: Boolean(assetId), settings: productionSettings },
+      { action: "enqueue", kind, episodeIds, rerunChangedVideoModel: kind === "produce", assetId, manualImageRetry: Boolean(assetId), settings: productionSettings },
       assetId ? `“${targetAsset?.name || '单项素材'}”已加入单项生成队列；不会重新生成其他已指定或已完成素材。` : "已加入队列，系统将自动补齐所需步骤。",
     );
   };
@@ -1519,7 +1523,7 @@ export default function SeriesPage() {
                     <RefreshCw size={14} />
                     一键重做
                   </button>
-                  <VideoGenerationSelect value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
+                  <VideoGenerationSelect rerunOnModelChange value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
                   <button
                     className={primary}
                     disabled={busy || !ready || !videoChoice.ready}
@@ -1628,7 +1632,7 @@ export default function SeriesPage() {
                         >
                           批量生成分镜剧本
                         </button>
-                        <VideoGenerationSelect value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
+                        <VideoGenerationSelect rerunOnModelChange value={videoChoice.selection} onChange={videoChoice.select} disabled={busy || editingLocked || !videoChoice.ready} />
                         {selection.length > 0 && (
                           <button
                             className={primary}
@@ -1640,6 +1644,7 @@ export default function SeriesPage() {
                         )}
                       </div>
                     </div>
+                    <p className="mb-3 text-xs text-[var(--text-secondary)]">切换视频模型后点“制作”，所选集将复用剧本与参考图重做视频，旧成片保留；同一模型不会重复制作已完成的集。</p>
                     {!project.episodes.length ? (
                       <div className="rounded-xl border border-dashed border-[var(--border-color)] px-6 py-16 text-center">
                         <BookOpen

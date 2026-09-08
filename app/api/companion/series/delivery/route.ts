@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
           fileName: meta.fileName,
           createdAt: new Date().toISOString(),
           episodeVersion: meta.version,
+          videoSelection: db.jobs.find(j => j.id === jobId)?.videoSelection,
           bytes,
         },
       ];

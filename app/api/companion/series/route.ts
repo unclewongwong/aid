@@ -1,4 +1,5 @@
 import { videoGenerationSelection } from '@/lib/videoGenerationSelection';
+import { rerunChangedEpisodeVideos } from '@/lib/series/videoModelRerun';
 import { seriesJobScope, seriesJobsConflict, mergeSeriesCheckpoint } from '@/lib/series/concurrency';
 import { NextRequest, NextResponse } from "next/server";
 import { recordSeriesInterruption, seriesCheckpointAdvanced } from '@/lib/series/interruption';
@@ -452,7 +453,7 @@ export async function POST(request: NextRequest) {
           )
             throw new Error("请先配置 Fish Audio API Key");
           const selectedIds = Array.isArray(body.episodeIds)
-            ? new Set(body.episodeIds)
+            ? new Set<string>(body.episodeIds)
             : undefined;
           if (
             selectedIds &&
@@ -461,6 +462,17 @@ export async function POST(request: NextRequest) {
             )
           )
             throw new Error("选中了不存在的分集");
+          let rerun = 0;
+          if (kind === 'produce' && body.rerunChangedVideoModel === true) {
+            // Recover selections from older sealed records inside the DB lock;
+            // only the credential-free selection is retained on public records.
+            for (const job of db.jobs.filter(j => j.seriesId === project.id && j.kind === 'produce' && (!selectedIds || selectedIds.has(j.episodeId!)) && !j.videoSelection && j.sealedSettings)) {
+              try { job.videoSelection = videoGenerationSelection(await openSettings(job.sealedSettings!)); }
+              catch { /* Old unreadable settings do not block a fresh explicit model choice; its media is archived as unknown. */ }
+            }
+            rerun = rerunChangedEpisodeVideos(project, db.jobs, selectedIds, effectiveSettings);
+            if (rerun) touchProject(project);
+          }
           const episodeIds = ["script", "produce"].includes(kind)
             ? project.episodes
                 .filter(
@@ -520,6 +532,10 @@ export async function POST(request: NextRequest) {
               }
               continue;
             }
+            if (kind === 'produce') {
+              const episode = project.episodes.find(e => e.id === episodeId);
+              if (episode && !episode.videoSelection) episode.videoSelection = videoGenerationSelection(effectiveSettings);
+            }
             db.jobs.push({
               id: seriesId("job"),
               seriesId: project.id,
@@ -537,7 +553,7 @@ export async function POST(request: NextRequest) {
             added++;
           }
           project.paused = false;
-          return { added };
+          return { added, rerun };
         }
         case "redo-visuals": {
           if (!project) throw new Error("连续剧不存在");

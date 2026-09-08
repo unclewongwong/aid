@@ -1,7 +1,9 @@
+import { rerunChangedEpisodeVideos } from '../lib/series/videoModelRerun.ts';
+import { seriesScriptAssetFingerprint } from '../lib/series/scriptStructureRepair.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { executeSeriesClaim } from '../lib/series/runner.ts';
-import { createSeries, parseOutline, parseEpisodes, parseScript } from '../lib/series/domain.ts';
+import { createSeries, parseOutline, parseEpisodes, parseScript, buildEpisodeProject } from '../lib/series/domain.ts';
 import { storyStorageKeys } from '../lib/series/storageScope.ts';
 import { outlineFixture, episodeFixtures, shotFixture } from './fixtures/series.mjs';
 
@@ -49,13 +51,23 @@ test('script runner records the asset-authoritative reverse repair before finali
   }
 });
 
-test('production runner reuses locked shared assets, saves checkpoints and uploads the episode without touching ordinary Story', async () => {
+for (const rerun of [false, true]) test(`production runner ${rerun ? 'reruns changed model with existing screenplay and images' : 'starts fresh'} without touching ordinary Story`, async () => {
   const project = createSeries({ name: '运行器测试', brief: '虚构测试', episodeCount: 3 });
   Object.assign(project, parseOutline(outlineFixture(), project));
   project.episodes = parseEpisodes(episodeFixtures(), project, 1, 3);
   project.characters.forEach((c, i) => { c.locked = true; c.voiceId = `fixed-${i}`; c.voiceSource = 'auto'; c.bibleUrl = `https://assets.test/${i}.png`; c.voiceReferenceUrl = `https://assets.test/voice-${i}.mp3`; });
   project.locations[0].imageUrl = 'https://assets.test/location.png';
   const settings = { videoProvider: 'apimart', videoModel: 'seedance-2.0-mini', apiKey: 'fixture-key', fishAudioKey: 'fixture-fish', imageModel: 'fixture-image', comfyui: { useLocalCompanion: true } };
+  if (rerun) {
+    const episode = project.episodes[0];
+    episode.script = parseScript(shotFixture(), project, episode);
+    episode.scriptAssetFingerprint = seriesScriptAssetFingerprint(project, episode);
+    episode.production = buildEpisodeProject(project, episode);
+    episode.production.storyboards.forEach((b,i)=>Object.assign(b,{status:'completed',imageUrl:`https://assets.test/shot-${i}.png`,videoStatus:'completed',videoUrl:'https://assets.test/old.mp4',videoTaskId:`old-${i}`}));
+    episode.deliveries.push({id:'old-delivery',episodeVersion:episode.version});
+    episode.videoSelection = {videoProvider:'apimart',videoModel:'wan3.0-video'};
+    assert.equal(rerunChangedEpisodeVideos(project, [], new Set([episode.id]), settings),1);
+  }
   const saved = { fetch: globalThis.fetch, window: globalThis.window, document: globalThis.document, localStorage: globalThis.localStorage };
   const storage = new Map([['aid:current-project:v2', 'ordinary-story'], ['appSettings', 'ordinary-settings'], ['aid:auto-production', 'ordinary-auto']]);
   globalThis.localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) };
@@ -66,6 +78,7 @@ test('production runner reuses locked shared assets, saves checkpoints and uploa
     requests.push(url);
     if (url === '/api/companion/status') return Response.json({ ok: false });
     if (url === '/api/series/generate') {
+      assert.equal(rerun,false,'model rerun must not rewrite the screenplay');
       const body = JSON.parse(init.body); assert.equal(body.stage, 'script');
       assert.equal(body.project.characters[0].voiceId, 'fixed-0');
       return Response.json({ script: parseScript(shotFixture(), project, project.episodes[0]) });
@@ -75,7 +88,7 @@ test('production runner reuses locked shared assets, saves checkpoints and uploa
       assert.equal(body.project.revision, lastRevision); checkpoints++;
       return Response.json({ revision: ++lastRevision });
     }
-    if (url.startsWith('/api/companion/series/delivery')) { assert.ok(checkpoints >= 4); assert.ok(init.body instanceof Blob); assert.equal(init.headers['X-AID-Lease'], 'lease-fixture'); uploaded = true; return Response.json({ ok: true }); }
+    if (url.startsWith('/api/companion/series/delivery')) { assert.ok(checkpoints >= (rerun ? 3 : 4)); assert.ok(init.body instanceof Blob); assert.equal(init.headers['X-AID-Lease'], 'lease-fixture'); uploaded = true; return Response.json({ ok: true }); }
     throw new Error(`Unexpected request: ${url}`);
   };
   globalThis.document = {
@@ -84,6 +97,7 @@ test('production runner reuses locked shared assets, saves checkpoints and uploa
       const params = new URL(frame.src, events.location.origin).searchParams;
       const keys = storyStorageKeys(params.get('seriesProject'));
       const production = JSON.parse(storage.get(keys.current));
+      if (rerun) assert.ok(production.storyboards.every(b=>b.imageUrl && !b.videoUrl && !b.videoTaskId));
       assert.ok(production.characters.every(c => c.voiceLocked && c.voiceSource === 'auto'));
       assert.equal(JSON.parse(storage.get(keys.settings)).comfyui.useLocalCompanion, false);
       assert.equal(JSON.parse(storage.get(keys.settings)).videoProvider, 'apimart');

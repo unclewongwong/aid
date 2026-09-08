@@ -155,6 +155,8 @@ export interface SeriesEpisode {
   knowledgeChanges: Array<{ characterId: string; learns: string }>;
   script?: SeriesShot[];
   production?: ProjectData;
+  videoSelection?: import('@/lib/videoGenerationSelection').VideoGenerationSelection;
+  videoHistory?: Array<{ at: string; version: number; videoSelection?: import('@/lib/videoGenerationSelection').VideoGenerationSelection; production?: ProjectData }>;
   version: number;
   needsReview?: string;
   deliveries: Array<{
@@ -162,6 +164,7 @@ export interface SeriesEpisode {
     fileName: string;
     createdAt: string;
     episodeVersion: number;
+    videoSelection?: import('@/lib/videoGenerationSelection').VideoGenerationSelection;
     bytes: number;
   }>;
 }
@@ -222,6 +225,7 @@ export interface SeriesJob {
   /** Earliest epoch milliseconds at which a recoverable queued job may be claimed again. */
   resumeAfter?: number;
   cancelRequested?: boolean;
+  supersededByVideoModel?: boolean;
   /** Public, credential-free record of the actual submitted video choice. */
   videoSelection?: import('@/lib/videoGenerationSelection').VideoGenerationSelection;
   sealedSettings?: string;

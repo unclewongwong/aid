@@ -44,13 +44,20 @@ function clearVideoArtifact(storyboard: Storyboard): Storyboard {
     videoTaskId: undefined,
     videoProviderUsed: undefined,
     videoSeed: undefined,
+    videoContinuityChainId: undefined,
+    videoContinuitySegmentIndex: undefined,
     videoPrompt: undefined,
     videoPromptOverride: false,
     videoDuration: undefined,
     videoEndingAudit: undefined,
     videoEndingWarning: undefined,
+    videoEndingRepairAttempts: undefined,
+    videoEndingMinimumDuration: undefined,
+    videoEndingHistory: undefined,
     videoDuplicateAudit: undefined,
     videoDuplicateRepairPrompt: undefined,
+    videoDuplicateRepairAttempts: undefined,
+    videoDuplicateHistory: undefined,
   };
 }
 
@@ -70,7 +77,6 @@ export function resetEpisodeVideosForProviderChange(
       storyboard.videoStatus === 'completed',
     ),
   ).length;
-  if (!affected) return 0;
   episode!.production!.storyboards = storyboards.map(clearVideoArtifact);
   return affected;
 }

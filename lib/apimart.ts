@@ -1,3 +1,4 @@
+import { videoImageCapability, validateVideoImageCount } from './videoImageCapabilities';
 import { videoAudioCapability } from './videoCapabilities';
 import axios from 'axios';
 import { assertProviderAccepted, chatInputContent, extractProviderText, ProviderModelRefusalError, providerPayloadSummary, providerResponseMetadata, type ProviderTextResult } from './pipeline/providerPayload';
@@ -432,6 +433,15 @@ export async function createVideoTask(
     const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
     const isSeedanceMini = model === 'seedance-2.0-mini';
 
+    if (options?.generationType && referenceImageUrls.length) {
+      validateVideoImageCount(videoImageCapability('apimart', model), options.generationType, referenceImageUrls.length);
+      if (model.toLowerCase().includes('veo') || isOmniFlashExt) requestBody.generation_type = options.generationType;
+      if (isSeedanceMini && options.generationType === 'frame' && !options.imageRoles?.length) {
+        options = { ...options, imageRoles: referenceImageUrls.map((url, i) => ({ url, role: i ? 'last_frame' : 'first_frame' })) };
+        referenceImageUrls = [];
+      }
+    }
+
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
     if (isGrokImagine) {
       requestBody.size = aspectRatio;
@@ -441,7 +451,8 @@ export async function createVideoTask(
       requestBody.duration = Math.max(6, Math.min(30, rawDuration));
       // Support up to 7 reference images
       if (referenceImageUrls.length > 0) {
-        requestBody.image_urls = referenceImageUrls.slice(0, 7);
+        if (referenceImageUrls.length > 7) throw new Error('Grok Imagine 最多支持 7 张参考图');
+        requestBody.image_urls = referenceImageUrls;
       }
     } else if (isOmniFlashExt) {
       requestBody.aspect_ratio = aspectRatio;
@@ -485,11 +496,12 @@ export async function createVideoTask(
       if (options?.imageRoles && options.imageRoles.length > 0) {
         const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
         if (firstFrame) requestBody.first_frame_image = firstFrame.url;
-      } else if (referenceImageUrls.length === 1) {
+      } else if (referenceImageUrls.length === 1 && options?.generationType !== 'reference') {
         requestBody.first_frame_image = referenceImageUrls[0];
-      } else if (referenceImageUrls.length > 1) {
+      } else if (referenceImageUrls.length > 0) {
         // R2V 参考图模式：1~9 张
-        requestBody.image_urls = referenceImageUrls.slice(0, 9);
+        if (referenceImageUrls.length > 9) throw new Error('HappyHorse 最多支持 9 张参考图');
+        requestBody.image_urls = referenceImageUrls;
       }
     } else if (isMiniMaxH3) {
       const roles = options?.imageRoles ?? [];

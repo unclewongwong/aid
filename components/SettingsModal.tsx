@@ -370,7 +370,7 @@ export default function SettingsModal({
               <option value="sora-2-vip">sora-2-vip</option>
               <option value="MiniMax-H3">
                 {(localSettings.videoProvider || 'apimart') === 'comfyui'
-                  ? 'MiniMax H3 · 仙宫云 4-step LoRA (2-15s, ~720P, native audio)'
+                  ? 'DaSiWa H3 8Turbo · 8 steps (2-15s, ~720P, native audio)'
                   : 'MiniMax-H3 (4-15s, 2K, audio sync)'}
               </option>
               <option value="minimax/h3-max/image-to-video">MiniMax H3 Max · fal (5–15s, 480P/768P, native audio)</option>
