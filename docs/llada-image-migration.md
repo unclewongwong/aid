@@ -24,6 +24,10 @@ On the inspected cloud instance, `z_image_turbo_bf16.safetensors` and `qwen_3_4b
 - 56 related tests passed, including model migration, one-reference limits, workflow wiring and old Companion rejection.
 - TypeScript and production build passed. An isolated browser smoke test also verified saved-setting migration, text generation, one-reference submission and the old-Companion gate.
 - Isolated cloud environment imports the upstream Loader/TextToImage/Edit classes successfully.
-- Weight download and real text-to-image/edit smoke tests are not complete yet. No Z-Image files removed; no release yet.
+- All 14 manifest files downloaded and verified; large weights match the repository LFS SHA-256. ComfyUI restarted while idle: 1,864 nodes, including AIDLLaDAImage; all 1,863 previous nodes remain available.
+- Actual 1024×1024 text-to-image passed in 94.641 seconds of cloud execution. Native single-image editing passed in 75.623 seconds. The edit changed the red cup to blue but also added a camera; this verifies the route, not exact preservation of unrelated details.
+- The upstream GGUF meta loader omitted non-persistent rotary frequencies. The isolated worker now recomputes those deterministic buffers from the model config; the successful generations used this fix. It also rejects prompts above 2,048 tokens rather than silently truncating them.
+- Transient SSH interruptions were recovered using the retained prompt ID; completed images were not regenerated. Outputs and task receipts are in the evidence directory below.
+- No website or Companion release yet. Keep the old Z-Image symlinks/workflow until the new website and Companion have been switched together, so the currently published client remains usable. Retire only the Z-specific symlinks/workflow after that switch; platform mount targets and shared VAE files must remain.
 
 Evidence and resumable setup tools: `outputs/llada-migration-20260908/` (ignored; do not commit credentials or generated media).

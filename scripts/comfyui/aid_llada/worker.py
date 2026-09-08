@@ -25,6 +25,23 @@ def main():
     pipeline, = LLaDAImageLoader().load("LLaDA-Image-Turbo-INT8.safetensors",
         "LLaDA-Image-Turbo-text_encoder-Q4_K_M.gguf", "LLaDa_VAE.safetensors",
         "bfloat16", "cuda", "On")
+    # The GGUF meta loader does not restore non-persistent rotary buffers.
+    # Recompute these deterministic frequencies from config, never model weights.
+    for layer in pipeline.text_encoder.modules():
+        if getattr(layer, "inv_freq", None) is not None and layer.inv_freq.is_meta:
+            frequencies, scaling = layer.rope_init_fn(layer.config, torch.device("cpu"))
+            layer.register_buffer("inv_freq", frequencies, persistent=False)
+            layer.original_inv_freq = frequencies
+            layer.attention_scaling = scaling
+    meta = [name for name, value in list(pipeline.text_encoder.named_parameters())
+        + list(pipeline.text_encoder.named_buffers()) if value.is_meta]
+    if meta:
+        raise RuntimeError(f"LLaDA encoder has uninitialized tensors: {meta}")
+    # Upstream silently truncates at 2048 tokens. Never discard authored details.
+    formatted = f"<role>HUMAN</role> Generate an image: {request['prompt'].strip()}\n<role>ASSISTANT</role>\n<IMAGE1>"
+    token_count = len(pipeline.tokenizer(formatted, add_special_tokens=True, truncation=False).input_ids)
+    if token_count > 2048:
+        raise ValueError(f"LLaDA 提示词超过模型输入容量（{token_count}/2048 tokens）；未截断内容或执行生图")
     args = dict(pipeline=pipeline, prompt=request["prompt"], width=request["width"],
         height=request["height"], steps=4, guidance_scale=1.0, seed=request["seed"])
     from PIL import Image
