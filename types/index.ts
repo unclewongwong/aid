@@ -47,6 +47,8 @@ export interface ObjectItem {
   imageFile?: File;
   aliases?: string[];
   visualIdentity?: AssetVisualIdentity;
+  /** Provider-only transport copy; the selected original remains authoritative. */
+  imageApiReference?: { sourceUrl: string; model: string; imageUrl: string };
 }
 
 /** Grounded once from the selected original, never from a generated shot. */

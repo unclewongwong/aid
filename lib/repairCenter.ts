@@ -18,7 +18,7 @@ export function diagnoseRepair(error: unknown, context: RepairContext = {}): Rep
   const decision = (code: string, action: RepairAction, reason: string, automatic = false): RepairDecision => ({ code, action, reason, automatic });
   if (isImageSafetyRejection(error) || /模型拒绝|model.*refus/i.test(message))
     return decision('content-review', 'manual-review', '上游审核拒绝；保留原文与任务，需人工审阅，不自动改写重提');
-  if (/invalid_image_file|invalid image file or mode/i.test(message))
+  if (/invalid_image_file|invalid image file or mode|image size exceeds the limit/i.test(message))
     return decision('invalid-reference', 'stop', '上游无法解码参考图片；保留原任务，核验图片格式与传输后再人工接续');
   if (error instanceof Error && /^Terminal(?:Image|Video)TaskError$/.test(error.name))
     return decision('task-failed', 'stop', '上游任务已明确失败；保留回执，不自动创建替代任务');

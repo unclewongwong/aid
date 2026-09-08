@@ -190,3 +190,15 @@ test('Story prepares both grid and single submissions only when no recoverable t
   assert.match(source, /if \(!reserved.allowed\) throw new Error/);
   assert.match(source, /if \(!taskId\) \{\s+const requestBody = await prepareImageRequestRef\.current/g);
 });
+
+test('source-bound transport copies affect only their image provider and never replace original assets',async()=>{
+ const original=url('mask'),compatible=url('compatible');
+ const object={id:'mask',name:'mask',description:'Original product',imageUrl:original,imageApiReference:{sourceUrl:original,model:'gpt-image-2-official',imageUrl:compatible}};
+ const prepare=createStoryImageRequestPreparer(noNetwork);
+ const selected=input({objects:[object],imageModel:'gpt-image-2-official'});
+ const before=structuredClone(selected);
+ const result=JSON.parse(await prepare(selected));assert.equal(result.objects[0].imageUrl,compatible);assert.deepEqual(selected,before);
+ assert.equal(JSON.parse(await prepare({...selected,imageModel:'gpt-image-2'})).objects[0].imageUrl,original);
+ assert.equal(JSON.parse(await prepare({...selected,objects:[{...object,imageUrl:url('new-original')}]})).objects[0].imageUrl,url('new-original'));
+ assert.equal(JSON.parse(await prepare({...selected,referenceImages:[original]})).objects[0].imageUrl,original);
+});

@@ -158,7 +158,11 @@ export function createStoryImageRequestPreparer(
     }));
     const preparedObjects = await Promise.all(objects.map(async object => ({
       id: object.id, name: object.name, aliases: object.aliases, description: visualAssetDescription(object),
-      imageUrl: await metadataImage(sourceOf(object)),
+      imageUrl: await metadataImage(!explicitReferences && object.imageApiReference
+        && object.imageApiReference.sourceUrl === sourceOf(object)
+        && object.imageApiReference.model === resolveCharacterStoryboardModel(input.imageModel, input.characters)
+        && remoteImageUrl(object.imageApiReference.imageUrl)
+        ? object.imageApiReference.imageUrl : sourceOf(object)),
     })));
     const sceneImage = explicitReferences ? '' : await resolve(board.sceneImageOverride || input.sceneImage || '');
     const body = JSON.stringify({
