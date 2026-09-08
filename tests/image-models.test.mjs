@@ -24,7 +24,8 @@ test('exposes both new providers in the global image-model selector', () => {
   const models = APIMART_IMAGE_MODEL_OPTIONS.map(option => option.value);
   assert.ok(models.includes('grok-imagine-image-2.0'));
   assert.ok(models.includes('gemini-3.1-flash-image-preview'));
-  assert.ok(models.includes('comfyui-z-image-turbo'));
+  assert.ok(models.includes('comfyui-llada-image-turbo'));
+  assert.ok(!models.includes('comfyui-z-image-turbo'));
   assert.ok(models.includes('midjourney'));
   assert.ok(models.includes('seedream-5-0-pro'));
   assert.ok(!models.includes('doubao-seedream-5-0-lite'));
@@ -197,9 +198,9 @@ test('keeps Midjourney task identities distinguishable from unified APIMart task
   assert.equal(isMidjourneyTask('task_123'), false);
 });
 
-test('advertises Z-Image-Turbo as a local text-only provider', () => {
+test('migrates the retired Z-Image provider to local LLaDA with one editing reference', () => {
   const capabilities = getImageModelCapabilities('comfyui-z-image-turbo');
-  assert.equal(capabilities.maxReferenceImages, 0);
+  assert.equal(capabilities.maxReferenceImages, 1);
   assert.equal(capabilities.maxResolution, '2K');
   assert.equal(imageModelRequiresApiKey('comfyui-z-image-turbo'), false);
 });

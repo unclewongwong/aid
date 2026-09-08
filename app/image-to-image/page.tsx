@@ -8,8 +8,8 @@ import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
 import { readApiJson } from '@/lib/apiResponse';
 import { imageCreationInputError } from '@/lib/imageCreation';
-import { getImageModelCapabilities, imageModelRequiresApiKey, isComfyUIZImageTurbo, isMidjourneyImageModel } from '@/lib/imageModels';
-import { imageApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
+import { getImageModelCapabilities, imageModelRequiresApiKey, isComfyUILLaDAImage, isMidjourneyImageModel } from '@/lib/imageModels';
+import { imageApiUrl, fetchImageApi, localComfyUISettings } from '@/lib/comfyuiClient';
 import { resolveMidjourneyProfileSetting, resolveMidjourneyStyleSetting } from '@/lib/midjourney';
 
 const MAX_REFERENCE_FILE_BYTES = 8 * 1024 * 1024;
@@ -63,7 +63,8 @@ async function compressReferenceImage(file: File): Promise<string> {
 export default function ImageToImagePage() {
   const { settings, saveSettings } = useSettings();
   const referenceLimit = getImageModelCapabilities(settings.imageModel).maxReferenceImages;
-  const isTextOnlyModel = isComfyUIZImageTurbo(settings.imageModel);
+  const isLLaDA = isComfyUILLaDAImage(settings.imageModel);
+  const isTextOnlyModel = referenceLimit === 0;
   const isMidjourney = isMidjourneyImageModel(settings.imageModel);
   const [showSettings, setShowSettings] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
@@ -105,8 +106,9 @@ export default function ImageToImagePage() {
   };
 
   const pollImageStatus = async (taskId: string) => {
-    for (let i = 0; i < 90; i++) {
-      setStatusText(`Generating studio image... ${i + 1}/90`);
+    const attempts = isLLaDA ? 600 : 90;
+    for (let i = 0; i < attempts; i++) {
+      setStatusText(`Generating studio image... ${i + 1}/${attempts}`);
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       const response = await fetch(imageApiUrl('/api/check-image-status', settings.comfyui, taskId), {
@@ -125,7 +127,7 @@ export default function ImageToImagePage() {
       }
 
       if (data.status === 'failed') {
-        throw new Error('Image generation failed');
+        throw new Error(data.error || 'Image generation failed');
       }
     }
 
@@ -173,7 +175,7 @@ export default function ImageToImagePage() {
       }
       if (!isTextOnlyModel) setReferenceImages(uploadedReferences);
       setStatusText('Creating image generation task...');
-      const response = await fetch(imageApiUrl('/api/image-to-image', settings.comfyui, settings.imageModel), {
+      const response = await fetchImageApi('/api/image-to-image', settings.comfyui, settings.imageModel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -268,15 +270,15 @@ export default function ImageToImagePage() {
           <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-6 p-4 md:p-7 xl:grid-cols-[minmax(0,1fr)_480px]">
             <div className="aid-form-stack space-y-5">
               <header className="aid-page-lead !border-0 !bg-transparent !p-0 !shadow-none">
-                <div><p className="aid-eyebrow">Image creation console</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl">{isTextOnlyModel || isMidjourney ? '用文字生成创意画面' : '用参考图控制创意结果'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{isTextOnlyModel ? 'Z-Image-Turbo 使用纯文字提示词生成图片，无需上传参考图。' : isMidjourney ? 'Midjourney 优先电影质感；参考图可选，用于宽松的角色、构图或风格引导。' : '上传主体与风格参考，补充创意方向和尺寸关系，生成更稳定的商业视觉。'}</p></div>
+                <div><p className="aid-eyebrow">Image creation console</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl">{isTextOnlyModel || isMidjourney || isLLaDA ? '用文字生成创意画面' : '用参考图控制创意结果'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{isLLaDA ? 'LLaDA-Image-Turbo 可直接用文字生成，或上传一张参考图并描述修改要求。' : isTextOnlyModel ? '使用文字描述目标画面，无需上传参考图。' : isMidjourney ? 'Midjourney 优先电影质感；参考图可选，用于宽松的角色、构图或风格引导。' : '上传主体与风格参考，补充创意方向和尺寸关系，生成更稳定的商业视觉。'}</p></div>
                 <span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]">{isTextOnlyModel ? 'TEXT ONLY' : `${referenceImages.length}/${referenceLimit} REFERENCES`}</span>
               </header>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3"><div><p className="aid-step-kicker">01 · 素材</p><h2 className="mt-1 text-base font-semibold text-white">{isTextOnlyModel ? '文生图模式' : '参考图片'}</h2></div><span className="text-xs text-[var(--text-muted)]">{isTextOnlyModel ? '无需参考图' : isMidjourney ? `可选 1 张软参考 · 单张 8MB` : `最多 ${referenceLimit} 张 · 单张 8MB`}</span></div>
+                <div className="flex items-center justify-between gap-3"><div><p className="aid-step-kicker">01 · 素材</p><h2 className="mt-1 text-base font-semibold text-white">{isTextOnlyModel ? '文生图模式' : '参考图片'}</h2></div><span className="text-xs text-[var(--text-muted)]">{isTextOnlyModel ? '无需参考图' : isLLaDA ? '可选 1 张编辑参考 · 单张 8MB' : isMidjourney ? `可选 1 张软参考 · 单张 8MB` : `最多 ${referenceLimit} 张 · 单张 8MB`}</span></div>
                 {isTextOnlyModel ? (
                   <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-5">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">Z-Image-Turbo 可直接用文字生成</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">可直接用文字生成</p>
                     <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">官方基础工作流不读取参考图片，请在下方填写“场景与创意方向”后直接提交。需要使用参考图时，请在设置中切换到支持图生图的模型。</p>
                     {referenceImages.length > 0 && <p className="mt-2 text-xs text-[var(--accent-orange)]">已保留 {referenceImages.length} 张参考图；切回支持参考图的模型后会恢复显示。</p>}
                   </div>
@@ -298,11 +300,11 @@ export default function ImageToImagePage() {
                     <label className="h-40 border-2 border-dashed border-[var(--border-color)] rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-[var(--bg-hover)] transition-colors bg-[var(--bg-primary)]">
                       <Upload size={32} className="text-[var(--text-secondary)] mb-3" />
                       <span className="text-sm text-[var(--text-primary)]">上传参考图片</span>
-                      <span className="mt-1 text-xs text-[var(--text-secondary)]">支持多选 · 已上传 {referenceImages.length}/{referenceLimit}</span>
+                      <span className="mt-1 text-xs text-[var(--text-secondary)]">{referenceLimit === 1 ? '单张参考' : '支持多选'} · 已上传 {referenceImages.length}/{referenceLimit}</span>
                       <input
                         type="file"
                         accept="image/*"
-                        multiple
+                        multiple={referenceLimit > 1}
                         className="hidden"
                         onChange={(e) => {
                           if (e.target.files) void handleImageUpload(e.target.files);

@@ -13,11 +13,16 @@ export interface ImageModelCapabilities {
 const GROK_IMAGE_2 = 'grok-imagine-image-2.0';
 export const NANO_BANANA_2 = 'gemini-3.1-flash-image-preview';
 export const SEEDREAM_5_PRO = 'seedream-5-0-pro';
-export const COMFYUI_Z_IMAGE_TURBO = 'comfyui-z-image-turbo';
+export const COMFYUI_LLADA_IMAGE_TURBO = 'comfyui-llada-image-turbo';
+const LEGACY_COMFYUI_Z_IMAGE_TURBO = 'comfyui-z-image-turbo';
+
+export function normalizeImageModel(model: string): string {
+  return model.trim().toLowerCase() === LEGACY_COMFYUI_Z_IMAGE_TURBO ? COMFYUI_LLADA_IMAGE_TURBO : model;
+}
 export const MIDJOURNEY_IMAGE_MODEL = 'midjourney';
 
 export const APIMART_IMAGE_MODEL_OPTIONS = [
-  { value: COMFYUI_Z_IMAGE_TURBO, label: 'ComfyUI · Z-Image-Turbo（本地）' },
+  { value: COMFYUI_LLADA_IMAGE_TURBO, label: 'ComfyUI · LLaDA-Image-Turbo（文生图 / 单图编辑）' },
   { value: MIDJOURNEY_IMAGE_MODEL, label: 'Midjourney v8.2 · 电影质感（可选 Profile）' },
   { value: SEEDREAM_5_PRO, label: 'Seedream 5.0 Pro · 质量优先' },
   { value: 'doubao-seedance-4-5', label: 'Seedream 4.5（兼容旧设置）' },
@@ -28,8 +33,8 @@ export const APIMART_IMAGE_MODEL_OPTIONS = [
   { value: 'gpt-image-2-official', label: 'GPT-Image-2 · 官方高保真' },
 ] as const;
 
-export function isComfyUIZImageTurbo(model: string): boolean {
-  return model.trim().toLowerCase() === COMFYUI_Z_IMAGE_TURBO;
+export function isComfyUILLaDAImage(model: string): boolean {
+  return normalizeImageModel(model).trim().toLowerCase() === COMFYUI_LLADA_IMAGE_TURBO;
 }
 
 export function isMidjourneyImageModel(model: string): boolean {
@@ -46,7 +51,7 @@ export function resolveStoryboardGridImageModel(model: string): string {
 }
 
 export function imageModelRequiresApiKey(model: string): boolean {
-  return !isComfyUIZImageTurbo(model);
+  return !isComfyUILLaDAImage(model);
 }
 
 export function isGrokImagineImage2(model: string): boolean {
@@ -73,11 +78,11 @@ export function isOfficialGptImage2(model: string): boolean {
 }
 
 export function getImageModelCapabilities(model: string): ImageModelCapabilities {
-  if (isComfyUIZImageTurbo(model)) {
+  if (isComfyUILLaDAImage(model)) {
     return {
-      model: COMFYUI_Z_IMAGE_TURBO,
-      label: 'ComfyUI · Z-Image-Turbo（纯文生图）',
-      maxReferenceImages: 0,
+      model: COMFYUI_LLADA_IMAGE_TURBO,
+      label: 'ComfyUI · LLaDA-Image-Turbo（文生图 / 单图编辑）',
+      maxReferenceImages: 1,
       maxResolution: '2K',
       aspectRatioField: 'size',
     };

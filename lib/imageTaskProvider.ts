@@ -1,7 +1,7 @@
 import { createImageTask, createMidjourneyImageTask } from './apimart';
 import { createComfyUIImageTask, type ComfyUIClientSettings } from './comfyui';
 import {
-  isComfyUIZImageTurbo,
+  isComfyUILLaDAImage,
   isMidjourneyImageModel,
   type ImageGenerationAspectRatio,
   type ImageResolutionOverride,
@@ -34,9 +34,10 @@ export async function createProviderImageTask(
   options: ProviderImageTaskOptions = {},
 ): Promise<string> {
   const style = normalizeImageStyleReference(options.styleReference);
-  if (isComfyUIZImageTurbo(model)) {
-    if (style) throw new Error('当前文生图模型不支持图片风格参考，请选择支持参考图的模型');
-    return (await createComfyUIImageTask({ prompt, aspectRatio, settings: comfyui })).taskId;
+  if (isComfyUILLaDAImage(model)) {
+    const styled = withImageStyleReference(prompt, imageUrls, style, 1, true);
+    if (styled.images.length > 1) throw new Error('LLaDA-Image-Turbo 支持一张编辑参考图，请只保留一张参考图');
+    return (await createComfyUIImageTask({ prompt: styled.prompt, referenceImage: styled.images[0], aspectRatio, settings: comfyui })).taskId;
   }
   if (isMidjourneyImageModel(model)) {
     return await createMidjourneyImageTask(

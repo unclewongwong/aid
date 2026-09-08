@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createProviderImageTask } from '@/lib/imageTaskProvider';
 import { buildStudioImagePrompt, imageCreationInputError } from '@/lib/imageCreation';
-import { getImageModelCapabilities, imageModelRequiresApiKey, isComfyUIZImageTurbo, isMidjourneyImageModel } from '@/lib/imageModels';
+import { getImageModelCapabilities, imageModelRequiresApiKey, isMidjourneyImageModel } from '@/lib/imageModels';
 import { buildMidjourneyPrompt } from '@/lib/midjourney';
 
 export async function POST(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { referenceImages, referenceImage, userIntent, scaleNotes, aspectRatio, imageModel, apiKey, visualStyle, comfyui = {}, midjourneyProfile = '', midjourneyStyle = {} } = await request.json();
     const selectedModel = imageModel || 'seedream-5-0-pro';
     const images = Array.isArray(referenceImages) ? referenceImages : referenceImage ? [referenceImage] : [];
-    const usesReferenceImages = !isComfyUIZImageTurbo(selectedModel) && images.length > 0;
+    const usesReferenceImages = images.length > 0;
     const inputError = imageCreationInputError({
       model: selectedModel,
       referenceCount: images.length,

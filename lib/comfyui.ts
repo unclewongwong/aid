@@ -1,3 +1,4 @@
+import { lladaImageApiPrompt, lladaImageDimensions } from './lladaImageWorkflow';
 import { createHash, randomBytes } from 'crypto';
 import { execFile, spawn, type ChildProcess } from 'child_process';
 import { gunzipSync } from 'zlib';
@@ -2262,42 +2263,9 @@ export async function createComfyUISubtitleRemovalTask(input: {
   }
 }
 
-function zImageDimensions(aspectRatio: string): { width: number; height: number } {
-  if (aspectRatio === '9:16') return { width: 768, height: 1344 };
-  if (aspectRatio === '16:9') return { width: 1344, height: 768 };
-  if (aspectRatio === '4:3') return { width: 1152, height: 864 };
-  return { width: 1024, height: 1024 };
-}
-
-function zImageApiPrompt(input: {
-  prompt: string;
-  width: number;
-  height: number;
-  seed: number;
-  outputPrefix: string;
-}): JsonRecord {
-  return {
-    '1': { class_type: 'UNETLoader', inputs: { unet_name: 'z_image_turbo_bf16.safetensors', weight_dtype: 'default' } },
-    '2': { class_type: 'CLIPLoader', inputs: { clip_name: 'qwen_3_4b.safetensors', type: 'lumina2', device: 'default' } },
-    '3': { class_type: 'VAELoader', inputs: { vae_name: 'ae.safetensors' } },
-    '4': { class_type: 'CLIPTextEncode', inputs: { text: input.prompt, clip: ['2', 0] } },
-    '5': { class_type: 'ConditioningZeroOut', inputs: { conditioning: ['4', 0] } },
-    '6': { class_type: 'EmptySD3LatentImage', inputs: { width: input.width, height: input.height, batch_size: 1 } },
-    '7': { class_type: 'ModelSamplingAuraFlow', inputs: { model: ['1', 0], shift: 3 } },
-    '8': {
-      class_type: 'KSampler',
-      inputs: {
-        model: ['7', 0], positive: ['4', 0], negative: ['5', 0], latent_image: ['6', 0],
-        seed: input.seed, steps: 8, cfg: 1, sampler_name: 'res_multistep', scheduler: 'simple', denoise: 1,
-      },
-    },
-    '9': { class_type: 'VAEDecode', inputs: { samples: ['8', 0], vae: ['3', 0] } },
-    '10': { class_type: 'SaveImage', inputs: { images: ['9', 0], filename_prefix: input.outputPrefix } },
-  };
-}
-
 export async function createComfyUIImageTask(input: {
   prompt: string;
+  referenceImage?: string;
   aspectRatio?: string;
   seed?: number;
   settings?: ComfyUIClientSettings;
@@ -2306,32 +2274,41 @@ export async function createComfyUIImageTask(input: {
   try {
     if (!config.sshHost) throw new ComfyUIError('ComfyUI SSH Host 未配置');
     const promptText = String(input.prompt || '').trim();
-    if (!promptText) throw new ComfyUIError('Z-Image-Turbo 提示词不能为空');
-    const { width, height } = zImageDimensions(input.aspectRatio || '1:1');
+    if (!promptText) throw new ComfyUIError('LLaDA-Image-Turbo 提示词不能为空');
+    const { width, height } = lladaImageDimensions(input.aspectRatio || '1:1');
     const runId = randomBytes(6).toString('hex');
     const seed = Number.isFinite(input.seed)
       ? Math.max(0, Math.floor(Number(input.seed)))
       : Number(BigInt(`0x${randomBytes(7).toString('hex')}`));
-    const prompt = zImageApiPrompt({
+    const prompt = lladaImageApiPrompt({
       prompt: promptText,
       width,
       height,
       seed,
-      outputPrefix: `aid/z_image/${runId}/result`,
+      outputPrefix: `aid/llada_image/${runId}/result`,
     });
-    const promptId = await withTunnel(config, async baseUrl => {
-      const definitions = await readRemoteDefinitions(config);
-      validatePrompt(prompt, definitions);
-      const response = await fetchJson(baseUrl, '/prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, client_id: `aid-zimage-${runId}` }),
+    const directory = await mkdtemp(path.join(tmpdir(), 'aid-llada-'));
+    try {
+      if (input.referenceImage) {
+        const localImage = await materializeSource(input.referenceImage, directory, 'reference');
+        prompt['1'].inputs.reference_image = await uploadAsset(config, localImage, 'aid/assets', { contentAddressed: true });
+      }
+      const promptId = await withTunnel(config, async baseUrl => {
+        const definitions = await readRemoteDefinitions(config);
+        validatePrompt(prompt, definitions);
+        const response = await fetchJson(baseUrl, '/prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, client_id: `aid-llada-${runId}` }),
+        });
+        const submittedId = String(response.prompt_id || '').trim();
+        if (!submittedId) throw new ComfyUIError('ComfyUI 提交响应没有 prompt_id');
+        return submittedId;
       });
-      const submittedId = String(response.prompt_id || '').trim();
-      if (!submittedId) throw new ComfyUIError('ComfyUI 提交响应没有 prompt_id');
-      return submittedId;
-    });
-    return { taskId: `${COMFYUI_IMAGE_TASK_PREFIX}${promptId}`, promptId, width, height };
+      return { taskId: `${COMFYUI_IMAGE_TASK_PREFIX}${promptId}`, promptId, width, height };
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   } finally {
     await cleanupPrivateKey(config);
   }
@@ -2406,7 +2383,7 @@ export async function getComfyUIImageStatus(taskId: string, settings: ComfyUICli
         };
       }
       const output = collectFileRefs(item.outputs || {}).find(ref => IMAGE_SUFFIXES.has(path.extname(ref.filename).toLowerCase()));
-      if (!output) return { status: 'failed' as const, error: 'Z-Image-Turbo 已结束但没有返回图片文件' };
+      if (!output) return { status: 'failed' as const, error: 'ComfyUI 生图已结束但没有返回图片文件' };
       return { status: 'completed' as const, output };
     });
   } finally {

@@ -37,7 +37,7 @@ import {
 import { APIMART_IMAGE_MODEL_OPTIONS, getImageModelCapabilities, imageModelRequiresApiKey, isMidjourneyImageModel, isGptImage2Model } from '@/lib/imageModels';
 import { createImageReferenceUploader } from '@/lib/storyImageRequest';
 import { HISTORICAL_CINEMA_AESTHETIC, makeCharacterVisualMaster } from '@/lib/characterVisualMaster';
-import { imageApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
+import { imageApiUrl, fetchImageApi, localComfyUISettings } from '@/lib/comfyuiClient';
 import type { VisualStyle } from '@/types';
 import { resolveMidjourneyProfileSetting, resolveMidjourneyStyleSetting } from '@/lib/midjourney';
 
@@ -255,7 +255,7 @@ export default function CharacterDesignPage() {
       if (pending && !confirm('已有保留任务。重新生成会创建新的付费任务，是否继续？')) return;
       const referenceImages = await ensureUploadedReferences();
       setStatus(isMj ? 'MJ 正在创作单幅角色候选…' : singleMaster ? 'GPT 正在生成单幅角色定稿…' : `生成 ${candidateCount} 个角色方向…`);
-      const response = await fetch(imageApiUrl('/api/character-design', settings.comfyui, designModel), {
+      const response = await fetchImageApi('/api/character-design', settings.comfyui, designModel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...commonPayload(), stage: 'concepts', candidateCount, referenceImages }),
@@ -279,7 +279,7 @@ export default function CharacterDesignPage() {
     try {
       if (pending && !confirm('已有保留任务。生成延展会创建新的付费任务，是否继续？')) return;
       setStatus('GPT 沿用定稿原图，扩展四个角度与表情…');
-      const response = await fetch(imageApiUrl('/api/character-design', settings.comfyui, 'gpt-image-2'), {
+      const response = await fetchImageApi('/api/character-design', settings.comfyui, 'gpt-image-2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...commonPayload(), imageModel: 'gpt-image-2', stage: 'extension', selectedConceptUrl: selectedConcept }),

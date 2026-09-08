@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
         const uploaded = await uploadBufferToCloudinary(buffer, {
           folder: 'aid-images/comfyui-z-image', public_id: id, resource_type: 'image', overwrite: true,
         });
-        return NextResponse.json({ status: 'completed', imageUrl: uploaded.secure_url, provider: 'comfyui-z-image' });
+        return NextResponse.json({ status: 'completed', imageUrl: uploaded.secure_url, provider: 'comfyui-image' });
       }
       return NextResponse.json({
         status: 'completed',
         imageUrl: `data:image/png;base64,${buffer.toString('base64')}`,
-        provider: 'comfyui-z-image',
+        provider: 'comfyui-image',
       });
     }
 

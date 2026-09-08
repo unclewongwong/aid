@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { hasExplicitGenerationModels } from '@/lib/settingsReadiness';
 import { AppSettings } from '@/types';
-import { SEEDREAM_5_PRO } from '@/lib/imageModels';
+import { SEEDREAM_5_PRO, normalizeImageModel } from '@/lib/imageModels';
 import { storyStorageKeys } from '@/lib/series/storageScope';
 import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
 
@@ -52,7 +52,7 @@ const LEGACY_IMAGE_MODEL_MAP: Record<string, string> = {
 
 function migrateSettings(settings: AppSettings): AppSettings {
   const migratedVideoModel = normalizeVideoModel(LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel || DEFAULT_SETTINGS.videoModel);
-  const migratedImageModel = LEGACY_IMAGE_MODEL_MAP[settings.imageModel] || settings.imageModel;
+  const migratedImageModel = normalizeImageModel(LEGACY_IMAGE_MODEL_MAP[settings.imageModel] || settings.imageModel || DEFAULT_SETTINGS.imageModel);
   const legacyComfyUI = settings.comfyui as (AppSettings['comfyui'] & {
     sshPrivateKey?: string;
     sshPrivateKeyPassphrase?: string;

@@ -1,5 +1,5 @@
 import type { AppSettings } from '@/types';
-import { isComfyUIZImageTurbo } from './imageModels';
+import { isComfyUILLaDAImage } from './imageModels';
 
 export const DEFAULT_COMFYUI_COMPANION_URL = 'http://127.0.0.1:3018';
 // Story generation runs inside the packaged Companion so long 28–80 shot jobs
@@ -30,9 +30,23 @@ export function imageApiUrl(
   settings: Partial<ComfyUISettings> | undefined,
   modelOrTaskId: string,
 ): string {
-  return isComfyUIZImageTurbo(modelOrTaskId) || String(modelOrTaskId || '').startsWith('comfyui-image:')
+  return isComfyUILLaDAImage(modelOrTaskId) || String(modelOrTaskId || '').startsWith('comfyui-image:')
     ? comfyUIApiUrl(pathname, settings)
     : pathname;
+}
+
+export async function fetchImageApi(
+  pathname: string, settings: Partial<ComfyUISettings> | undefined,
+  modelOrTaskId: string, init: RequestInit,
+): Promise<Response> {
+  if (isComfyUILLaDAImage(modelOrTaskId) && settings?.useLocalCompanion !== false && pathname !== '/api/check-image-status') {
+    const response = await fetch(comfyUIApiUrl('/api/companion/status', settings), {
+      cache: 'no-store', signal: AbortSignal.timeout(5000),
+    });
+    const status = response.ok ? await response.json() : {};
+    if (!status.lladaImageTurbo) throw new Error('LLaDA-Image-Turbo 需要新版 Companion，请更新后再生成');
+  }
+  return fetch(imageApiUrl(pathname, settings, modelOrTaskId), init);
 }
 
 export function companionVersionAtLeast(version: string, minimum: readonly number[]): boolean {

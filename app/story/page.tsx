@@ -27,7 +27,7 @@ import { useVideoGenerationSelection } from '@/hooks/useVideoGenerationSelection
 import { withVideoSelection } from '@/lib/videoGenerationSelection';
 import { SETTINGS_REQUIRED_MESSAGE } from '@/lib/settingsReadiness';
 import { useSettings } from '@/hooks/useSettings';
-import { comfyUIApiUrl, companionVersionAtLeast, downloadComfyUIVideo, fetchStoryApi, imageApiUrl, isComfyUIClientTask, localComfyUISettings, SEGMENT_VIDEO_COMPANION_MIN_VERSION, videoStatusResponseError } from '@/lib/comfyuiClient';
+import { comfyUIApiUrl, companionVersionAtLeast, downloadComfyUIVideo, fetchStoryApi, imageApiUrl, fetchImageApi, isComfyUIClientTask, localComfyUISettings, SEGMENT_VIDEO_COMPANION_MIN_VERSION, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { getImageModelCapabilities, imageModelRequiresApiKey, isGptImage2Model, isMidjourneyImageModel, resolveStoryboardGridImageModel } from '@/lib/imageModels';
 import { Grid2X2 } from 'lucide-react';
 import { isRequestTooLargeError, readApiJson } from '@/lib/apiResponse';
@@ -1635,7 +1635,7 @@ export default function StoryPage() {
                 styleReference: styleReferenceRef.current, midjourneyStyle: resolveMidjourneyStyleSetting(activeSettings), midjourneyProfile: resolveMidjourneyProfileSetting(activeSettings),
               });
               if (generationProjectId !== projectIdRef.current || (autoRunLockRef.current && autoAbortRef.current)) throw new Error('制作已暂停或项目已切换，未提交新的四宫格任务');
-              const res = await fetch(imageApiUrl('/api/generate', activeSettings.comfyui, gridImageModel), {
+              const res = await fetchImageApi('/api/generate', activeSettings.comfyui, gridImageModel, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: requestBody,
@@ -1808,7 +1808,7 @@ export default function StoryPage() {
             await ensureStoryVisualAssets();
             const requestBody = await prepareImageRequestRef.current({ storyboard: { ...storyboard, prompt, capturePreset: capturePresetRef.current }, resolutionOverride: storyStorageKeys().isolated ? '1K' : undefined, characters: effectiveStoryCast(charactersRef.current, storyPlanRef.current?.characters), objects: objectsRef.current, aspectRatio: projectAspectRatioRef.current, imageModel: activeSettings.imageModel, apiKey: activeSettings.apiKey, costumeImages: costumeImagesRef.current, sceneImage: storyboard.sceneImageOverride || sceneImagesRef.current[0] || '', visualStyle, capturePreset: capturePresetRef.current, comfyui: localComfyUISettings(activeSettings.comfyui), styleReference: styleReferenceRef.current, midjourneyStyle: resolveMidjourneyStyleSetting(activeSettings), midjourneyProfile: resolveMidjourneyProfileSetting(activeSettings) });
             if (generationProjectId !== projectIdRef.current || (autoRunLockRef.current && autoAbortRef.current)) throw new Error('制作已暂停或项目已切换，未提交新的分镜任务');
-            const response = await fetch(imageApiUrl('/api/generate', activeSettings.comfyui, activeSettings.imageModel), {
+            const response = await fetchImageApi('/api/generate', activeSettings.comfyui, activeSettings.imageModel, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: requestBody,
@@ -1923,7 +1923,7 @@ export default function StoryPage() {
     }
 
     try {
-      const response = await fetch(imageApiUrl('/api/generate-costume', activeSettings.comfyui, activeSettings.imageModel), {
+      const response = await fetchImageApi('/api/generate-costume', activeSettings.comfyui, activeSettings.imageModel, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

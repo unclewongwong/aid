@@ -1,6 +1,6 @@
 import { ANIMATED_VISUAL_STYLES } from './visualStylePresets';
 import type { VisualStyle } from '@/types';
-import { isComfyUIZImageTurbo, isGptImage2Model, isMidjourneyImageModel } from './imageModels';
+import { isComfyUILLaDAImage, isGptImage2Model, isMidjourneyImageModel } from './imageModels';
 import { buildGptPhotographicDetail } from './gptPhotographicDetail';
 import { getProductionStylePreset } from './promptArchitecture';
 
@@ -9,7 +9,7 @@ export function imageCreationInputError(input: {
   referenceCount: number;
   userIntent?: string;
 }): string {
-  if (isComfyUIZImageTurbo(input.model) || isMidjourneyImageModel(input.model)) {
+  if (isComfyUILLaDAImage(input.model) || isMidjourneyImageModel(input.model)) {
     return input.userIntent?.trim() ? '' : '使用文生图模型时，请先描述目标画面';
   }
   return input.referenceCount > 0 ? '' : '请至少上传一张参考图片';
