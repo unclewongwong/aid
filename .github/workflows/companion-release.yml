@@ -76,7 +76,12 @@ jobs:
       - name: Select host decoder for Windows cross-build tests
         if: matrix.platform == 'win32'
         shell: bash
-        run: echo "FFMPEG_PATH=$(command -v ffmpeg)" >> "$GITHUB_ENV"
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          host_ffmpeg=$(command -v ffmpeg)
+          test -x "$host_ffmpeg"
+          echo "FFMPEG_PATH=$host_ffmpeg" >> "$GITHUB_ENV"
       - run: npm run test:seedance-mini
       - run: npm run test:wan3-video
       - run: node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/film-ending.test.mjs
