@@ -1,8 +1,9 @@
+import { isR2MediaUrl } from './mediaUrl';
 const GENERATED_IMAGE_HOSTS = new Set(['getapib.org', 'res.cloudinary.com']);
 export function isStoredStoryboardSource(source: string): boolean {
   try {
     const url = new URL(source);
-    return url.protocol === 'https:' && !url.username && !url.password && !url.port && GENERATED_IMAGE_HOSTS.has(url.hostname);
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port && (GENERATED_IMAGE_HOSTS.has(url.hostname) || isR2MediaUrl(source));
   } catch { return false; }
 }
 export function storyboardImageFetchUrl(source: string): string {

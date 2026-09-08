@@ -1,10 +1,13 @@
-import { uploadBufferToCloudinary, uploadToCloudinary } from './cloudinaryUpload';
+import { uploadBufferToCloudinary, uploadToCloudinary, usesHostedSigning } from './cloudinaryUpload';
+
+import { usesR2Storage } from './r2Upload';
 
 const MAX_SOURCE_BYTES = 50 * 1024 * 1024;
 export const MAX_STORED_IMAGE_BYTES = 9.5 * 1024 * 1024;
 
-export async function fitImageUpload(buffer: Buffer): Promise<Buffer> {
+export async function fitImageUpload(buffer: Buffer, enforceCloudinaryLimit = false): Promise<Buffer> {
   if (buffer.byteLength > MAX_SOURCE_BYTES) throw new Error('图片超过 50 MB，已保留生成任务，请手动处理原图');
+  if (!enforceCloudinaryLimit && (usesR2Storage() || usesHostedSigning())) return buffer;
   if (buffer.byteLength <= MAX_STORED_IMAGE_BYTES) return buffer;
   // Native image tooling is only needed for oversized sources. Do not make
   // ordinary uploads (or JSON validation) depend on loading it at cold start.

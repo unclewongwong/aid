@@ -8,6 +8,7 @@ export async function GET() {
     name: 'AID Companion',
     version: process.env.AID_COMPANION_VERSION || 'development',
     nativeVideoExport: true,
+    r2MediaStorage: true,
     h3DirectorLongVideo: true,
     storyOriginalAssetGrounding: true,
     seriesProduction: true,

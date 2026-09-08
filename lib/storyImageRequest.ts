@@ -1,3 +1,4 @@
+import { validMediaUploadTicket, type MediaUploadTicket } from './mediaUploadTicket';
 import type { Character, ObjectItem, Storyboard, VisualStyle, CapturePreset } from '@/types';
 import type { ComfyUIClientSettings } from './comfyui';
 import type { ImageStyleReference } from './imageStyleReference';
@@ -69,19 +70,21 @@ async function uploadReference(source: string, request: typeof fetch, localUploa
   }
   const signing = await request('/api/media-upload/sign', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ folder: 'aid-images', resource_type: 'image' }),
+    body: JSON.stringify({ folder: 'aid-images', resource_type: 'image', content_type: blob.type, protocol: 2 }),
     signal: AbortSignal.timeout(20_000),
   });
-  const ticket = await readApiJson<{ targets?: Array<{ url: string; fields: Record<string, string> }> }>(signing, '准备参考图上传失败');
+  const ticket = await readApiJson<{ targets?: MediaUploadTicket[] }>(signing, '准备参考图上传失败');
   const targets = ticket.targets;
-  if (!Array.isArray(targets) || !targets.length || targets.some(target =>
-    !target || typeof target.url !== 'string'
-    || !/^https:\/\/api\.cloudinary\.com\/v1_1\/[a-zA-Z0-9_-]+\/image\/upload$/.test(target.url)
-    || !target.fields?.signature || Object.values(target.fields).some(value => typeof value !== 'string'))) {
+  if (!Array.isArray(targets) || !targets.length || targets.some(target => !validMediaUploadTicket(target))) {
     throw new Error('参考图上传签名无效；尚未提交生成');
   }
   for (let index = 0; index < targets.length; index++) {
     const target = targets[index];
+    if (target.provider === 'r2') {
+      const response = await request(target.url, { method: 'PUT', headers: target.headers, body: blob, redirect: 'error', signal: AbortSignal.timeout(120_000) });
+      if (!response.ok) throw new Error(`参考图上传失败（R2 ${response.status}）；尚未提交生成`);
+      return target.secure_url;
+    }
     const form = new FormData();
     for (const [key, value] of Object.entries(target.fields)) form.append(key, value);
     form.append('file', blob, 'reference');

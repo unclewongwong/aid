@@ -612,7 +612,7 @@ test('desktop uses a scoped hosted signature and direct large-file upload, never
     globalThis.fetch = async (url, init) => {
       calls++;
       if (url === 'https://pandais.beauty/api/media-upload/sign') {
-        assert.deepEqual(JSON.parse(init.body), { folder: options.folder, resource_type: 'video', public_id: options.public_id });
+        assert.deepEqual(JSON.parse(init.body), { folder: options.folder, resource_type: 'video', public_id: options.public_id, protocol: 2 });
         return Response.json({ targets });
       }
       assert.equal(url, targets[0].url); assert.equal(init.body.get('file').size, 7 * 1024 * 1024);

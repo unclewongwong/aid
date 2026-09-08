@@ -1,3 +1,4 @@
+import { isR2MediaUrl } from '../mediaUrl';
 import { chatOnce } from '@/lib/pipeline/llm';
 import { extractJson } from '@/lib/pipeline/json';
 import { generationDraft } from '@/lib/pipeline/generationDraft';
@@ -20,7 +21,7 @@ export async function imageForCastAudit(url: string): Promise<string> {
       const parsed = new URL(url);
       // Generated series assets use these known storage hosts. Never turn this endpoint
       // into an arbitrary URL fetcher or follow redirects into local networks.
-      if (parsed.protocol !== 'https:' || !['res.cloudinary.com', 'getapib.org'].includes(parsed.hostname) || parsed.username || parsed.password || parsed.port) throw new Error('核验图片需先保存到项目素材库');
+      if (parsed.protocol !== 'https:' || (!['res.cloudinary.com', 'getapib.org'].includes(parsed.hostname) && !isR2MediaUrl(url)) || parsed.username || parsed.password || parsed.port) throw new Error('核验图片需先保存到项目素材库');
       const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(45000) });
       if (!response.ok || !response.body || !response.headers.get('content-type')?.startsWith('image/')) throw new Error(`核验素材读取失败（${response.status}）`);
       const chunks: Buffer[] = []; let size = 0;

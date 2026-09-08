@@ -79,7 +79,7 @@ function uploadMock({ failFirst = false, invalidTicket = false } = {}) {
     if (String(target).startsWith('data:')) return fetch(target);
     if (target === '/api/media-upload/sign') {
       calls.signing++;
-      assert.deepEqual(JSON.parse(init.body), { folder: 'aid-images', resource_type: 'image' });
+      assert.deepEqual(JSON.parse(init.body), { folder: 'aid-images', resource_type: 'image', content_type: 'image/png', protocol: 2 });
       assert.ok(init.body.length < 100);
       return Response.json({ targets: [{ url: invalidTicket ? 'https://untrusted.example/upload' : 'https://api.cloudinary.com/v1_1/test/image/upload', fields: { signature: 'test-only', timestamp: '1' } }] });
     }

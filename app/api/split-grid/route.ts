@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadBufferToCloudinary, uploadToCloudinary } from '@/lib/cloudinaryUpload';
+import { usesR2Storage } from '@/lib/r2Upload';
+import { readMediaSource } from '@/lib/mediaSource';
+import { isR2MediaUrl } from '@/lib/mediaUrl';
 import { buildCloudinaryGridCellUrls, cloudinaryGridDimensions, cloudinaryGridInfoUrl } from '@/lib/gridCloudinary';
 
 const MAX_SOURCE_BYTES = 50 * 1024 * 1024;
@@ -23,6 +26,16 @@ async function compressMotherGrid(sourceBuffer: Buffer): Promise<Buffer> {
   return compressed;
 }
 
+async function persistR2Grid(imageUrl: string, gridSize: 2 | 3) {
+  const source = await readMediaSource(imageUrl, MAX_SOURCE_BYTES);
+  const { createGridCellBuffers } = await import('@/lib/gridR2');
+  const { width, height, cells: buffers } = await createGridCellBuffers(source, gridSize);
+  const grid = isR2MediaUrl(imageUrl) ? { secure_url: imageUrl } : await uploadBufferToCloudinary(source, { folder: 'aid-grid-sources', resource_type: 'image' });
+  const cells: string[] = [];
+  for (const cell of buffers) cells.push((await uploadBufferToCloudinary(cell, { folder: 'aid-grid-cells', resource_type: 'image' })).secure_url);
+  return { gridUrl: grid.secure_url, cells, preprocessing: { sourceWidth: width, sourceHeight: height, maxCellEdge: 1600, gridSize, delivery: 'r2-persisted-cells' } };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { imageUrl, gridSize: requestedGridSize } = await request.json();
@@ -30,6 +43,8 @@ export async function POST(request: NextRequest) {
     if (typeof imageUrl !== 'string' || !/^https:\/\//i.test(imageUrl)) {
       return NextResponse.json({ error: 'A valid HTTPS grid image URL is required' }, { status: 400 });
     }
+
+    if (usesR2Storage() || isR2MediaUrl(imageUrl)) return NextResponse.json(await persistR2Grid(imageUrl, gridSize));
 
     let grid;
     const infoUrl = cloudinaryGridInfoUrl(imageUrl);
@@ -77,6 +92,7 @@ export async function POST(request: NextRequest) {
         });
       }
     }
+    if (!grid.secure_url.includes('res.cloudinary.com/')) return NextResponse.json(await persistR2Grid(grid.secure_url, gridSize));
     const width = Number(grid.width || 0);
     const height = Number(grid.height || 0);
     const cells = buildCloudinaryGridCellUrls(grid.secure_url, width, height, gridSize);

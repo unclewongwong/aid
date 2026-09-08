@@ -1,6 +1,6 @@
 {
   "name": "aid",
-  "version": "0.1.210",
+  "version": "0.1.211",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -53,9 +53,12 @@
     "test:image-upload": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/image-upload.test.mjs tests/generated-image-persistence.test.mjs tests/story-image-request.test.mjs tests/api-response.test.mjs",
     "test:pipeline-recovery": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/pipeline-recovery.test.mjs",
     "test:wan3-video": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/wan3-video-references.test.mjs tests/api-voice-reference-recovery.test.mjs",
-    "test:api-video-references": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/api-video-multi-reference.test.mjs"
+    "test:api-video-references": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/api-video-multi-reference.test.mjs",
+    "test:r2-storage": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/r2-storage.test.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@e965/xlsx": "^0.20.3",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
@@ -64,6 +67,7 @@
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",
     "file-saver": "^2.0.5",
+    "file-type": "^22.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",
     "marked": "^15.0.6",
