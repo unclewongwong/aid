@@ -61,3 +61,19 @@ test('cached voice link expiry restores exact audio without another synthesis, i
   await createVoiceReferenceService(deps)(input);assert.equal(uploads,3);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+
+test('invalid image input and terminal receipts override stale resumable task context',()=>{
+ for(const error of ['Invalid image file or mode for image 1','invalid_image_file',Object.assign(new Error('render failed'),{name:'TerminalImageTaskError'}),Object.assign(new Error('render failed'),{name:'TerminalVideoTaskError'})]){
+  const decision=diagnoseRepair(error,{taskId:'stale-known-id',resumable:true,validation:true});
+  assert.equal(decision.automatic,false);assert.notEqual(decision.action,'resume-task');assert.notEqual(decision.action,'repair-text');
+ }
+});
+test('terminal image failure preserves one original receipt across persistence and repeated reports',async()=>{
+ const {recordImageTaskFailure}=await import('../lib/imageTaskFailure.ts');
+ const original={id:'shot-9',status:'generating',taskId:'paid-task',imageTaskMode:'single',prompt:'keep'};
+ const failed=recordImageTaskFailure(original,'invalid_image_file');
+ assert.equal(failed.taskId,'paid-task');assert.equal(failed.status,'failed');assert.equal(failed.prompt,'keep');assert.equal(failed.imageTaskMode,'single');
+ const restored=recordImageTaskFailure(JSON.parse(JSON.stringify(failed)),'invalid_image_file');
+ assert.equal(restored.imageFailureHistory.length,1);assert.equal(restored.imageFailureHistory[0].taskId,'paid-task');assert.equal(original.status,'generating');
+});

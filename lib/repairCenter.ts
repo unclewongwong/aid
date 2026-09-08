@@ -18,6 +18,10 @@ export function diagnoseRepair(error: unknown, context: RepairContext = {}): Rep
   const decision = (code: string, action: RepairAction, reason: string, automatic = false): RepairDecision => ({ code, action, reason, automatic });
   if (isImageSafetyRejection(error) || /模型拒绝|model.*refus/i.test(message))
     return decision('content-review', 'manual-review', '上游审核拒绝；保留原文与任务，需人工审阅，不自动改写重提');
+  if (/invalid_image_file|invalid image file or mode/i.test(message))
+    return decision('invalid-reference', 'stop', '上游无法解码参考图片；保留原任务，核验图片格式与传输后再人工接续');
+  if (error instanceof Error && /^Terminal(?:Image|Video)TaskError$/.test(error.name))
+    return decision('task-failed', 'stop', '上游任务已明确失败；保留回执，不自动创建替代任务');
   if (context.submissionUncertain || /提交结果.*(?:未确认|不确定)|原图像提交结果尚未确认|回执.*(?:不可读|没有任务编号)/i.test(message))
     return decision('submission-uncertain', 'stop', '提交结果未确认；先核对原回执，避免重复计费');
   if (/\b(?:ENOSPC|EACCES|EROFS)\b|修复记录.*(?:失败|损坏|无法)|本地磁盘无法保存/i.test(message))

@@ -77,6 +77,7 @@ import { applyCapturePreset, DEFAULT_CAPTURE_PRESET, normalizeCapturePreset } fr
 import { completeProductionTiming, formatProductionElapsed, normalizeProductionTiming, pauseProductionTiming, productionElapsedMs, startProductionTiming } from '@/lib/productionTiming';
 import { isFalVideoTask } from '@/lib/falVideo';
 import { mergeRegeneratedVisualPrompts } from '@/lib/visualPromptRewrite';
+import { recordImageTaskFailure } from '@/lib/imageTaskFailure';
 
 async function makePortableMediaSource(source: string, label: string, inlineRemote = false): Promise<string> {
   if (source.startsWith('data:')) return source;
@@ -1518,7 +1519,7 @@ export default function StoryPage() {
           ...groupCharacters.map(c => `${c.name}: ${visualAssetDescription(c, costumeSources[c.name])}`),
           ...textDefinedCharacters,
         ].join('\n');
-        const rejected = group.find(sb => sb.status === 'failed' && isImageSafetyRejection(sb.imageFailureReason));
+        const rejected = group.find(sb => sb.status === 'failed' && (isImageSafetyRejection(sb.imageFailureReason) || (options.throwOnError && sb.taskId)));
         if (rejected) throw new TerminalImageTaskError(rejected.imageFailureReason || '上游审核拒绝');
         const safetyFindings = (options.resumeTaskId ? [] : group).map(sb => ({
           storyboard: sb,
@@ -1723,7 +1724,7 @@ export default function StoryPage() {
           console.error('Grid generation failed:', error);
           const contentRejected = isImageSafetyRejection(error);
           const terminalTaskFailure = error instanceof TerminalImageTaskError && !contentRejected;
-          updateGridStoryboards(items => items.map(sb => group.some(g => g.id === sb.id) ? {
+          updateGridStoryboards(items => items.map(sb => group.some(g => g.id === sb.id) ? terminalTaskFailure ? recordImageTaskFailure(sb, extractImageTaskError(error)) : {
             ...sb,
             // A polling timeout or split/upload failure does not prove that the
             // paid image task failed. Keep it recoverable and reattach to the
@@ -1776,6 +1777,16 @@ export default function StoryPage() {
       if (hasUsableStoryboardImage(latestBeforeStart)) return;
       if (latestBeforeStart.status === 'failed' && isImageSafetyRejection(latestBeforeStart.imageFailureReason))
         throw new TerminalImageTaskError(latestBeforeStart.imageFailureReason || '上游审核拒绝');
+      if (latestBeforeStart.status === 'failed' && latestBeforeStart.taskId) {
+        if (options.throwOnError) throw new TerminalImageTaskError(latestBeforeStart.imageFailureReason || '上游任务已失败');
+        // A direct manual click may retry a non-moderation failure; automatic
+        // continuation never drops the terminal receipt or buys a replacement.
+        const next = storyboardsRef.current.map(item => item.id === storyboard.id
+          ? { ...item, taskId: undefined, imageTaskMode: undefined, status: 'pending' as const } : item);
+        storyboardsRef.current = next;
+        setStoryboards(next);
+        persistCurrentProject(next);
+      }
       const initialRisks = analyzeImagePromptSafety(`${storyboard.prompt}\n${storyboard.description}`);
       const maxSafetyAttempts = 1; // Preflight only; provider refusals require review.
       for (let safetyAttempt = 0; safetyAttempt < maxSafetyAttempts; safetyAttempt += 1) {
@@ -1831,14 +1842,16 @@ export default function StoryPage() {
       if (generationProjectId !== projectIdRef.current) return;
       const contentRejected = isImageSafetyRejection(error);
       const terminalTaskFailure = error instanceof TerminalImageTaskError && !contentRejected;
-      commitStoryboards(prev => prev.map(sb => sb.id === storyboard.id ? {
+      const next: Storyboard[] = storyboardsRef.current.map(sb => sb.id === storyboard.id ? terminalTaskFailure ? recordImageTaskFailure(sb, error.message) : {
         ...sb,
         status: !contentRejected && !terminalTaskFailure && sb.taskId ? 'generating' : 'failed',
         taskId: terminalTaskFailure ? undefined : sb.taskId,
         imageTaskMode: terminalTaskFailure ? undefined : sb.imageTaskMode,
         imageFailureReason: error instanceof Error ? error.message : 'Unknown image generation error',
-      } : sb));
-      persistCurrentProject();
+      } : sb);
+      storyboardsRef.current = next;
+      setStoryboards(next);
+      persistCurrentProject(next);
       if (options.throwOnError) throw error;
     }
   };
