@@ -53,3 +53,11 @@ test('automatic resume reuses only an unchanged source, shot count and voice cas
   assert.equal(canResumeStoryPlan(plan, 'approved script', 2, [{ ...cast[0], description: 'different story identity' }]), false);
   assert.equal(canResumeStoryPlan(plan, 'approved script', 2, [{ ...cast[0], id: 'replacement-card' }]), false);
 });
+
+
+ test('JSON dialogue containing refusal words remains valid story data',async()=>{
+ const {extractJson}=await import('../lib/pipeline/json.ts');
+ const value={dialogue:"I'm sorry, I can't assist with that request."};
+ assert.deepEqual(extractJson(JSON.stringify(value)),value);
+ assert.deepEqual(extractJson('```json\n'+JSON.stringify(value)+'\n```'),value);
+ });

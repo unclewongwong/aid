@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { diagnoseRepair, newRepairLedger, reserveRepair, resolveRepair, type RepairLedger } from '../repairCenter';
+import { diagnoseRepair, isRepairScopeBlocked, newRepairLedger, reserveRepair, resolveRepair, type RepairLedger } from '../repairCenter';
 
 // Provider keys participate only in the hash; no credentials are written to a
 // draft. Cache each bounded writing/directing batch, including invalid output.
@@ -61,6 +61,11 @@ export async function recoverGeneration<T>(input: {
   const ledger = await input.draft.readRepairs?.() || newRepairLedger();
   let lastError: unknown;
   let validation = false;
+  const stopRejected = async (error: unknown) => {
+    reserveRepair(ledger, 'writing', diagnoseRepair(error), { progress: raw, error });
+    await input.draft.saveRepairs?.(ledger);
+    throw error;
+  };
   const accept = async (value: string) => {
     const result = input.parse(value);
     resolveRepair(ledger, 'writing');
@@ -69,9 +74,16 @@ export async function recoverGeneration<T>(input: {
   };
   if (raw) {
     try { return await accept(raw); }
-    catch (error) { lastError = error; validation = true; }
+    catch (error) {
+      if (input.shouldRetry?.(error) === false) await stopRejected(error);
+      lastError = error; validation = true;
+    }
   }
   for (let attempt = 1; attempt <= input.attempts; attempt++) {
+    if (isRepairScopeBlocked(ledger, 'writing')) {
+      const stopped = ledger.events.findLast(event => event.scope === 'writing' && event.status === 'stopped');
+      throw new Error(`修复中枢：${stopped?.reason || '该批次已停止自动修复，保留原稿'}`);
+    }
     if (lastError) {
       const decision = diagnoseRepair(lastError, { validation });
       const reserved = reserveRepair(ledger, 'writing', decision, { limit: input.attempts, progress: raw, error: lastError });
@@ -82,14 +94,17 @@ export async function recoverGeneration<T>(input: {
     try {
       raw = await input.generate(raw, lastError, attempt);
     } catch (error) {
-      if (input.shouldRetry?.(error) === false) throw error;
+      if (input.shouldRetry?.(error) === false) await stopRejected(error);
       lastError = error;
       validation = error instanceof Error && /DirectorFieldRepairError|ScriptStructureError|ScriptDialogueError/.test(error.name);
       continue;
     }
     await input.draft.save(raw);
     try { return await accept(raw); }
-    catch (error) { lastError = error; validation = true; }
+    catch (error) {
+      if (input.shouldRetry?.(error) === false) await stopRejected(error);
+      lastError = error; validation = true;
+    }
   }
   throw lastError instanceof Error ? lastError : new Error('生成未通过校验');
 }

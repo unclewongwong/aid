@@ -1,3 +1,5 @@
+import { ProviderModelRefusalError } from './providerPayload';
+
 function tryParseJson(text: string): any | undefined {
   try {
     return JSON.parse(text.trim());
@@ -73,5 +75,11 @@ export function extractJson(text: string): any {
   const embedded = findFirstJsonValue(t);
   if (embedded !== undefined) return embedded;
 
+  // Only a standalone refusal counts. Valid screenplay JSON may legitimately
+  // contain these words as dialogue; never interpret that as provider policy.
+  if (/^(?:I'm sorry[,，]?\s*|I am sorry[,，]?\s*|Sorry[,，]?\s*)?I (?:can(?:not|'t|’t)|am unable to) (?:assist|help|comply) (?:with )?(?:that|this|your|the) request[.!。]?$/i.test(t)
+    || /^(?:抱歉[，,。]?\s*)?(?:我)?(?:无法|不能)(?:协助|帮助|满足|处理)(?:您|你)?的?(?:这个|该|此)?请求[。.!]?$/.test(t)) {
+    throw new ProviderModelRefusalError(t, t);
+  }
   throw new Error(`No valid JSON in AI response (${t.length} chars): ${t.slice(0, 300)}`);
 }

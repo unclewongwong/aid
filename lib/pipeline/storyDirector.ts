@@ -65,7 +65,7 @@ export function buildDirectorPrompt(input: {
   };
 
   return `${CINEMATIC_STORY_CONTRACT}
-你是一位电影导演兼分镜师。全片剧本已经锁定。现在只处理导演批次 ${batchNumber}/${totalBatches}（镜头 ${firstIndex}–${lastIndex}），把本批 beats 可视化为可拍摄分镜。
+你是一位电影导演兼分镜师。全片剧本已经锁定。现在只处理导演批次 ${batchNumber}/${totalBatches}（镜头 ${beats.map(beat => beat.index).join("、")}），把本批 beats 可视化为可拍摄分镜。
 
 📌 用户原始输入已由 StoryPlan、需求核对表、详细 beats 与逐字 speech 锁定。为避免每个导演批次重复发送整部长稿造成超时或安全误判，本阶段只执行下方结构化合同；不得改写锁定剧情与台词。
 
@@ -73,7 +73,7 @@ export function buildDirectorPrompt(input: {
 需求核对表：${JSON.stringify(storyPlan.requirements || [], null, 2)}
 
 🎯 最高原则：忠实于 StoryPlan，不重新创作
-- 本批分镜数量必须等于 ${beats.length}，顺序与 index ${firstIndex}–${lastIndex} 完全一致，不得增删或重排。
+- 本批分镜数量必须等于 ${beats.length}，顺序与 index ${beats.map(beat => beat.index).join("、")} 完全一致，不得增删或重排。
 - 台词、动作、时长、转场和连续关系来自 beat；你负责设计景别、运镜、机位、场景成像基线与正式图片 prompt。
 - performance 是演员执行合同：description 必须逐个落实其中的 objective、blocking、gesture、expression、gaze、breath、reaction 与 subtext，但不得把字段名或心理说明直接写成画面文字。微表情要通过眼球、眉眼、嘴角、下颌、呼吸、重心和距离的可见变化表现。
 - 必须让 dramaticPurpose、cause、conflict、choice、consequence 和 stateBefore/stateAfter 在画面中可见；镜头必须改变信息、关系、决定或物理状态，不能只制造氛围。
@@ -390,13 +390,23 @@ export async function directStoryboard(input: {
   /** Explicit redo key; participates in draft identity so a deliberate visual
    * rewrite never restores a valid response from an earlier visual pass. */
   generationRevision?: string;
+  /** Original one-based storyboard positions to regenerate; omitted means all. */
+  shotNumbers?: number[];
 }): Promise<Storyboard[]> {
   const { storyPlan: submittedPlan, characters, objects, apiKey, aspectRatio, language = 'zh', visualStyle, capturePreset, scriptProvider, scriptModel = 'gpt-4o', dmxApiKey, generationRevision } = input;
   const storyPlan = canonicalizeStoryIdentities(submittedPlan, characters);
   const registeredEntityNames = [...characters.map(character => character.name), ...objects.map(object => object.name)];
   // The motion brief is additional output, so keep each response bounded.
-  const batches = buildDirectorBatches(storyPlan, 6);
   const allBeats = storyPlan.sequences.flatMap(sequence => sequence.beats);
+  const requested = input.shotNumbers === undefined ? undefined : new Set(input.shotNumbers);
+  if (requested && (!requested.size || requested.size !== input.shotNumbers!.length
+    || [...requested].some(number => !Number.isInteger(number) || number < 1 || number > allBeats.length))) {
+    throw new Error('局部重写镜头编号无效、重复或超出剧本范围');
+  }
+  const selectedBeats = new Set(allBeats.filter((_, index) => !requested || requested.has(index + 1)));
+  const batches = buildDirectorBatches({ ...storyPlan, sequences: storyPlan.sequences.map(sequence => ({
+    ...sequence, beats: sequence.beats.filter(beat => selectedBeats.has(beat)),
+  })) }, 6);
   const rawShots: any[] = [];
 
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
@@ -467,7 +477,10 @@ export async function directStoryboard(input: {
           });
           let patch: any;
           try { patch = extractJson(reply); }
-          catch { throw new DirectorFieldRepairError(repairs.map(issue => ({ path: issue.path, reason: '响应没有可解析的 JSON；只返回指定字段的字符串值' }))); }
+          catch (error) {
+            if (isProviderContentRejection(error)) throw error;
+            throw new DirectorFieldRepairError(repairs.map(issue => ({ path: issue.path, reason: '响应没有可解析的 JSON；只返回指定字段的字符串值' })));
+          }
           const progress = applyDirectorFieldRepairProgress(retained, patch, repairs, beats, registeredEntityNames);
           repairFeedback = progress.failures.length ? new DirectorFieldRepairError(progress.failures) : undefined;
           if (!progress.applied.length) throw new DirectorFieldRepairError(progress.failures);
@@ -516,5 +529,7 @@ export async function directStoryboard(input: {
     rawShots.push(...batchShots);
   }
 
-  return mergeBeats(storyPlan, rawShots, aspectRatio, capturePreset, visualStyle, characters.map(c => c.name));
+  const byIndex = new Map(rawShots.map(shot => [shot.index, shot]));
+  return mergeBeats(storyPlan, allBeats.map(beat => byIndex.get(beat.index)), aspectRatio, capturePreset, visualStyle, characters.map(c => c.name))
+    .filter(shot => !requested || requested.has(shot.sceneNumber));
 }

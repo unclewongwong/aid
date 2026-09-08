@@ -22,6 +22,12 @@ test('source evidence, paused state and exact originals are required and cannot 
 });
 test('targeted directing rewrite keeps unaffected paid images and their complete original prompts',()=>{
  const retained=[{sceneNumber:1,visualPromptRewriteId:'r',prompt:'old',action:'locked'},{sceneNumber:2,prompt:'approved',imageUrl:'paid',taskId:'known'}];
- const fresh=[{sceneNumber:1,prompt:'fixed',description:'fixed'},{sceneNumber:2,prompt:'unwanted'}];
+ const fresh=[{sceneNumber:1,prompt:'fixed',description:'fixed'}];
  const result=mergeRegeneratedVisualPrompts(retained,fresh);assert.equal(result[0].prompt,'fixed');assert.equal(result[0].action,'locked');assert.deepEqual(result[1],retained[1]);
+});
+test('targeted rewrite rejects unexpected, missing and duplicate returned shots',()=>{
+ const retained=[{sceneNumber:1,visualPromptRewriteId:'r'},{sceneNumber:2,prompt:'keep'},{sceneNumber:3,visualPromptRewriteId:'r'}];
+ for(const numbers of [[1],[1,2],[1,1],[1,2,3]]) assert.throws(()=>mergeRegeneratedVisualPrompts(retained,numbers.map(sceneNumber=>({sceneNumber}))),/不匹配/);
+ const result=mergeRegeneratedVisualPrompts(retained,[{sceneNumber:3,prompt:'three'},{sceneNumber:1,prompt:'one'}]);
+ assert.equal(result[0].prompt,'one');assert.equal(result[1],retained[1]);assert.equal(result[2].prompt,'three');
 });

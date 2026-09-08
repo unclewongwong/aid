@@ -1392,6 +1392,7 @@ export default function StoryPage() {
         scriptModel: activeSettings.scriptModel || 'gpt-4o',
         dmxApiKey: activeSettings.dmxApiKey,
         generationRevision: rewriteIds.sort().join(':'),
+        shotNumbers: retained.filter(shot => shot.visualPromptRewriteId).map(shot => shot.sceneNumber),
       }),
     }, activeSettings.comfyui);
     const { storyboards: regenerated } = await readApiJson<{ storyboards: Storyboard[] }>(response, '重写分镜生图与视频提示词失败');

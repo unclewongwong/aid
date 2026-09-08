@@ -93,3 +93,47 @@ test('explicit provider refusal stops adaptive repair without resubmission or lo
   assert.deepEqual(JSON.parse(await readFile(path.join(root,'pipeline-drafts',file),'utf8')),invalid);
  });
 });
+
+
+test('targeted director buys only selected shots and preserves original storyboard numbering',async()=>{
+ await isolatedDirector(async()=>{
+  let calls=0;
+  axios.post=async(url,body)=>{
+   calls++;
+   const prompt=body.messages[0].content;
+   const batch=JSON.parse(prompt.split('本批详细剧本（权威）：\n')[1].split('\n\n')[0]);
+   assert.deepEqual(batch.map(beat=>beat.index),[8,12]);
+   return response([approved[0],approved[4]]);
+  };
+  const result=await directStoryboard({...input,shotNumbers:[1,5]});
+  assert.equal(calls,1);assert.deepEqual(result.map(shot=>shot.sceneNumber),[1,5]);
+  assert.deepEqual(result.map(shot=>shot.id),['scene-1','scene-5']);
+  assert.equal(result[1].prompt,approved[4].prompt);
+  assert.deepEqual(await directStoryboard({...input,shotNumbers:[1,5]}),result);
+  assert.equal(calls,1);
+  for(const shotNumbers of [[],[1,1],[0],[6],[1.5]]) await assert.rejects(directStoryboard({...input,shotNumbers}),/编号无效/);
+  assert.equal(calls,1);
+ });
+});
+
+test('plain text refusal stops once and a restart cannot spend more calls on that saved refusal',async()=>{
+ await isolatedDirector(async()=>{
+  let calls=0;
+  axios.post=async()=>{calls++;return {status:200,headers:{},data:{choices:[{message:{content:"I'm sorry, I can't assist with that request."},finish_reason:'stop'}]}};};
+  await assert.rejects(directStoryboard(input),/文本模型拒绝/);
+  assert.equal(calls,1);
+  await assert.rejects(directStoryboard(input),/文本模型拒绝/);
+  assert.equal(calls,1);
+ });
+});
+
+test('plain refusal during field repair is not converted into a repairable JSON error',async()=>{
+ await isolatedDirector(async()=>{
+  let calls=0;const invalid=structuredClone(approved);invalid[0].videoDirection.action='沈贵妃开口说出原句。';
+  axios.post=async()=>{calls++;return calls===1?response(invalid):{status:200,headers:{},data:{choices:[{message:{content:"I'm sorry, I can't assist with that request."},finish_reason:'stop'}]}};};
+  await assert.rejects(directStoryboard(input),/文本模型拒绝/);
+  assert.equal(calls,2);
+  await assert.rejects(directStoryboard(input),/审核拒绝/);
+  assert.equal(calls,2,'restart retains refusal stop while preserving valid original fields');
+ });
+});
