@@ -1,6 +1,6 @@
 # aid R2 媒体迁移
 
-2026-09-08：用户要求将 aid 图床改成 R2 以降低成本。代码基线 0.1.210；本轮适配未发布、未切换线上配置，已安装 Companion 仍是旧版。
+2026-09-08：用户要求将 aid 图床改成 R2 以降低成本。0.1.211 完成 R2 适配、真实存储验证及本机安装；正式网站与三平台安装包均已发布，验收见下文。
 
 ## 实施范围
 
@@ -21,7 +21,7 @@ CORS：GET/HEAD 允许所有来源；PUT 仅允许 pandais.beauty、www.pandais.
 
 Cloudflare 响应头规则 `AID media cross-origin resource policy`（ID `2cf5562c44ab4da1b0cd039c9596de31`）只匹配此素材域名，设置 `Cross-Origin-Resource-Policy: cross-origin` 和 `Access-Control-Allow-Origin: *`。前者兼容 aid 的 COEP require-corp，后者使普通图片与跨域 canvas 共用缓存时仍可读取。浏览器实测图片/画布/音视频通过，crossOriginIsolated 保持 true。
 
-18项真实上传验收已通过（原始字节、13MB图片、签名PUT/CORS/禁止覆盖、四/九格、WAV和MP4），见 `out/verification/r2-storage-20260908/live-result.json`。本机 Companion 已更新0.1.211，持久化数据哈希一致；网站发布验证进行中，原制作队列已可恢复暂停，正式切换后恢复。
+18项真实上传验收已通过（原始字节、13MB图片、签名PUT/CORS/禁止覆盖、四/九格、WAV和MP4），见 `out/verification/r2-storage-20260908/live-result.json`。本机 Companion 已更新0.1.211，持久化数据哈希一致；正式网站6a9fee64cf0241b56d36fad4及本机实际上传、切图验证通过。原制作队列在安装后出现新状态，准备任务已完成、重做任务因既有图片401失败且项目暂停；保留最新状态，未覆盖为升级前快照。完整发布回执见 docs/release-0.1.211.md。
 
 ## 开通后配置与验收
 
@@ -37,4 +37,10 @@ Cloudflare 响应头规则 `AID media cross-origin resource policy`（ID `2cf556
 
 `tests/r2-storage.test.mjs` 覆盖签名作用域、文件类型和原图、网页 PUT、Companion 无密钥上传、错误恢复、域名边界、内网拒绝及四/九格顺序和尺寸。关联旧用例包括 image-upload、story-image-request、generated-image-persistence、grid-preprocess、grid-recovery、series-image-cast、api-voice-reference-recovery。
 
-本地验证：7 项 R2 专项测试、12 项 Story 请求测试通过；其余 37 项关联旧流程测试通过。类型检查和生产构建通过，回执 `out/verification/r2-storage-20260908/result.json`。未进行真实 R2 上传或上线验收。当前配置为空时保留 Cloudinary 路径，正式切换需要以上真实验收。
+本地验证：7 项 R2 专项测试、12 项 Story 请求测试通过；其余 37 项关联旧流程测试通过。类型检查和生产构建通过，回执 `out/verification/r2-storage-20260908/result.json`。随后18项真实 R2 验证及隔离浏览器验收通过；发布回归29组578项通过（协议升级后同步修正旧测试的签名请求断言，Series组重新通过161项）。配置为空时保留 Cloudinary 路径。
+
+## 发布构建注意事项
+
+从Mac构建Netlify函数时，`scripts/prepare-netlify-sharp.mjs`按照已安装Sharp声明的版本准备Linux x64与libvips包，避免线上上传/切图报缺少Linux运行库。正式部署前核验ZIP内包含Linux `.node`与`.so`，再做临时站点真实API验证。
+
+独立执行`netlify build`后跳过构建部署，应显式使用`netlify deploy --no-build --dir .netlify/static`，否则CLI可能沿用netlify.toml的原始`.next`目录，跳过插件转换后的发布目录。临时站点验收通过后用restoreSiteDeploy发布同一部署，再验证正式域名。
