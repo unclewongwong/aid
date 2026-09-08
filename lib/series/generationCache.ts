@@ -2,9 +2,11 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { ProviderResponseMetadata } from '@/lib/pipeline/providerPayload';
+import type { RepairLedger } from '../repairCenter';
 
 export interface SeriesGenerationState {
   version: 1;
+  repairs?: RepairLedger;
   responses?: Array<{ at: string; kind: 'generation' | 'repair' | 'continuation'; metadata: ProviderResponseMetadata }>;
   refusal?: string;
   objectGrounding?: { evidenceOnly: true };
@@ -29,7 +31,15 @@ export function createSeriesGenerationCache(root: string, key: string) {
   };
   return {
     read: () => read(`${base}.txt`),
-    save: (raw: string) => atomicSave(`${base}.txt`, raw),
+    save: async (raw: string) => {
+      const previous = await read(`${base}.txt`);
+      if (previous !== undefined && previous !== raw) {
+        const history = path.join(root, 'series-drafts-history', key);
+        await mkdir(history, { recursive: true, mode: 0o700 });
+        await writeFile(path.join(history, `${randomUUID()}.txt`), previous, { flag: 'wx', mode: 0o600 });
+      }
+      await atomicSave(`${base}.txt`, raw);
+    },
     readState: async (): Promise<SeriesGenerationState | undefined> => {
       const raw = await read(`${base}.meta.json`);
       if (!raw) return undefined;

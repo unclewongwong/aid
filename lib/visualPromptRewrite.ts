@@ -10,7 +10,9 @@ export function mergeRegeneratedVisualPrompts(
   if (retained.length !== regenerated.length) {
     throw new Error(`视觉提示重写返回 ${regenerated.length} 镜，但保留分镜为 ${retained.length} 镜`);
   }
+  const targeted = retained.some(storyboard => Boolean(storyboard.visualPromptRewriteId));
   return retained.map((storyboard, index) => {
+    if (targeted && !storyboard.visualPromptRewriteId) return storyboard;
     const fresh = regenerated[index];
     if (!fresh || fresh.sceneNumber !== storyboard.sceneNumber) {
       throw new Error(`视觉提示重写的第 ${index + 1} 项与保留的第 ${storyboard.sceneNumber} 镜不匹配`);

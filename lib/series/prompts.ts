@@ -65,7 +65,8 @@ export function seriesPrompt(
   const original = legacySeriesPrompt(stage, project, episodeId);
   // Other stages keep their cache identity; only the outline schema changes.
   if (stage !== 'outline') return original;
-  return `${outlineEpisodeContract(project.episodeCount)}\n${original
+  const appearanceContract = '角色字段分工：on_screen角色的description只写一张人物参考图可见的年龄、体态、头发、妆容、服装、配饰、颜色与稳定识别特征；不把消费观、经历、人物目标、情绪变化过程或剧情发展混入外貌。身份放role，目标放want，变化放arc，表演与语气放voiceBrief。不得改变原稿明确的年龄、物种或外貌，也不要凭空增加标记。';
+  return `${outlineEpisodeContract(project.episodeCount)}\n${appearanceContract}\n${original
     .replace('"start":1,"end":3,"goal"', `"start":1,"end":${project.episodeCount},"goal"`)
     .replace('"plantedIn":1,"payoffIn":3,"answer"', `"plantedIn":1,"payoffIn":${project.episodeCount},"answer"`)
     .replace('本项目只有原稿这一集；arcs只能覆盖第1集，promises须在第1集内埋设并回收，ending必须是原稿末镜而不是新结局。',

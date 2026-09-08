@@ -398,7 +398,7 @@ export function parseScript(
         const object = project.objects.find(item => item.id === id)!;
         structureIssues.push({
           kind: 'ungrounded_object', index: i, shotNumber: i + 1,
-          objectId: id, objectName: object.name, aliases: object.aliases || [], visual, action,
+          objectId: id, objectName: object.name, objectDescription: object.description, aliases: object.aliases || [], visual, action,
         });
       }
     }

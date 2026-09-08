@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import RepairCenterLog from '@/components/RepairCenterLog';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2055,6 +2056,7 @@ export default function SeriesPage() {
                 )}
                 {tab === "queue" && (
                   <>
+                    <RepairCenterLog events={project.episodes.flatMap(episode => episode.production?.repairCenter?.events || []).sort((a, b) => a.at.localeCompare(b.at))} />
                     <div className="mb-5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
                       <p className="text-sm">
                         {snapshot.workerMode === "companion"

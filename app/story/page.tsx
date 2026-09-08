@@ -7,6 +7,7 @@ import DevToolsLayout from '@/components/DevToolsLayout';
 import Toolbar from '@/components/Toolbar';
 import StatusBar from '@/components/StatusBar';
 import StepIndicator from '@/components/StepIndicator';
+import RepairCenterLog from '@/components/RepairCenterLog';
 import Step1 from '@/components/Step1';
 import { scriptGenerationPhaseLabel, type ScriptGenerationPhase } from '@/components/ScriptThinkingPanel';
 import Step2 from '@/components/Step2';
@@ -65,7 +66,8 @@ import { storyStorageKeys } from '@/lib/series/storageScope';
 import { bindSeriesPlan, buildApprovedSeriesPlan, reconcileSeriesProductionContract, validateSeriesProduction } from '@/lib/series/productionContract';
 import { recoverCompletedVideoForExport } from '@/lib/videoExportRecovery';
 import { visibleImageCast, type ImageCastCharacter } from '@/lib/series/imageCastContract';
-import { AwaitingMediaTaskError, autoProductionLockName, autoRetryDelayMs, hasUsableStoryboardImage, imagePollingTimeoutError, isTransientAutoProductionError, normalizeStoryboardImageArtifact, planAutoImageBatch, planAutoVideoBatches } from '@/lib/autoProduction';
+import { AwaitingMediaTaskError, autoProductionLockName, autoRetryDelayMs, hasUsableStoryboardImage, imagePollingTimeoutError, normalizeStoryboardImageArtifact, planAutoImageBatch, planAutoVideoBatches } from '@/lib/autoProduction';
+import { diagnoseRepair, isRepairScopeBlocked, newRepairLedger, repairFingerprint, reserveRepair, resolveRepair, type RepairContext } from '@/lib/repairCenter';
 import { effectiveStoryCast } from '@/lib/storyCast';
 import { characterAliasValues, characterIdentityIndex, withoutCharacterValues } from '@/lib/characterIdentity';
 import { recoverSeriesStoryAliases } from '@/lib/series/storyCastRecovery';
@@ -255,6 +257,8 @@ export default function StoryPage() {
   const [autoRunning, setAutoRunning] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false);
   const [autoStage, setAutoStage] = useState('');
+  const repairCenterRef = useRef(newRepairLedger());
+  const [repairEvents, setRepairEvents] = useState(repairCenterRef.current.events);
   const [autoExportRequestId, setAutoExportRequestId] = useState(0);
   const [autoResumeRequested, setAutoResumeRequested] = useState(false);
   const autoAbortRef = useRef(false);
@@ -512,6 +516,7 @@ export default function StoryPage() {
 
   const persistCurrentProject = (nextStoryboards = storyboardsRef.current) => {
     saveProject({
+      repairCenter: repairCenterRef.current,
       characters: charactersRef.current,
       objects: objectsRef.current,
       storyContent,
@@ -600,6 +605,8 @@ export default function StoryPage() {
   useEffect(() => {
     const savedProject = loadProject();
     if (savedProject) {
+      repairCenterRef.current = savedProject.repairCenter || newRepairLedger();
+      setRepairEvents(repairCenterRef.current.events);
       projectIdRef.current = savedProject.id!;
       const savedLanguageForVoice = savedProject.language === 'en' ? 'en' : 'zh';
       const savedCharacters = castStoryVoices((savedProject.characters || []) as Character[], savedLanguageForVoice);
@@ -938,6 +945,9 @@ export default function StoryPage() {
         const data = JSON.parse(await file.text());
         const importedProjectId = adoptProjectId(data.id);
         projectIdRef.current = importedProjectId;
+        repairCenterRef.current = data.repairCenter?.version === 1 && data.repairCenter.budgets && Array.isArray(data.repairCenter.events)
+          ? data.repairCenter : newRepairLedger();
+        setRepairEvents(repairCenterRef.current.events);
         autoAbortRef.current = true;
         setAutoRunning(false);
         setAutoStage('');
@@ -1004,6 +1014,7 @@ export default function StoryPage() {
         // open before the file chooser completed.
         saveProject({
           id: importedProjectId,
+          repairCenter: repairCenterRef.current,
           name: data.name || 'Untitled Project',
           characters: importedCharacters,
           objects: importedObjects,
@@ -1037,7 +1048,7 @@ export default function StoryPage() {
   };
 
   const handleExport = () => {
-    exportProject({ name: projectName, characters, objects, storyContent, language: projectLanguage, targetShotCount, aspectRatio: projectAspectRatio, visualStyle, capturePreset, productionTiming, storyOutline: '', storyboards, voiceReferences, costumeImages, sceneImages, styleReference: styleReferenceRef.current, storyPlan, videoSegmentPlan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    exportProject({ name: projectName, repairCenter: repairCenterRef.current, characters, objects, storyContent, language: projectLanguage, targetShotCount, aspectRatio: projectAspectRatio, visualStyle, capturePreset, productionTiming, storyOutline: '', storyboards, voiceReferences, costumeImages, sceneImages, styleReference: styleReferenceRef.current, storyPlan, videoSegmentPlan, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   };
 
   const handleUpdateStoryboard = (updated: Storyboard) => {
@@ -2515,13 +2526,17 @@ export default function StoryPage() {
         await new Promise(resolve => window.setTimeout(resolve, Math.min(1000, deadline - Date.now())));
       }
     };
-    const retryUntilCompleted = async <T,>(label: string, operation: () => Promise<T>): Promise<T | undefined> => {
+    const retryUntilCompleted = async <T,>(label: string, operation: () => Promise<T>, context: () => RepairContext = () => ({})): Promise<T | undefined> => {
       let failureCount = 0;
       let transientFailureCount = 0;
+      const scope = `${label}:${repairFingerprint(JSON.stringify([storyContent, charactersRef.current.map(c => [c.id, c.description, c.imageUrl]), storyboardsRef.current.map(s => [s.id, s.prompt, s.imagePromptOverride, s.videoPrompt]), settingsRef.current.imageModel, settingsRef.current.videoModel]))}`;
+      if (isRepairScopeBlocked(repairCenterRef.current, scope)) throw new Error(`修复中枢：${label}已停止自动循环；请先处理记录中的原因或修改对应输入`);
       while (!autoAbortRef.current) {
         try {
           setAutoStage(failureCount ? `${label}（第 ${failureCount + 1} 次尝试）` : label);
           const result = await operation();
+          resolveRepair(repairCenterRef.current, scope);
+          setRepairEvents([...repairCenterRef.current.events]);
           persistCurrentProject();
           return result;
         } catch (error) {
@@ -2532,16 +2547,19 @@ export default function StoryPage() {
             await waitBeforeRetry(15_000);
             continue;
           }
-          if (isImageSafetyRejection(error) || isRequestTooLargeError(error)) throw error;
-          const transient = isTransientAutoProductionError(error);
+          const decision = diagnoseRepair(error, context());
+          const transient = decision.action === 'retry-transient' || decision.action === 'resume-task' || decision.action === 'restore-media';
           if (transient) transientFailureCount += 1;
           else failureCount += 1;
           const count = transient ? transientFailureCount : failureCount;
-          if (batchRunId && count >= (transient ? 6 : batchStageRetries)) throw error;
+          const reserved = reserveRepair(repairCenterRef.current, scope, decision, { limit: transient ? 6 : batchStageRetries, error });
+          setRepairEvents([...repairCenterRef.current.events]);
+          persistCurrentProject();
+          if (!reserved.allowed) throw new Error(`修复中枢：${reserved.event.reason}。${error instanceof Error ? error.message : String(error)}`);
           const delayMilliseconds = autoRetryDelayMs(count);
           const delaySeconds = Math.round(delayMilliseconds / 1000);
           const message = error instanceof Error ? error.message : '未知错误';
-          setAutoStage(`${label}失败：${message}；${delaySeconds} 秒后自动重试`);
+          setAutoStage(`修复中枢 · ${label}：${reserved.event.reason}；${delaySeconds} 秒后继续（${count}/${transient ? 6 : batchStageRetries}）。${message}`);
           await waitBeforeRetry(delayMilliseconds);
         }
       }
@@ -2649,6 +2667,9 @@ export default function StoryPage() {
         }
         const unfinished = storyboardsRef.current.filter(sb => !hasUsableStoryboardImage(sb));
         if (unfinished.length) throw new Error(`仍有 ${unfinished.length} 个分镜未完成`);
+      }, () => {
+        const pending = storyboardsRef.current.find(item => !hasUsableStoryboardImage(item));
+        return { taskId: pending?.taskId, resumable: Boolean(pending?.taskId) };
       });
       if (autoAbortRef.current) return;
       setCurrentStep(5);
@@ -2709,7 +2730,10 @@ export default function StoryPage() {
             : completed.every(item => item.videoStatus === 'completed' && item.videoUrl);
           if (!isDone) throw new Error('任务结束但没有返回完整视频');
         };
-        await retryUntilCompleted(groupLabel, completeGroup);
+        await retryUntilCompleted(groupLabel, completeGroup, () => {
+          const leader = refreshPlannedVideoSegment(storyboardsRef.current, group)[0];
+          return { taskId: leader?.videoTaskId, resumable: Boolean(leader?.videoTaskId) };
+        });
         if (videoProvider === 'comfyui' && isFilmEndingSegment(storyboardsRef.current, group)) {
           // Ending direction belongs in the generation prompt, not a second ASR gate.
           // Resume paid clips unchanged, including checkpoints with a failed old audit.
@@ -2949,6 +2973,11 @@ export default function StoryPage() {
                 )}
               </div>
             </div>
+            <RepairCenterLog events={repairEvents} disabled={autoRunning} onRecheck={() => {
+              repairCenterRef.current.budgets = {};
+              persistCurrentProject();
+              setAutoStage('已重新开放检查；点击继续成片后按当前输入核验');
+            }} />
             {currentStep === 1 && (
               <Step2
                 characters={characters}

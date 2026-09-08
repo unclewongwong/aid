@@ -186,6 +186,7 @@ test('Story prepares both grid and single submissions only when no recoverable t
   const source = await readFile(new URL('../app/story/page.tsx', import.meta.url), 'utf8');
   assert.equal((source.match(/await prepareImageRequestRef\.current\(/g) || []).length, 2);
   assert.equal((source.match(/body: requestBody/g) || []).length, 2);
-  assert.match(source, /if \(isImageSafetyRejection\(error\) \|\| isRequestTooLargeError\(error\)\) throw error/);
+  assert.match(source, /diagnoseRepair\(error, context\(\)\)/);
+  assert.match(source, /if \(!reserved.allowed\) throw new Error/);
   assert.match(source, /if \(!taskId\) \{\s+const requestBody = await prepareImageRequestRef\.current/g);
 });

@@ -6,6 +6,7 @@ import { generateFishSpeech } from './fishAudio';
 import { ensureCloudinaryUploadReady, uploadBufferToCloudinary } from './cloudinaryUpload';
 import { VOICE_REFERENCE_CONTRACT_VERSION, voiceReferenceSample } from './voiceReference';
 import { verifyFishVoiceLanguage, type VoiceLanguageCheck } from './voiceLanguageCheck';
+import { publicAudioAvailable } from './apiVoiceReferenceRecovery';
 
 export class VoiceReferenceError extends Error {
   code: string;
@@ -19,6 +20,7 @@ interface Dependencies {
   synthesize: typeof generateFishSpeech;
   upload: typeof uploadBufferToCloudinary;
   verify?: typeof verifyFishVoiceLanguage;
+  available?: (url: string) => Promise<boolean>;
 }
 
 // A service instance coalesces concurrent requests; the atomic disk checkpoint
@@ -43,6 +45,12 @@ export function createVoiceReferenceService(deps: Dependencies) {
         try { cached = JSON.parse(await readFile(filename, 'utf8')); }
         catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
         if (cached && (!cached.voiceId || !cached.audio || Buffer.from(cached.audio, 'base64').length < 1000)) throw new Error('已保存试音损坏；已停止，避免重复生成');
+        if (cached?.url && deps.available && !await deps.available(cached.url)) {
+          // Keep the original paid audio and voice identity; invalidate delivery
+          // only. A failed re-upload resumes here without another synthesis.
+          cached.url = undefined;
+          await save();
+        }
         if (cached?.url && (!input.verifyLanguage || cached.languageCheck?.passed)) return { url: cached.url, duration: cached.duration || 0, voiceId: cached.voiceId, languageCheck: cached.languageCheck };
         if (!cached?.url) await deps.ready();
       } catch (error) {
@@ -83,7 +91,7 @@ export function createVoiceReferenceService(deps: Dependencies) {
           public_id: `voice-ref-${VOICE_REFERENCE_CONTRACT_VERSION}-${id}`, overwrite: false,
         });
         if (!result.secure_url?.startsWith('https://')) throw new Error('未返回有效的试音地址');
-        cached.url = result.secure_url; cached.duration = result.duration || 0;
+        cached.url = result.secure_url; cached.duration = result.duration || cached.duration || 0;
         await save();
         return { url: cached.url, duration: cached.duration || 0, voiceId: cached.voiceId, languageCheck: cached.languageCheck };
       } catch (error) {
@@ -100,6 +108,7 @@ export function generateVoiceReference(input: Input) {
   service ||= createVoiceReferenceService({
     root: path.join(process.env.AID_COMPANION_DATA_DIR || tmpdir(), 'voice-reference-cache'),
     ready: ensureCloudinaryUploadReady, synthesize: generateFishSpeech, upload: uploadBufferToCloudinary, verify: verifyFishVoiceLanguage,
+    available: publicAudioAvailable,
   });
   return service(input);
 }

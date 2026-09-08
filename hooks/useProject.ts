@@ -13,6 +13,7 @@ const CURRENT_PROJECT_V2_KEY = 'aid:current-project:v2';
 const LEGACY_CURRENT_PROJECT_KEY = 'currentProject';
 
 export interface ProjectData {
+  repairCenter?: import('@/lib/repairCenter').RepairLedger;
   styleReference?: ImageStyleReference;
   id?: string;
   name: string;
@@ -95,12 +96,14 @@ export function useProject() {
   const saveProject = useCallback((data: Partial<ProjectData>) => {
     const { current: CURRENT_PROJECT_V2_KEY, legacy: LEGACY_CURRENT_PROJECT_KEY, isolated } = storyStorageKeys();
     const targetId = data.id || projectId;
+    let existingRepairs: ProjectData['repairCenter'];
     try {
       // New builds read from a private v2 slot. Tabs that still execute an
       // older deployed bundle can keep writing the legacy key, but they can no
       // longer replace the active project's script, paid task ids or caches.
       const existingRaw = localStorage.getItem(CURRENT_PROJECT_V2_KEY);
       const existing = existingRaw ? JSON.parse(existingRaw) as Partial<ProjectData> : undefined;
+      if (existing?.id === targetId) existingRepairs = existing.repairCenter;
       const existingTime = Date.parse(String(existing?.updatedAt || ''));
       const knownTime = Date.parse(String(lastKnownUpdatedAtRef.current || ''));
       if (existing?.id === targetId
@@ -135,6 +138,7 @@ export function useProject() {
       storyPlan: data.storyPlan,
       videoSegmentPlan: data.videoSegmentPlan,
       pipelineState: data.pipelineState,
+      repairCenter: data.repairCenter || existingRepairs,
       createdAt: data.createdAt || new Date().toISOString(),
       updatedAt,
     };

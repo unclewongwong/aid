@@ -121,6 +121,7 @@ export interface SeriesShot {
 }
 
 export interface SeriesEpisode {
+  visualTextRepairs?: Array<{ at: string; revision: string; patches: import('./visualTextRepair').ApprovedVisualTextPatch[]; storyboards: ProjectData['storyboards'] }>;
   /** One-click visual redo keeps screenplay/shot intent and bypasses script regeneration once. */
   visualRedoPending?: boolean;
   scriptAssetFingerprint?: string;

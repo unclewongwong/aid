@@ -1,4 +1,4 @@
-import { recoverApiVoiceReferences, publicAudioAvailable } from '@/lib/apiVoiceReferenceRecovery';
+import { recoverApiVoiceReferences, recoverComfyUIVoiceReferences, publicAudioAvailable } from '@/lib/apiVoiceReferenceRecovery';
 import { apiVoiceReferenceUrls, selectVideoVoiceReferences } from '@/lib/videoCapabilities';
 import { NextRequest, NextResponse } from 'next/server';
 import { applyFilmEndingPrompt, applySeriesVideoStyle, applyVideoDuplicateRepairPrompt, buildStoryboardVideoPrompt, buildVideoSegmentPrompt, generateStoryboardVideo } from '@/lib/videoGenerator';
@@ -184,12 +184,13 @@ export async function POST(request: NextRequest) {
         end: line.end,
       }));
       const referenceAudioNames: string[] = [];
-      const referenceAudios = selectVideoVoiceReferences('comfyui', 'MiniMax-H3', speakingCharacters, voiceReferences)
+      const referenceAudios = (await recoverComfyUIVoiceReferences(
+        selectVideoVoiceReferences('comfyui', 'MiniMax-H3', speakingCharacters, voiceReferences)))
         .map(x => { referenceAudioNames.push(x.name); return x.url; });
       // createComfyUIVideoTask materializes URL/data URL locally and then
       // uploads that exact file into ComfyUI/input over SSH. Do not insert a
-      // Cloudinary hop here: it is unnecessary and can drop a valid data URL
-      // when Cloudinary is unavailable.
+      // upload hop for valid/inline media. Only expired managed links above
+      // are restored from the original audio cache, without new synthesis.
       const isMultiBeatSegment = videoStoryboards.length > 1;
       const isMotionContinuation = Number(motionContext?.segmentIndex) > 0;
       const firstFrame = isMotionContinuation

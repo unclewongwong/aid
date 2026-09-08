@@ -1,4 +1,5 @@
 import { containsExactDialogue, isChineseVideoDirectionField, validateVideoDirectionField, VIDEO_DIRECTION_LIMITS, VIDEO_DIRECTION_MAX_CHARACTERS } from '@/lib/videoDirection';
+import { TEXT_REPAIR_CONTRACT } from '../repairCenter';
 import type { Beat } from './types';
 
 export type DirectorRepairContext = Pick<Beat, 'index' | 'action' | 'characters' | 'objects' | 'speech' | 'stateBefore' | 'stateAfter' | 'editBridge'>
@@ -178,7 +179,7 @@ export function buildDirectorFieldRepairPrompt(shots: any[], beats: DirectorRepa
   const responseRule = issues.length === 1
     ? `Return JSON {"value":"a complete concise sentence"} for ONLY ${issues[0].path} (episode shot ${issues[0].shotNumber}). The caller binds this value to that field; do not return shot indexes or other fields.`
     : 'Return JSON {"repairs":[{"path":"the exact requested path","value":"a complete concise sentence"}]}, one entry for EVERY requested path and NO others. Paths use zero-based batch positions; shotNumber is the real episode shot number. Never confuse them.';
-  return `你只负责修正已批准分镜中无效的摄影和可见动作字段。
+  return `${TEXT_REPAIR_CONTRACT}\n你只负责修正已批准分镜中无效的摄影和可见动作字段。
 ${responseRule}
 修正报告中的校验问题。过长内容用更少文字重写；从视觉导演字段中移除对白和声音指令，同时保留可见动作。保留已命名演员、主动作、机位与运动、方向、否定条件、可见落点和连续关系。删除重复修饰和重复调度。不得新增事件，不得修改台词、图片提示词、服装、身份或其他字段。不得复制整个分镜数组，不得截取半句后补标点。${outputRule}
 registeredEntityNames is the same project registry used by final validation, not a list of actors to add to this shot. Keep an already present registered name intact even if it belongs to a silent background actor; never introduce people or objects just because they appear in the registry. The locked action and existing visual context determine what happens. If a field is missing, derive only that field from the locked context.

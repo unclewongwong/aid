@@ -14,6 +14,7 @@ export interface UngroundedObjectIssue {
   shotNumber: number;
   objectId: string;
   objectName: string;
+  objectDescription?: string;
   aliases: string[];
   visual: string;
   action: string;
@@ -156,6 +157,7 @@ export function applyObjectGroundingRepairs(
   raw: any,
   reply: any,
   issues: ScriptStructureIssue[],
+  registry: Array<{ id: string; name: string }> = [],
 ) {
   const targets = issues.filter((issue): issue is UngroundedObjectIssue => issue.kind === 'ungrounded_object');
   const repairs = reply?.repairs;
@@ -191,6 +193,13 @@ export function applyObjectGroundingRepairs(
         : typeof repair.value === 'string' ? repair.value.trim() : '';
       if (mention && (!oldValue.includes(mention) || mention.length > 60))
         throw new Error(`第${issue.shotNumber}镜需指出原字段中真实存在的道具短语`);
+      if (mention && oldValue.indexOf(mention) !== oldValue.lastIndexOf(mention))
+        throw new Error(`第${issue.shotNumber}镜道具短语不唯一；请提供能唯一定位的完整短语，不能全局替换`);
+      for (const other of registry.filter(other => other.id !== issue.objectId)) {
+        const count = (text: string) => text.split(other.name).length - 1;
+        if (other.name && count(value) < count(oldValue))
+          throw new Error(`第${issue.shotNumber}镜修稿不能覆盖已登记的 ${other.name}；不同道具不能互相改名`);
+      }
       if (!value) throw new Error('保留道具时只能定点修正 visual 或 action');
       const names = [issue.objectName, ...issue.aliases].map(normalized).filter(Boolean);
       if (!names.some(name => normalized(value).includes(name)))
@@ -214,7 +223,7 @@ export function applyObjectGroundingRepairs(
 
 /** Save valid independent patches even when another target is malformed.
  * Duplicate/unknown targets remain a hard rejection; they are not safe to guess. */
-export function applyPartialObjectGroundingRepairs(raw: any, reply: any, issues: ScriptStructureIssue[]) {
+export function applyPartialObjectGroundingRepairs(raw: any, reply: any, issues: ScriptStructureIssue[], registry: Array<{ id: string; name: string }> = []) {
   const targets = issues.filter((issue): issue is UngroundedObjectIssue => issue.kind === 'ungrounded_object');
   if (!Array.isArray(reply?.repairs)) throw new Error('道具修稿必须返回 repairs 数组');
   const allowed = new Map(targets.map(issue => [`${issue.shotNumber}:${issue.objectId}`, issue]));
@@ -230,7 +239,7 @@ export function applyPartialObjectGroundingRepairs(raw: any, reply: any, issues:
   for (const repair of reply.repairs) {
     const issue = allowed.get(`${Number(repair.shotNumber)}:${repair.objectId}`)!;
     try {
-      const applied = applyObjectGroundingRepairs(result, { repairs: [repair] }, [issue]);
+      const applied = applyObjectGroundingRepairs(result, { repairs: [repair] }, [issue], registry);
       // Multiple props may share a field. Do not let a later full-field patch
       // erase a canonical binding already applied in this batch.
       if (repair.decision === 'ground') {

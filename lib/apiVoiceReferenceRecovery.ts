@@ -4,6 +4,20 @@ import path from 'node:path';
 import { uploadBufferToCloudinary } from './cloudinaryUpload';
 
 type Reference = { name: string; url: string };
+/** ComfyUI can consume inline/local references directly. Only legacy managed
+ * remote media needs the cache recovery path; preserve the input order. */
+export function createComfyUIVoiceReferenceRecovery(recover: (references: Reference[]) => Promise<Reference[]>) {
+  return async (references: Reference[]): Promise<Reference[]> => {
+    const legacy = references.filter(reference => {
+      try { const url = new URL(reference.url); return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com'; }
+      catch { return false; }
+    });
+    if (!legacy.length) return references;
+    const restored = await recover(legacy);
+    let index = 0;
+    return references.map(reference => legacy.includes(reference) ? restored[index++] : reference);
+  };
+}
 export interface SavedVoiceMedia { audio: string; url?: string; [key: string]: unknown }
 interface Dependencies {
   available: (url: string) => Promise<boolean>;
@@ -95,3 +109,5 @@ export const recoverApiVoiceReferences = createApiVoiceReferenceRecovery({
     await rename(temporary, identity.file);
   },
 });
+
+export const recoverComfyUIVoiceReferences = createComfyUIVoiceReferenceRecovery(recoverApiVoiceReferences);

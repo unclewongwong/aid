@@ -23,7 +23,7 @@ test('retains a failed batch, repairs it after restart and reuses a validated re
     assert.deepEqual(await recoverGeneration({ draft: generationDraft('test', identity), parse, attempts: 2, generate: async () => assert.fail('must reuse saved batch') }), value);
     assert.equal(await generationDraft('test', ['different input']).read(), undefined);
     for (const file of await readdir(path.join(root, 'pipeline-drafts'))) {
-      assert.match(file, /^[a-f0-9]{64}\.txt$/);
+      assert.match(file, /^[a-f0-9]{64}\.txt(?:\.repairs\.json)?$/);
       assert.doesNotMatch(await readFile(path.join(root, 'pipeline-drafts', file), 'utf8'), /private-fixture-key/);
     }
   } finally {
@@ -32,12 +32,12 @@ test('retains a failed batch, repairs it after restart and reuses a validated re
   }
 });
 
-test('transport failures retain the original and honor the retry bound', async () => {
+test('unknown transport failures retain the original and stop without blind resubmission', async () => {
   let raw = '{"complete":false}', calls = 0, saves = 0;
   await assert.rejects(recoverGeneration({ draft: { read: async () => raw, save: async value => { raw = value; saves++; } }, attempts: 3,
     parse: () => { throw Error('invalid'); }, generate: async previous => { assert.equal(previous, raw); calls++; throw Error('offline'); },
   }), /offline/);
-  assert.equal(calls, 3); assert.equal(saves, 0); assert.equal(raw, '{"complete":false}');
+  assert.equal(calls, 1); assert.equal(saves, 0); assert.equal(raw, '{"complete":false}');
 });
 
 test('automatic resume reuses only an unchanged source, shot count and voice cast', () => {

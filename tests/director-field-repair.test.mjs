@@ -158,7 +158,7 @@ test('retained invalid batch recovers with a field patch, survives transport fai
  const draft={read:async()=>raw,save:async value=>{raw=value;saves++;}};
  const parse=raw=>{const data=JSON.parse(raw);validateDirectorShots(data,beats,'array','en',beats[0].characters,true);return data;};
  const repaired=await recoverGeneration({draft,parse,attempts:3,generate:async previous=>{
-  calls++;assert.equal(previous,JSON.stringify(shots));if(calls===1)throw Error('transport unavailable');
+  calls++;assert.equal(previous,JSON.stringify(shots));if(calls===1)throw Error('503 temporarily unavailable');
   const retained=JSON.parse(previous);return JSON.stringify(applyDirectorFieldRepairs(retained,reply,directorFieldRepairs(retained,beats)));
  }});
  assert.equal(calls,2);assert.equal(saves,1);assert.deepEqual(repaired.slice(0,2),shots.slice(0,2));

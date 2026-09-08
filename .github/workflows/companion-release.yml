@@ -85,6 +85,7 @@ jobs:
       - run: npm run test:grid-recovery
       - run: npm run test:series
       - run: npm run test:pipeline-recovery
+      - run: npm run test:repair-center
       - run: node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/companion-export-poll.test.mjs tests/video-export-recovery.test.mjs tests/settings-readiness.test.mjs tests/series-video-selection-api.test.mjs tests/auto-production.test.mjs
       - run: node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/series-cross-language.test.mjs
       - run: npm run build:companion

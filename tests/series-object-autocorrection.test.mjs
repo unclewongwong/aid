@@ -8,6 +8,21 @@ import { generateSeriesStage } from '../lib/series/generation.ts';
 import { createSeries, parseOutline, parseEpisodes } from '../lib/series/domain.ts';
 import { outlineFixture, episodeFixtures, shotFixture } from './fixtures/series.mjs';
 
+test('prop repair cannot replace another registered product inside its name',()=>{
+ const raw={shots:[{number:15,visual:'小雨将潘达面膜递给林夏。',action:'她递过面膜。',objectIds:['mask','bag']}]};
+ const issue={kind:'ungrounded_object',index:0,shotNumber:15,objectId:'bag',objectName:'普通大袋子',aliases:['大袋子'],visual:raw.shots[0].visual,action:raw.shots[0].action};
+ const registry=[{id:'mask',name:'潘达面膜'},{id:'bag',name:'普通大袋子'}];
+ const repair={shotNumber:15,objectId:'bag',decision:'ground',field:'visual',mention:'面膜'};
+ assert.throws(()=>applyPartialObjectGroundingRepairs(raw,{repairs:[repair]},[issue],registry),/不能覆盖已登记的 潘达面膜/);
+ assert.equal(raw.shots[0].visual,'小雨将潘达面膜递给林夏。');
+});
+
+test('ambiguous repeated prop phrases cannot trigger a global replacement',()=>{
+ const raw={shots:[{number:1,visual:'她的袋子靠着另一只袋子。',action:'她站着。',objectIds:['bag']}]};
+ const issue={kind:'ungrounded_object',index:0,shotNumber:1,objectId:'bag',objectName:'普通大袋子',aliases:[],visual:raw.shots[0].visual,action:raw.shots[0].action};
+ assert.throws(()=>applyPartialObjectGroundingRepairs(raw,{repairs:[{shotNumber:1,objectId:'bag',decision:'ground',field:'visual',mention:'袋子'}]},[issue]),/不唯一/);
+});
+
 test('prop conflict identifies owner without silently merging package and contents', () => {
   const objects = [{ id: 'box', name: '锦盒', aliases: ['面膜', 'Box'] }];
   assert.match(fixedObjectIdentityError(objects, '面膜袋', ['面膜']), /“面膜”已被道具“锦盒”/);

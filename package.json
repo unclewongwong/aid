@@ -1,6 +1,6 @@
 {
   "name": "aid",
-  "version": "0.1.212",
+  "version": "0.1.213",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -54,7 +54,8 @@
     "test:pipeline-recovery": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/pipeline-recovery.test.mjs",
     "test:wan3-video": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/wan3-video-references.test.mjs tests/api-voice-reference-recovery.test.mjs",
     "test:api-video-references": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/api-video-multi-reference.test.mjs",
-    "test:r2-storage": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/r2-storage.test.mjs"
+    "test:r2-storage": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/r2-storage.test.mjs",
+    "test:repair-center": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-transform-types --experimental-loader ./tests/ts-alias-loader.mjs --test tests/repair-center.test.mjs tests/api-voice-reference-recovery.test.mjs tests/series-object-autocorrection.test.mjs tests/series-visual-text-repair.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",

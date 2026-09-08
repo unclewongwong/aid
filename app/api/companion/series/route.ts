@@ -666,6 +666,10 @@ export async function POST(request: NextRequest) {
             throw new Error("连续剧已在回收站或不存在，不能重试任务");
           const retryBlocker = seriesRetryBlocker(job, db.jobs);
           if (retryBlocker) throw new Error(retryBlocker);
+          // Explicit user retry reopens orchestration checks only. Original
+          // provider receipts and moderation records remain authoritative.
+          const retriedEpisode = owner.episodes.find(episode => episode.id === job.episodeId);
+          if (retriedEpisode?.production?.repairCenter) retriedEpisode.production.repairCenter.budgets = {};
           if (body.settings) {
             const resumedSettings = mergeResumedSeriesSettings(await openSettings(job.sealedSettings!), body.settings, process.env.APIMART_API_KEY || '');
             job.sealedSettings = await sealSettings(resumedSettings);
