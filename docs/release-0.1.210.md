@@ -8,3 +8,10 @@
 网站和 Companion 配套更新，新增 `seriesVideoModelRerun` 能力；云端 ComfyUI 无需更新。保留复杂提示词、8Turbo、七种视觉风格和每段片头裁切 0.24 秒。
 
 验证：28 组、571 项回归测试、生产构建和隔离浏览器交互通过。无真实视频生成或原项目修改。完整发布结果记录于 `out/releases/v0.1.210/`，构建中不能视为发布完成。
+
+
+发布完成：业务提交 `5c89c27a0d886052362840bef8dd8769ec11b354`，标签 `v0.1.210` / `companion-v0.1.210` 已推送。Netlify 部署 `6a9f98b2d4b83584bb4416a1` 已上线，正式域名图生视频 11 个、连续剧 13 个、Story 17 个脚本与构建逐字节一致。线上隔离浏览器验证 10 张图片经托管上传完整提交、模式/数量提示、灰按钮恢复入口及选中新模型重做请求通过，没有修改真实项目。
+
+本机 `/Applications/AID Companion.app` 已运行 0.1.210，`seriesVideoModelRerun` 与原有能力、正式域名 CORS 正常。打包与安装的 2374 个文件内容一致，安装期间四类项目/草稿/视频持久化数据哈希不变。完整 0.1.209 备份于 `out/releases/v0.1.210/AID Companion-0.1.209-installed.app`。
+
+GitHub Actions `34189554395` 的 Mac Apple Silicon、Mac Intel、Windows x64 与 release job 全部成功。公开安装包发布为 `companion-v0.1.210`。云端 ComfyUI 与模型文件未改动。
