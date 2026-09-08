@@ -6,11 +6,18 @@ export const DEFAULT_COMFYUI_COMPANION_URL = 'http://127.0.0.1:3018';
 // are not cut off by the hosting gateway. Keep this gate aligned with the
 // screenplay schema: older builds silently drop newer narrative fields.
 export const STORY_COMPANION_MIN_VERSION = [0, 1, 89] as const;
-export const SEGMENT_VIDEO_COMPANION_MIN_VERSION = [0, 1, 201] as const;
+export const SEGMENT_VIDEO_COMPANION_MIN_VERSION = [0, 1, 209] as const;
 export const LOCAL_EXPORT_COMPANION_MIN_VERSION = [0, 1, 207] as const;
-export const H3_DIRECTOR_COMPANION_MIN_VERSION = [0, 1, 201] as const;
+export const H3_DIRECTOR_COMPANION_MIN_VERSION = [0, 1, 209] as const;
 
 type ComfyUISettings = NonNullable<AppSettings['comfyui']>;
+
+export async function assertH3EightTurboSupport(settings?: Partial<ComfyUISettings>): Promise<void> {
+  const response = await fetch(comfyUIApiUrl('/api/companion/status', settings), { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+  if (!response.ok) throw new Error('无法确认 H3 8Turbo 服务，请检查 Companion 连接');
+  const status = await response.json();
+  if (!status.h3Dasiwa8Turbo) throw new Error('H3 已统一使用 DaSiWa 8Turbo，请先更新 Companion 至 v0.1.209 或更高版本');
+}
 
 export function comfyUIApiUrl(pathname: string, settings?: Partial<ComfyUISettings>): string {
   if (settings?.useLocalCompanion === false) return pathname;

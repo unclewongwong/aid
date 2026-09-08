@@ -349,7 +349,9 @@ export async function POST(request: NextRequest) {
                 : e,
             );
           } else {
-            if (Object.prototype.hasOwnProperty.call(body.patch || {}, 'styleReference')) setSeriesStyleReference(project, body.patch.styleReference);
+            if (Object.prototype.hasOwnProperty.call(body.patch || {}, 'styleReference') || Object.prototype.hasOwnProperty.call(body.patch || {}, 'visualStyle')) {
+              setSeriesStyleReference(project, Object.prototype.hasOwnProperty.call(body.patch || {}, 'styleReference') ? body.patch.styleReference : project.styleReference, body.patch.visualStyle);
+            }
             if (typeof body.patch?.name === "string" && text(body.patch.name))
               project.name = text(body.patch.name);
             if (

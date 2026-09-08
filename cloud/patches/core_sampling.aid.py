@@ -100,7 +100,7 @@ def sample_single_stage(
     notify(phase_name, 0)
     use_aid_t8_compat = (
         str(sampler_name) == "euler"
-        and int(steps) == 4
+        and int(steps) in (4, 8)
         and str(scheduler) == "simple"
         and abs(float(shift_video) - 12.0) < 1e-6
         and abs(float(shift_audio) - 3.0) < 1e-6

@@ -1,7 +1,7 @@
 import CharacterUpload from './CharacterUpload';
 import ObjectUpload from './ObjectUpload';
 import { CapturePreset, Character, ObjectItem, VisualStyle } from '@/types';
-import { PRODUCTION_STYLE_PRESETS } from '@/lib/promptArchitecture';
+import { PRODUCTION_STYLE_PRESETS, FEATURED_PRODUCTION_STYLES, OTHER_PRODUCTION_STYLES } from '@/lib/promptArchitecture';
 import { CAPTURE_PRESETS } from '@/lib/capturePresets';
 import { buildImageStyleControls } from '@/lib/imageStyleControls';
 
@@ -51,7 +51,7 @@ export default function Step2({ characters, objects, onCharactersChange, onObjec
             aria-label="选择全片制作风格"
             className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-1 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0"
           >
-            {PRODUCTION_STYLE_PRESETS.map((preset) => {
+            {FEATURED_PRODUCTION_STYLES.map((preset) => {
               const isSelected = visualStyle === preset.value;
               return (
                 <button
@@ -68,6 +68,10 @@ export default function Step2({ characters, objects, onCharactersChange, onObjec
                 </button>
               );
             })}
+            <select aria-label="更多制作风格" value={OTHER_PRODUCTION_STYLES.some(style => style.value === visualStyle) ? visualStyle : ''} onChange={event => { if (event.target.value) onVisualStyleChange(event.target.value as VisualStyle); }} className="rounded-md border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-2 py-2 text-xs text-[var(--text-secondary)]">
+              <option value="" disabled>更多风格</option>
+              {OTHER_PRODUCTION_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+            </select>
           </div>
         </div>
 

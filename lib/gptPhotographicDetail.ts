@@ -1,10 +1,11 @@
-import type { CapturePreset } from '@/types';
+import type { CapturePreset, VisualStyle } from '@/types';
 
 export interface PhotographicDetailContext {
   view?: 'shot' | 'portrait' | 'character-sheet' | 'full-body' | 'environment' | 'grid' | 'creative';
   shotSize?: string;
   characterCount?: number;
   capturePreset?: CapturePreset;
+  visualStyle?: VisualStyle;
 }
 
 // A short photographic cue, not a material-rendering specification. Identity,
@@ -20,6 +21,9 @@ export function buildGptPhotographicDetail(context: PhotographicDetailContext = 
   const focus = lowDetailCapture
     ? 'Respect the declared capture device and its natural depth; no added portrait-mode blur.'
     : 'Keep the authored lens, camera distance and focus. Background detail may soften or disappear; the story action stays readable.';
-  return `${view === 'grid' || view === 'character-sheet' ? 'Apply separately at each view’s actual scale, without turning every view into a close portrait.\n' : ''}${face ? `${face}\n` : ''}Use the light already present in the scene. Dark areas may remain dark and small lamps may clip; do not add beauty fill or decorative rim light. Ordinary cloth and set surfaces need not shine or show every detail. Do not add dirt, damage or wetness to manufacture realism.
+  const lighting = ['variety', 'commercial'].includes(context.visualStyle || '')
+    ? 'Use the selected production lighting, including motivated soft key and fill. Preserve the authored location and time of day; keep faces and required action readable without plastic skin or decorative flare.'
+    : 'Use the light already present in the scene. Dark areas may remain dark and small lamps may clip; do not add beauty fill or decorative rim light.';
+  return `${view === 'grid' || view === 'character-sheet' ? 'Apply separately at each view’s actual scale, without turning every view into a close portrait.\n' : ''}${face ? `${face}\n` : ''}${lighting} Ordinary cloth and set surfaces need not shine or show every detail. Do not add dirt, damage or wetness to manufacture realism.
 ${focus}`;
 }

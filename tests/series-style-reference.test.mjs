@@ -10,6 +10,24 @@ import {buildEpisodeProject} from '../lib/series/domain.ts';
 
 const style={imageUrl:'https://example.com/series-look.png',description:'Warm highlights, blue-green ambient fill, restrained contrast.'};
 
+test('a preset-only change archives the old look once without requiring a style image', () => {
+  const project = { visualStyle:'cinematic-natural', characters:[{id:'c1',version:1,bibleUrl:'old-card.png',voiceId:'voice',voiceReferenceUrl:'original.wav'}], locations:[], episodes:[{id:'ep-1',version:2,script:[{number:1,dialogue:'Keep these words.'}],production:{id:'old-production',visualStyle:'cinematic-natural'},deliveries:[{id:'old-film'}]}] };
+  const before = structuredClone(project);
+  assert.equal(setSeriesStyleReference(project, undefined, 'variety'), true);
+  assert.equal(project.visualStyle, 'variety');
+  assert.equal(project.styleReference, undefined);
+  assert.equal(project.visualHistory[0].visualStyle, 'cinematic-natural');
+  assert.deepEqual(project.visualHistory[0].productions[0].production, before.episodes[0].production);
+  assert.deepEqual(project.episodes[0].script, before.episodes[0].script);
+  assert.deepEqual(project.episodes[0].deliveries, before.episodes[0].deliveries);
+  assert.equal(project.characters[0].voiceReferenceUrl, 'original.wav');
+  assert.equal(setSeriesStyleReference(project, undefined, 'variety'), false);
+  assert.equal(project.visualHistory.length, 1);
+  const updated = structuredClone(project);
+  assert.throws(() => setSeriesStyleReference(project, undefined, 'unknown'), /有效/);
+  assert.deepEqual(project, updated);
+});
+
 test('style change archives paid tasks and media, preserving scripts, voices and historical deliveries',()=>{
   const project={characters:[{id:'c1',imageUrl:'identity.png',bibleUrl:'old.png',locked:true,version:1,appearance:'on_screen',voiceId:'voice',voiceReferenceUrl:'voice.mp3',photographicAnchor:{imageTaskId:'paid-original',imageUrl:'anchor.png'}}],locations:[{id:'l1',imageUrl:'old-scene.png',imageTaskId:'paid-location'}],episodes:[{id:'ep-1',version:1,script:[{number:1}],production:{id:'old-production'},deliveries:[{id:'old-film'}]}]};
   const before=structuredClone(project);

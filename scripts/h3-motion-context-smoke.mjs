@@ -17,7 +17,7 @@ const comfyui = {
   sshHost: 'me21gb3rds8p0h44.ssh.x-gpu.com', sshPort: 43213, sshUser: 'root',
   sshKeyPath: '~/.ssh/id_ed25519', comfyPort: 8188, workflowRoot: '/root/ComfyUI',
   imageWorkflowPath: '', multiImageWorkflowPath: '', firstLastWorkflowPath: '',
-  h3Fl2vaProfile: 'dasiwa4', timeoutSeconds: 7200,
+  h3Fl2vaProfile: 'dasiwa8', timeoutSeconds: 7200,
 };
 
 function storyboard(index) {

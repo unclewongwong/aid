@@ -516,7 +516,7 @@ export default function SettingsModal({
               <label className="block text-xs font-mono text-[var(--text-secondary)]">
                 H3 视频生成方案
                 <div className="mt-1 rounded border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-primary)]">
-                  pruned 模型 + DaSiWa 4步 · 单镜、多镜、首尾帧统一
+                  DaSiWa Hybrid 8Turbo · 8 步 · 单镜、多镜、首尾帧统一
                 </div>
               </label>
               <div className="grid gap-3 md:grid-cols-2">

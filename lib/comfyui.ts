@@ -10,8 +10,8 @@ import net from 'net';
 import { Client, type SFTPWrapper } from 'ssh2';
 import { MAX_H3_REFERENCE_SPEAKERS, MAX_H3_SPEECH_TURNS } from '@/lib/speechAudioContract';
 import { buildH3DirectorGraph, directorGraphInfo, type DirectorPlan } from '@/lib/h3Director';
-import { H3_DASIWA_4TURBO_PROFILE } from '@/lib/h3GenerationProfile';
-export { H3_DASIWA_4TURBO_PROFILE } from '@/lib/h3GenerationProfile';
+import { H3_DASIWA_8TURBO_PROFILE } from '@/lib/h3GenerationProfile';
+export { H3_DASIWA_8TURBO_PROFILE } from '@/lib/h3GenerationProfile';
 import {
   applyT8H3MotionContext,
   h3MotionContextHeadSeconds,
@@ -68,7 +68,7 @@ export type ComfyUIWorkflow =
   | 'aid_multi_reference'
   | 'aid_first_last';
 
-export type H3Fl2vaProfile = 'balanced8' | 'dasiwa4' | 'legacy';
+export type H3Fl2vaProfile = 'dasiwa8' | 'balanced8' | 'dasiwa4' | 'legacy';
 
 const WORKFLOW_SEARCH_PATTERNS: Record<ComfyUIWorkflow, string> = {
   aid_single_reference: '*单图生视频*4步lora*.json',
@@ -134,7 +134,7 @@ function positiveInt(value: string, fallback: number, minimum = 1): number {
 
 function h3Fl2vaProfile(_value: unknown): H3Fl2vaProfile {
   // Old browser settings and queued jobs must not restore the retired stacks.
-  return 'dasiwa4';
+  return 'dasiwa8';
 }
 
 function normalizePrivateKey(value: string, source: string): string {
@@ -203,7 +203,7 @@ export function getComfyUIConfig(settings: ComfyUIClientSettings = {}): ComfyUIC
     multiImageWorkflowPath: envOrValue(settings.multiImageWorkflowPath, 'COMFYUI_MULTI_IMAGE_WORKFLOW_PATH', ''),
     firstLastWorkflowPath: envOrValue(settings.firstLastWorkflowPath, 'COMFYUI_FIRST_LAST_WORKFLOW_PATH', ''),
     h3Fl2vaProfile: h3Fl2vaProfile(
-      settings.h3Fl2vaProfile ?? process.env.COMFYUI_H3_FL2VA_PROFILE ?? 'dasiwa4',
+      settings.h3Fl2vaProfile ?? process.env.COMFYUI_H3_FL2VA_PROFILE ?? 'dasiwa8',
     ),
     characterReplaceWorkflowPath: envOrValue(
       settings.characterReplaceWorkflowPath,
@@ -920,32 +920,36 @@ function linkedFrom(node: JsonRecord, inputName: string, expectedNodeId: string)
 export function applyH3Fl2vaProfile(
   prompt: JsonRecord,
   _variant: ComfyUIWorkflow,
-  _profile: H3Fl2vaProfile = 'dasiwa4',
+  _profile: H3Fl2vaProfile = 'dasiwa8',
 ): JsonRecord {
-  // I2VA / FL2VA / Ref2VA are conditioning modes of the same Hybrid base.
-  // Never infer an interchangeable checkpoint from the conditioning name:
-  // this projected LoRA only matches the exact DaSiWa checkpoint above.
-  const selectedProfile = H3_DASIWA_4TURBO_PROFILE;
-
+  const selectedProfile = H3_DASIWA_8TURBO_PROFILE;
   const [unetId, unet] = uniquePromptNode(prompt, 'UNETLoader');
   const [, clip] = uniquePromptNode(prompt, 'CLIPLoader');
   const [sageId, sage] = uniquePromptNode(prompt, 'MiniMaxH3MemoryEfficientSageAttentionPatch');
-  const [loraId, lora] = uniquePromptNode(prompt, 'LoraLoaderBypassModelOnly');
   const [, sampler] = uniquePromptNode(prompt, 'MiniMaxH3DualClockSamplerT8');
-
-  if (!linkedFrom(sage, 'model', unetId)
-    || !linkedFrom(lora, 'model', sageId)
-    || !linkedFrom(sampler, 'model', loraId)) {
-    throw new ComfyUIError(`${selectedProfile.name} 方案要求 UNET → Sage → LoRA → Sampler 的完整模型链`);
+  const loras = Object.entries(prompt).filter(([, node]) => /LoraLoader/i.test(node.class_type || ''));
+  if (!linkedFrom(sage, 'model', unetId) || loras.length > 1) {
+    throw new ComfyUIError('8Turbo 工作流需要唯一的 UNET → Sage → Sampler 模型链');
   }
-
+  if (loras.length) {
+    const [loraId, lora] = loras[0];
+    if (lora.class_type !== 'LoraLoaderBypassModelOnly' || !linkedFrom(lora, 'model', sageId) || !linkedFrom(sampler, 'model', loraId)) {
+      throw new ComfyUIError('8Turbo 无法识别旧工作流的加速 LoRA 链，未提交生成');
+    }
+    // Rewire every consumer before removing the legacy adapter. Removing the
+    // node also prevents Comfy from validating/loading an obsolete LoRA file.
+    for (const node of Object.values(prompt)) for (const [key, value] of Object.entries(node.inputs || {})) {
+      if (Array.isArray(value) && String(value[0]) === loraId) node.inputs[key] = [sageId, value[1]];
+    }
+    delete prompt[loraId];
+  } else if (!linkedFrom(sampler, 'model', sageId)) {
+    throw new ComfyUIError('8Turbo 工作流的采样器未连接到 Sage 模型');
+  }
   unet.inputs.unet_name = selectedProfile.diffusionModel;
   unet.inputs.weight_dtype = 'default';
   clip.inputs.clip_name = selectedProfile.textEncoder;
   clip.inputs.type = 'minimax';
   clip.inputs.device = 'default';
-  lora.inputs.lora_name = selectedProfile.lora;
-  lora.inputs.strength_model = selectedProfile.loraStrength;
   sampler.inputs.steps = selectedProfile.steps;
   sampler.inputs.shift_video = selectedProfile.shiftVideo;
   sampler.inputs.shift_audio = selectedProfile.shiftAudio;
@@ -1133,7 +1137,7 @@ export function buildComfyUISubtitleRemovalPrompt(input: {
     throw new ComfyUIError('云端缺少 MiniMax H3 Director，无法自动去除烧录字幕');
   }
   const diffusionModel = requiredDefinitionOption(definitions, 'UNETLoader', 'unet_name', [
-    'minimax_h3_ref2va_pruned_int8_convrot.safetensors',
+    H3_DASIWA_8TURBO_PROFILE.diffusionModel,
   ]);
   const textEncoder = requiredDefinitionOption(definitions, 'CLIPLoader', 'clip_name', [
     'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
@@ -1147,8 +1151,8 @@ export function buildComfyUISubtitleRemovalPrompt(input: {
   ]);
   const taskType = 'v2v — 视频转视频(Video to Video)';
   // MiniMax's official V2V prompt guide prescribes this exact terse command.
-  // Extra preservation prose and the four-step creative LoRA both proved too
-  // weak in production: the model reconstructed the source subtitle verbatim.
+  // This edit keeps its task-specific command and source audio; it does not
+  // alter the detailed creative prompt used by ordinary H3 generation.
   const editPrompt = '<Video 1> Remove subtitles from the video.';
   const timelineData = JSON.stringify({
     version: 5,
@@ -1243,11 +1247,11 @@ export function buildComfyUISubtitleRemovalPrompt(input: {
       total_frames: source.frameCount,
       timeline_data: timelineData,
       bd_grp_advanced: '高级采样 Advanced',
-      steps: 25,
-      sampler: 'res_multistep',
-      scheduler: H3_DASIWA_4TURBO_PROFILE.scheduler,
-      shift_video: H3_DASIWA_4TURBO_PROFILE.shiftVideo,
-      shift_audio: H3_DASIWA_4TURBO_PROFILE.shiftAudio,
+      steps: H3_DASIWA_8TURBO_PROFILE.steps,
+      sampler: 'euler',
+      scheduler: H3_DASIWA_8TURBO_PROFILE.scheduler,
+      shift_video: H3_DASIWA_8TURBO_PROFILE.shiftVideo,
+      shift_audio: H3_DASIWA_8TURBO_PROFILE.shiftAudio,
       bd_grp_perf: '性能 Performance',
       clear_vram_between_segments: true,
       export_source_images: false,

@@ -1,9 +1,11 @@
+import { buildGptImage2PhotographicContract } from './gptImagePrompt';
+import { ANIMATED_VISUAL_STYLES } from './visualStylePresets';
 import type { VisualStyle } from '@/types';
 import { normalizeVisualStyle, buildCharacterBiblePrompt, buildCharacterConceptGridPrompt, buildSceneReferencePrompt } from './promptArchitecture';
 import { buildGptPhotographicDetail } from './gptPhotographicDetail';
 
 export function usesPhotographicReferences(style?: VisualStyle): boolean {
-  return !['anime', '3d-cg', 'stop-motion', 'follow-reference'].includes(normalizeVisualStyle(style));
+  return ![...ANIMATED_VISUAL_STYLES, 'follow-reference'].includes(normalizeVisualStyle(style));
 }
 
 export const PHOTOGRAPHIC_IDENTITY_RULE = 'References lock face/head, age, species, anatomy, hair and costume, not their rendering style. Use practical makeup, sewn wardrobe or creature effects without redesigning the character. Merfolk retain their fish tail, never human legs or shoes; a tail outside the crop need not be shown.';
@@ -56,6 +58,6 @@ export function buildGptSceneReferencePrompt(scene: string, style?: VisualStyle,
   return `Create one photorealistic location-scouting photograph, ${aspectRatio} composition, of this story location: ${scene}.
 For a fantasy location, photograph how a film crew would build and light that design: fabricated scenery and illuminated props, without showing the crew. Preserve architecture, entrances, landmarks and scale.
 One wide photograph from human height beside the entrance, with usable foreground space. Honor the authored time, weather and light. Surfaces need not all shine; moisture is irregular where the scene requires it. Keep background detail subordinate to the room's layout.
-${buildGptPhotographicDetail({ view: 'environment', characterCount: 0 })}
+${buildGptImage2PhotographicContract(style, undefined, { view: 'environment', characterCount: 0 })}
 Keep the location faithful to the brief. No people, contact sheet, alternate views, labels, titles or added text.`;
 }

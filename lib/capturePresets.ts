@@ -1,4 +1,4 @@
-import type { CapturePreset, Storyboard } from '@/types';
+import type { CapturePreset, Storyboard, VisualStyle } from '@/types';
 
 export const DEFAULT_CAPTURE_PRESET: CapturePreset = 'cinematic-narrative';
 
@@ -13,6 +13,13 @@ export interface CapturePresetDefinition {
 }
 
 export const CAPTURE_PRESETS: CapturePresetDefinition[] = [
+  {
+    value: 'variety-show', label: '综艺实拍', description: '现场多人机位、柔和补光与清晰反应',
+    director: '外景综艺拍摄，保持多人位置关系和表情可读。机位按剧本捕捉动作与反应，可柔和补光，但保留故事的地点和昼夜；人物自然互动，不默认摆拍、看镜头或慢动作。',
+    image: 'Location reality-TV capture with readable group expressions, moderate zoom perspective, broad soft fill, natural skin color and an unposed mid-conversation moment. Preserve the authored location and time of day; no decorative haze, flare, beauty smoothing or broadcast text.',
+    grid: 'Reality-TV coverage with clear group geography, readable individual reactions, balanced natural skin, soft fill and consistent location light; no staged hero poses or broadcast captions.',
+    video: 'A broadcast camera follows the authored interaction and reaction, keeping group geography readable. Natural conversational gestures and individual responses, no blanket slow motion or unrequested address to camera.',
+  },
   {
     value: 'cinematic-narrative',
     label: '电影叙事',
@@ -95,6 +102,20 @@ export const CAPTURE_PRESETS: CapturePresetDefinition[] = [
     video: 'Continue the supplied reference capture method: preserve its camera distance, viewpoint, framing behavior, focus response, and justified image texture without adding a second camera style.',
   },
 ];
+
+export function capturePresetForStyle(style?: VisualStyle): CapturePreset {
+  if (style === 'iphone') return 'phone-bystander';
+  if (style === 'variety') return 'variety-show';
+  if (style === 'documentary') return 'documentary-follow';
+  if (style === 'commercial') return 'commercial-studio';
+  if (style === 'follow-reference') return 'follow-reference';
+  return DEFAULT_CAPTURE_PRESET;
+}
+
+/** New style presets supply a camera default for older requests without one. */
+export function resolveStyleCapture(style?: VisualStyle, capture?: CapturePreset): CapturePreset {
+  return !capture || (capture === DEFAULT_CAPTURE_PRESET && ['film', 'iphone', 'variety', 'guoman', 'chibi'].includes(style || '')) ? capturePresetForStyle(style) : capture;
+}
 
 export function normalizeCapturePreset(value?: CapturePreset | string): CapturePreset {
   return CAPTURE_PRESETS.some((preset) => preset.value === value)

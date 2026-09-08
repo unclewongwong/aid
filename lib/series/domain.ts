@@ -1,3 +1,4 @@
+import { capturePresetForStyle } from '../capturePresets';
 import type {
   SeriesBible,
   SeriesCharacter,
@@ -637,6 +638,7 @@ export function buildEpisodeProject(
     targetShotCount: project.shotCount,
     aspectRatio: project.aspectRatio,
     visualStyle: project.visualStyle,
+    capturePreset: capturePresetForStyle(project.visualStyle),
     styleReference: project.styleReference,
     storyOutline: "",
     storyboards: [],

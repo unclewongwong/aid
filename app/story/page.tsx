@@ -1,4 +1,5 @@
 'use client';
+import { capturePresetForStyle } from '@/lib/capturePresets';
 import type { ImageStyleReference } from '@/lib/imageStyleReference';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -1059,16 +1060,25 @@ export default function StoryPage() {
     }
     if (hasStoryMedia(storyboardsRef.current) && !window.confirm('更换风格后现有分镜图需要重新生成，相关视频也需重制。不会自动提交付费生成，是否继续？')) return;
     setVisualStyle(normalized);
+    const selectedCapture = capturePresetForStyle(normalized);
+    capturePresetRef.current = selectedCapture;
+    setCapturePreset(selectedCapture);
     productionTimingRef.current = undefined;
     setProductionTiming(undefined);
-    setStoryboards(prev => {
-      const next = prev.map(storyboard => storyboard.visualStyle === normalized
-        ? storyboard
-        : applyCapturePreset({ ...storyboard, visualStyle: normalized }, capturePresetRef.current));
-      storyboardsRef.current = next;
-      return next;
-    });
+    const nextStoryboards = storyboardsRef.current.map(storyboard =>
+      applyCapturePreset({ ...storyboard, visualStyle: normalized }, selectedCapture));
+    storyboardsRef.current = nextStoryboards;
+    setStoryboards(nextStoryboards);
     sceneImagesRef.current = []; setSceneImages([]);
+    videoSegmentPlanRef.current = undefined; setVideoSegmentPlan(undefined);
+    saveProject({
+      characters: charactersRef.current, objects: objectsRef.current, storyContent,
+      language: projectLanguageRef.current, targetShotCount, aspectRatio: projectAspectRatioRef.current,
+      visualStyle: normalized, capturePreset: selectedCapture, productionTiming: undefined,
+      storyOutline: '', storyboards: nextStoryboards, voiceReferences: voiceReferencesRef.current,
+      costumeImages: costumeImagesRef.current, sceneImages: [], styleReference: styleReferenceRef.current,
+      storyPlan: storyPlanRef.current, videoSegmentPlan: undefined, createdAt: new Date().toISOString(),
+    });
   };
 
   const handleCapturePresetChange = (preset: CapturePreset) => {
@@ -2136,7 +2146,7 @@ export default function StoryPage() {
         const statusResponse = await fetch(comfyUIApiUrl('/api/companion/status', activeSettings.comfyui), { cache: 'no-store', signal: AbortSignal.timeout(2500) });
         const status = statusResponse.ok ? await statusResponse.json() : undefined;
         if (!status?.ok || !companionVersionAtLeast(String(status.version || ''), SEGMENT_VIDEO_COMPANION_MIN_VERSION)) {
-          throw new Error(`单镜单图与 pruned 四步生成需要 Companion v${SEGMENT_VIDEO_COMPANION_MIN_VERSION.join('.')} 或更高版本；当前版本为 ${status?.version || '未知'}`);
+          throw new Error(`H3 8Turbo 生成需要 Companion v${SEGMENT_VIDEO_COMPANION_MIN_VERSION.join('.')} 或更高版本；当前版本为 ${status?.version || '未知'}`);
         }
       } catch (error) {
         failBeforeSubmission(error instanceof Error ? error.message : '无法确认 Companion 版本');

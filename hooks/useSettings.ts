@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     imageWorkflowPath: '',
     multiImageWorkflowPath: '',
     firstLastWorkflowPath: '',
-    h3Fl2vaProfile: 'dasiwa4',
+    h3Fl2vaProfile: 'dasiwa8',
     h3ContinuityMode: 'tail-frame',
     h3MotionContextFrames: 22,
     timeoutSeconds: 7200,
@@ -61,7 +61,7 @@ function migrateSettings(settings: AppSettings): AppSettings {
   const comfyui = {
     ...DEFAULT_SETTINGS.comfyui!,
     ...(legacyComfyUI || {}),
-    h3Fl2vaProfile: 'dasiwa4' as const,
+    h3Fl2vaProfile: 'dasiwa8' as const,
     sshKeyPath: /^(?:\/|~\/)/.test(legacyKeyPath)
       ? legacyKeyPath
       : DEFAULT_SETTINGS.comfyui!.sshKeyPath,

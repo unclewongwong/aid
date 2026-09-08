@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { assertH3EightTurboSupport } from '../lib/comfyuiClient.ts';
 
 import {
   applyH3Fl2vaProfile,
   getComfyUIConfig,
   COMFYUI_SUBTITLE_TASK_PREFIX,
   fitH3ReferenceAudioDurations,
-  H3_DASIWA_4TURBO_PROFILE,
+  H3_DASIWA_8TURBO_PROFILE,
   h3ConditioningTaskType,
   h3AlignedDurationSeconds,
   h3AlignedFrameCount,
@@ -34,6 +35,16 @@ import {
 const TOTAL_BUDGET = 14.7;
 const MINIMUM_DURATION = 2;
 
+test('standalone and batch H3 reject old companions before submitting paid media', async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.208',h3DasiwaCheckpointPair:true}), {status:200});
+    await assert.rejects(assertH3EightTurboSupport(), /8Turbo/);
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.209',h3Dasiwa8Turbo:true}), {status:200});
+    await assert.doesNotReject(assertH3EightTurboSupport());
+  } finally { globalThis.fetch=original; }
+});
+
 test('uses stable content-addressed names for reusable H3 reference uploads', () => {
   const first = comfyUIAssetCacheFileName(Buffer.from('same reference'), 'voice.WAV');
   const repeated = comfyUIAssetCacheFileName(Buffer.from('same reference'), 'another.wav');
@@ -45,7 +56,7 @@ test('uses stable content-addressed names for reusable H3 reference uploads', ()
 
 test('builds a Director V2V subtitle-removal pass that preserves source audio', () => {
   const definitions = {
-    UNETLoader: { input: { required: { unet_name: [['minimax_h3_ref2va_pruned_int8_convrot.safetensors']], weight_dtype: [['default']] } } },
+    UNETLoader: { input: { required: { unet_name: [['DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors']], weight_dtype: [['default']] } } },
     CLIPLoader: { input: { required: { clip_name: [['qwen3vl_32b_minimax_h3_int8_convrot.safetensors']], type: [['minimax']], device: [['default']] } } },
     VAELoader: { input: { required: { vae_name: [['minimax_h3_video_vae_fp16.safetensors', 'minimax_h3_audio_vae_fp32.safetensors']] } } },
     MiniMaxH3MemoryEfficientSageAttentionPatch: { input: { required: { model: ['MODEL'] } } },
@@ -61,9 +72,9 @@ test('builds a Director V2V subtitle-removal pass that preserves source audio', 
     },
     outputPrefix: 'aid/subtitle/test', seed: 42, definitions,
   });
-  assert.equal(prompt['1'].inputs.unet_name, 'minimax_h3_ref2va_pruned_int8_convrot.safetensors');
+  assert.equal(prompt['1'].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors');
   assert.equal(prompt['30'].inputs.global_prompt, '<Video 1> Remove subtitles from the video.');
-  assert.equal(prompt['30'].inputs.steps, 25);
+  assert.equal(prompt['30'].inputs.steps, 8);
   assert.deepEqual(prompt['30'].inputs.model, ['2', 0]);
   assert.equal(prompt['3'], undefined);
   const timeline = JSON.parse(prompt['30'].inputs.timeline_data);
@@ -145,23 +156,24 @@ function acceleratedPrompt() {
   };
 }
 
-test('all generation variants normalize stale settings to pruned four-step graphs', () => {
+test('all generation variants replace retired adapters with verified 8Turbo', () => {
   for (const variant of ['aid_single_reference', 'aid_first_last', 'aid_multi_reference']) {
-    for (const profile of [undefined, 'balanced8', 'legacy', 'dasiwa4']) {
+    for (const profile of [undefined, 'balanced8', 'legacy', 'dasiwa4', 'dasiwa8']) {
       const prompt = acceleratedPrompt();
       const result = applyH3Fl2vaProfile(prompt, variant, profile);
       assert.equal(result.active, true);
-      assert.equal(result.name, 'dasiwa4');
+      assert.equal(result.name, 'dasiwa8');
       assert.equal(result.sageAttention, true);
       assert.equal(result.approximateCache, false);
-      assert.equal(prompt[20].inputs.unet_name, H3_DASIWA_4TURBO_PROFILE.diffusionModel);
-      // Pin the adapter's actual metadata contract, not just the same mutable
-      // constant on both sides: FL2VA-pruned passed the old tautological test.
-      assert.equal(prompt[20].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors');
-      assert.equal(result.diffusionModelSha256, '71c61492faf65b410d0726840ac3b27b017fcfeb76b16ae11589223d81b7121c');
-      assert.equal(prompt[24].inputs.clip_name, H3_DASIWA_4TURBO_PROFILE.textEncoder);
-      assert.equal(prompt[22].inputs.lora_name, H3_DASIWA_4TURBO_PROFILE.lora);
-      assert.equal(prompt[23].inputs.steps, 4);
+      assert.equal(prompt[20].inputs.unet_name, H3_DASIWA_8TURBO_PROFILE.diffusionModel);
+      // Pin the published checkpoint independently of the mutable profile.
+      assert.equal(prompt[20].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors');
+      assert.equal(result.diffusionModelSha256, 'e0441d26414f6e0c28f43d580e6cc56fad424da0fa4d261b698ca73188aa6332');
+      assert.equal(prompt[24].inputs.clip_name, H3_DASIWA_8TURBO_PROFILE.textEncoder);
+      assert.equal(prompt[22], undefined);
+      assert.deepEqual(prompt[23].inputs.model, ['21', 0]);
+      assert.equal(result.lora, null);
+      assert.equal(prompt[23].inputs.steps, 8);
       assert.equal(prompt[23].inputs.shift_video, 12);
       assert.equal(prompt[23].inputs.shift_audio, 3);
       assert.equal(prompt[23].inputs.sampler_name, 'dual_clock_euler');
@@ -170,10 +182,21 @@ test('all generation variants normalize stale settings to pruned four-step graph
   }
 });
 
-test('old saved acceleration choices cannot restore an eight-step submission', () => {
-  for (const profile of ['balanced8', 'legacy', 'dasiwa4', undefined]) {
-    assert.equal(getComfyUIConfig({ h3Fl2vaProfile: profile }).h3Fl2vaProfile, 'dasiwa4');
+test('old saved acceleration choices cannot restore the retired four-step stack', () => {
+  for (const profile of ['balanced8', 'legacy', 'dasiwa4', 'dasiwa8', undefined]) {
+    assert.equal(getComfyUIConfig({ h3Fl2vaProfile: profile }).h3Fl2vaProfile, 'dasiwa8');
   }
+});
+
+test('8Turbo migration is idempotent and rewires all retired LoRA consumers', () => {
+  const prompt = acceleratedPrompt();
+  prompt[25] = { class_type:'BasicGuider', inputs:{model:['22',0],conditioning:['30',0]} };
+  applyH3Fl2vaProfile(prompt, 'aid_single_reference');
+  assert.deepEqual(prompt[25].inputs.model, ['21',0]);
+  const once = structuredClone(prompt);
+  applyH3Fl2vaProfile(prompt, 'aid_single_reference');
+  assert.deepEqual(prompt, once);
+  assert.equal(Object.values(prompt).some(node => /LoraLoader/.test(node.class_type)), false);
 });
 
 test('normalizing a multi-reference graph preserves all image, voice and seed inputs', () => {

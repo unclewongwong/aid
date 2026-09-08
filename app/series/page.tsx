@@ -38,7 +38,8 @@ import SeriesStyleReferenceEditor from '@/components/SeriesStyleReferenceEditor'
 import { useSettings } from "@/hooks/useSettings";
 import { readApiJson } from "@/lib/apiResponse";
 import { fixedObjectIdentityError } from '@/lib/series/objectIdentity';
-import { PRODUCTION_STYLE_PRESETS } from "@/lib/promptArchitecture";
+import VisualStyleOptions from "@/components/VisualStyleOptions";
+import type { VisualStyle } from "@/types";
 import {
   CHARACTER_HISTORY_STORAGE_KEY,
   characterFromGeneratedSeries,
@@ -954,9 +955,11 @@ export default function SeriesPage() {
       }
       if (body.settings && ['enqueue', 'resume', 'retry'].includes(String(body.action))) {
         if (!videoChoice.ready) throw new Error('视频模型选择正在加载，请稍后重试');
-        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean }>(
+        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean; h3Dasiwa8Turbo?: boolean; seriesVisualStyleSelection?: boolean }>(
           await fetch(`${base}/api/companion/status`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }), '无法检查视频模型选择支持');
         if (!status.seriesVideoModelSelection) throw new Error('请更新 Companion 后再开始制作，旧版会覆盖所选视频模型。');
+        if (productionSettings.videoProvider === 'comfyui' && !status.h3Dasiwa8Turbo) throw new Error('请更新 Companion 后开始 H3 制作，新版统一使用 DaSiWa 8Turbo。');
+        if (!status.seriesVisualStyleSelection) throw new Error('请更新 Companion 后开始制作，以便使用所选全剧视觉风格。');
         if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后再开始制作，以便按定稿镜数逐张生成 1K 分镜图。');
       }
       if (body.action === "delete-job") {
@@ -1007,6 +1010,8 @@ export default function SeriesPage() {
         seriesVisualRedoRecovery?: boolean;
         storySingleImageShots?: boolean;
         h3DasiwaCheckpointPair?: boolean;
+        h3Dasiwa8Turbo?: boolean;
+        seriesVisualStyleSelection?: boolean;
       }>(
         await fetch(`${base}/api/companion/status`, {
           cache: "no-store",
@@ -1015,6 +1020,7 @@ export default function SeriesPage() {
         "无法检查一键重做支持",
       );
       if (!status.seriesVideoModelSelection) throw new Error("请更新 Companion 后重做，旧版会覆盖所选视频模型。");
+      if (!status.seriesVisualStyleSelection || (productionSettings.videoProvider === 'comfyui' && !status.h3Dasiwa8Turbo)) throw new Error('请更新 Companion 后重做，以便使用新风格与 H3 8Turbo。');
       if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后重做，以便逐张生成 1K 分镜图。');
       if (!status.seriesVisualRedo || !status.seriesVisualPromptRewrite || !status.seriesVisualRedoRecovery || !status.storySingleImageShots || !status.h3DasiwaCheckpointPair)
         throw new Error("一键重做需要更新 Companion 后重新连接。");
@@ -1034,19 +1040,18 @@ export default function SeriesPage() {
       setBusy(false);
     }
   };
-  const saveStyleReference = async (file: File | undefined, description: string, remove = false) => {
+  const saveStyleReference = async (file: File | undefined, description: string, remove = false, visualStyle?: VisualStyle) => {
     if (!project || busy || editingLocked || base === undefined) return false;
     const target = project;
     setBusy(true); setError(''); setNotice('');
     try {
-      const status = await readApiJson<{seriesStyleReference?:boolean}>(await fetch(`${base}/api/companion/status`), '无法检查风格参考支持');
-      if (!status.seriesStyleReference) throw new Error('当前 Companion 尚不支持全系列风格参考，请更新后再保存');
+      const status = await readApiJson<{seriesStyleReference?:boolean;seriesVisualStyleSelection?:boolean}>(await fetch(`${base}/api/companion/status`), '无法检查风格参考支持');
+      if (!status.seriesStyleReference || !status.seriesVisualStyleSelection) throw new Error('请更新 Companion 后保存全剧视觉风格');
       let imageUrl = target.styleReference?.imageUrl;
       if (file) {
         imageUrl = await uploadSeriesReference(base, file, '风格图');
       }
-      if (!remove && !imageUrl) throw new Error('请先上传风格参考图');
-      await seriesRequest({action:'edit',seriesId:target.id,revision:target.revision,patch:{styleReference:remove?null:{imageUrl,description}}},base);
+      await seriesRequest({action:'edit',seriesId:target.id,revision:target.revision,patch:{styleReference:remove||!imageUrl?null:{imageUrl,description},visualStyle:visualStyle||target.visualStyle}},base);
       await refresh(base);
       setNotice('全系列风格已保存。旧视觉素材已归档，继续队列将按新风格重制；剧本和声音保留。');
       return true;
@@ -1884,7 +1889,7 @@ export default function SeriesPage() {
                 )}
                 {tab === "cast" && (
                   <>
-                    <SeriesStyleReferenceEditor key={`${project.id}-${project.styleReference?.version || 0}`} style={project.styleReference} disabled={editingLocked || busy || !connected} onSave={saveStyleReference}/>
+                    <SeriesStyleReferenceEditor key={`${project.id}-${project.visualStyle}-${project.styleReference?.version || 0}`} style={project.styleReference} visualStyle={project.visualStyle} disabled={editingLocked || busy || !connected} onSave={saveStyleReference}/>
                     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-sm">全剧公共资产</p>
@@ -2417,11 +2422,7 @@ export default function SeriesPage() {
                   className={field}
                   defaultValue="cinematic-natural"
                 >
-                  {PRODUCTION_STYLE_PRESETS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
+                  <VisualStyleOptions />
                 </select>
               </Labeled>
               <p className="text-xs leading-6 text-[var(--text-secondary)]">

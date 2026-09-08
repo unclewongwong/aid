@@ -1,3 +1,4 @@
+import { ANIMATED_VISUAL_STYLES } from './visualStylePresets';
 import type { VisualStyle } from '@/types';
 import { isComfyUIZImageTurbo, isGptImage2Model, isMidjourneyImageModel } from './imageModels';
 import { buildGptPhotographicDetail } from './gptPhotographicDetail';
@@ -24,7 +25,7 @@ export function buildStudioImagePrompt(input: {
   const intent = input.userIntent?.trim();
   const scale = input.scaleNotes?.trim();
   const gpt = isGptImage2Model(input.model || '');
-  const explicitMedium = ['anime', '3d-cg', 'stop-motion'].includes(input.visualStyle || '');
+  const explicitMedium = Boolean(input.visualStyle && ANIMATED_VISUAL_STYLES.includes(input.visualStyle));
   const gptTreatment = explicitMedium
     ? `OUTPUT MEDIUM: ${getProductionStylePreset(input.visualStyle).imageContract}. Preserve the requested medium; do not add photographic skin or a live-action treatment.`
     : `MEDIUM AND LIGHTING PRIORITY:

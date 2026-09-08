@@ -1,5 +1,6 @@
+import { ANIMATED_VISUAL_STYLES } from './visualStylePresets';
 import type { CapturePreset, VisualStyle } from '@/types';
-import { getCapturePreset } from './capturePresets';
+import { getCapturePreset, resolveStyleCapture } from './capturePresets';
 import { getProductionStylePreset, normalizeVisualStyle } from './promptArchitecture';
 import { buildGptPhotographicDetail, type PhotographicDetailContext } from './gptPhotographicDetail';
 import { INHERIT_CHARACTER_LOOK } from './characterVisualMaster';
@@ -8,6 +9,8 @@ const collapse = (value?: string) => String(value || '').replace(/\s+/g, ' ').tr
 
 function captureSystem(capturePreset?: CapturePreset): string {
   switch (getCapturePreset(capturePreset).value) {
+    case 'variety-show':
+      return getCapturePreset('variety-show').image;
     case 'phone-bystander':
       return 'A photorealistic ordinary photograph taken on the main camera of a modern phone, catching one spontaneous action phase rather than a completed pose. The subject remains occupied by real activity and does not present to the phone. Use natural small-sensor depth, automatic exposure and white balance, modest computational sharpening, slight shadow noise and casually imperfect framing. No portrait-mode blur, professional lighting or cinema-camera treatment.';
     case 'broadcast-candid':
@@ -57,16 +60,18 @@ export function buildGptImage2PhotographicContract(
   context: PhotographicDetailContext = {},
 ): string {
   const style = normalizeVisualStyle(visualStyle);
-  if (style === 'anime' || style === '3d-cg' || style === 'stop-motion') {
+  capturePreset = resolveStyleCapture(style, capturePreset);
+  if (ANIMATED_VISUAL_STYLES.includes(style)) {
     const preset = getProductionStylePreset(style);
     return `OUTPUT MEDIUM (authoritative):
 Render the entire frame as ${preset.imageContract}. Keep this one medium coherent across every character, object, environment, light source and surface. Do not convert it into live-action photography or mix it with another medium.`;
   }
 
+  const selected = ['film', 'iphone', 'variety', 'commercial', 'documentary'].includes(style) ? getProductionStylePreset(style) : undefined;
   return `PHOTOGRAPHIC OUTPUT (authoritative):
-${captureSystem(capturePreset)}
+${selected ? selected.imageContract : captureSystem(capturePreset)}
 ${photographicLook(visualStyle, capturePreset)}
-${buildGptPhotographicDetail({ ...context, capturePreset })}`;
+${buildGptPhotographicDetail({ ...context, capturePreset, visualStyle: style })}`;
 }
 
 export interface GptImage2StoryPromptInput {

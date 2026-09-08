@@ -1,3 +1,4 @@
+import { ADDITIONAL_STYLE_PRESETS } from './visualStylePresets';
 import type { ImageGenerationAspectRatio } from './imageModels';
 import type { CapturePreset, VisualStyle } from '@/types';
 
@@ -52,6 +53,7 @@ export interface MidjourneyPromptOptions {
 }
 
 const CAPTURE_DIRECTIONS: Record<CapturePreset, string> = {
+  'variety-show': 'location reality-TV camera, readable group expressions, natural skin, broad soft fill and an unposed interaction',
   'cinematic-narrative': 'one physically possible instant inside a causal action, the subject occupied by the scene rather than presenting to camera, motivated feature-film framing and natural unposed performance',
   'broadcast-candid': 'authentic live-television candid long-lens observation of one unguarded instant, the subject already absorbed in an ordinary task and unaware of camera, loose asymmetric side-on posture, attention outside lens, slightly incomplete gesture, foreground pedestrian or street-object occlusion, off-center untidy framing, slight edge crop, plausible motion blur, restrained broadcast compression and subtle interlaced texture, no influencer pose or beauty retouching',
   'documentary-follow': 'one honest action phase already underway, occupied subject, observational documentary camera, available light, purposeful handheld proximity, naturally imperfect framing and unperformed reaction',
@@ -64,6 +66,7 @@ const CAPTURE_DIRECTIONS: Record<CapturePreset, string> = {
 };
 
 const ENVIRONMENT_CAPTURE_DIRECTIONS: Record<CapturePreset, string> = {
+  'variety-show': 'a real reality-TV location, readable spatial geography, moderate zoom perspective and soft natural-looking fill',
   'cinematic-narrative': 'readable foreground, middle ground and background, motivated light sources',
   'broadcast-candid': 'live-television long-lens observation, off-center framing, restrained broadcast compression',
   'documentary-follow': 'observational documentary camera, available light, naturally imperfect handheld framing',
@@ -91,6 +94,7 @@ export function resolveMidjourneyProfileSetting(settings: {
 }
 
 const STYLE_DIRECTIONS: Partial<Record<VisualStyle, string>> = {
+  ...Object.fromEntries(ADDITIONAL_STYLE_PRESETS.map(style => [style.value, style.imageContract])),
   'follow-reference': 'match the reference medium, palette, contrast, lighting and texture without mixing in a second visual style',
   'cinematic-natural': 'a frame photographed for a high-budget live-action feature on a physical location or built set, physically present subjects with practical makeup and physically made costumes where specified, preserve each described species and anatomy, individual facial asymmetry and natural skin or species-appropriate surface variation, truthful wet hair skin fabric and scales, physically believable water weight contact shadows and atmospheric depth, natural cinema exposure and white balance, restrained color, gentle highlight roll-off and real optical focus falloff',
   'warm-film': 'warm photochemical 35mm cinema, creamy but textured skin, amber practical light, fine irregular grain, organic spherical-prime focus falloff, restrained halation only around bright sources, honey highlights and textured lifted shadows',

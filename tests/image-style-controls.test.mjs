@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import axios from 'axios';
 import { PRODUCTION_STYLE_PRESETS } from '../lib/promptArchitecture.ts';
-import { CAPTURE_PRESETS } from '../lib/capturePresets.ts';
+import { CAPTURE_PRESETS, getCapturePreset, resolveStyleCapture } from '../lib/capturePresets.ts';
 import { buildImageStyleControls } from '../lib/imageStyleControls.ts';
 import { buildCharacterMasterPrompt, buildGptCharacterMasterPrompt } from '../lib/characterVisualMaster.ts';
 import { createStoryImageRequestPreparer } from '../lib/storyImageRequest.ts';
@@ -15,21 +15,22 @@ const character = { id: 'c1', name: 'Qing', description: 'ivory robe and gold fl
 const styleReference = { imageUrl: styleUrl, description: 'STYLE_SENTINEL: cool silver tones with violet shadows.' };
 const shot = { id: 's1', sceneNumber: 1, status: 'pending', prompt: 'ACTION_SENTINEL: Qing lifts a curtain with two fingers.', characters: ['Qing'], objects: [] };
 
-test('all 9 styles × 9 capture selections have concrete independent image instructions', () => {
+test('all styles and capture selections preserve independent image instructions', () => {
   const unique = new Set();
   for (const style of PRODUCTION_STYLE_PRESETS) for (const capture of CAPTURE_PRESETS) {
+    const effectiveCapture = getCapturePreset(resolveStyleCapture(style.value, capture.value));
     const options = { visualStyle: style.value, capturePreset: capture.value, hasCharacterReference: true };
     const prompt = buildImageStyleControls(options); unique.add(prompt);
     if (style.value !== 'follow-reference') assert.ok(prompt.includes(style.imageContract));
-    if (capture.value !== 'follow-reference') assert.ok(prompt.includes(capture.image));
+    if (effectiveCapture.value !== 'follow-reference') assert.ok(prompt.includes(effectiveCapture.image));
     assert.match(prompt, /preserve the referenced face identity/);
     for (const build of [buildCharacterMasterPrompt, buildGptCharacterMasterPrompt]) {
       const result = build({ name: 'Qing', description: 'CHARACTER_SENTINEL', ...options });
       if (style.value !== 'follow-reference') assert.ok(result.includes(style.imageContract));
-      if (capture.value !== 'follow-reference') assert.ok(result.includes(capture.image));
+      if (effectiveCapture.value !== 'follow-reference') assert.ok(result.includes(effectiveCapture.image));
     }
   }
-  assert.equal(unique.size, 81);
+  assert.ok(unique.size >= PRODUCTION_STYLE_PRESETS.length * (CAPTURE_PRESETS.length - 1));
   const inherited = buildImageStyleControls({ visualStyle: 'follow-reference', capturePreset: 'follow-reference', hasCharacterReference: true });
   assert.doesNotMatch(inherited, /SELECTED IMAGE STYLE|SELECTED CAPTURE METHOD|no beauty filter|surveillance/);
 });
@@ -71,4 +72,24 @@ test('Story keeps style through serialization and final single/grid payload with
       if (grid) assert.equal((body.prompt.match(/SELECTED CAPTURE METHOD: surveillance/g) || []).length, 1);
     }
   } finally { axios.post = original; }
+});
+
+test('the seven selected looks reach the real single-shot payload and survive request serialization', async () => {
+  const prepare = createStoryImageRequestPreparer(async () => { throw new Error('no upload expected'); });
+  const original = axios.post; const sent=[];
+  axios.post = async (_url, body) => { sent.push(body); return {data:{data:[{task_id:'preset-payload-test'}]}}; };
+  try {
+    for (const [style, marker] of [['film',/35mm motion-picture/],['iphone',/1x camera of an iPhone/],['variety',/reality TV show/],['guoman',/Chinese 3D animated/],['chibi',/large heads, compact bodies/],['documentary',/observational documentary/],['commercial',/commercial photography/]]) {
+      const body = JSON.parse(await prepare({storyboard:shot,characters:[character],objects:[],apiKey:'test',imageModel:'gpt-image-2',aspectRatio:'9:16',visualStyle:style,capturePreset:'cinematic-narrative',resolutionOverride:'1K'}));
+      assert.equal(body.visualStyle,style);
+      await generateStoryboardImage(body.storyboard,body.characters,'test',[],'9:16',body.imageModel,{},undefined,body.referenceImages,body.referenceImageLabels,body.visualStyle,body.capturePreset,{},'',{},undefined,body.resolutionOverride);
+      const payload = sent.at(-1);
+      assert.match(payload.prompt,marker);
+      assert.match(payload.prompt,/ACTION_SENTINEL/);
+      assert.deepEqual(payload.image_urls,[master]);
+      if (['guoman','chibi'].includes(style)) assert.doesNotMatch(payload.prompt,/PHOTOGRAPHIC OUTPUT \(authoritative\)|live-action wardrobe fitting/);
+      if (style === 'variety') assert.match(payload.prompt,/soft fill/);
+      if (style === 'iphone') assert.match(payload.prompt,/SELECTED CAPTURE METHOD: phone-bystander/);
+    }
+  } finally { axios.post=original; }
 });

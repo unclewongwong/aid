@@ -325,6 +325,11 @@ export interface ApiMartVideoStatusResponse {
 
 // 全局视觉风格锁：把「角色参考图的媒介」钉死到所有生成环节
 export type VisualStyle =
+  | 'film'
+  | 'iphone'
+  | 'variety'
+  | 'guoman'
+  | 'chibi'
   | 'follow-reference'
   | 'cinematic-natural'
   | 'warm-film'
@@ -339,6 +344,7 @@ export type VisualStyle =
 
 // 项目级拍摄方式。它不改变角色或美术媒介，只约束镜头如何观察、构图与成像。
 export type CapturePreset =
+  | 'variety-show'
   | 'cinematic-narrative'
   | 'broadcast-candid'
   | 'documentary-follow'
@@ -380,7 +386,7 @@ export interface AppSettings {
     imageWorkflowPath: string;
     multiImageWorkflowPath: string;
     firstLastWorkflowPath: string;
-    h3Fl2vaProfile?: 'balanced8' | 'dasiwa4' | 'legacy';
+    h3Fl2vaProfile?: 'dasiwa8' | 'balanced8' | 'dasiwa4' | 'legacy';
     h3ContinuityMode?: 'tail-frame' | 'motion-context';
     h3MotionContextFrames?: 5 | 22 | 39;
     characterReplaceWorkflowPath?: string;

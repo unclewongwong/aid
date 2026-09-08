@@ -168,7 +168,7 @@ export interface SeriesEpisode {
 
 export interface SeriesProject {
   styleReference?: ImageStyleReference;
-  visualHistory?: Array<{ changedAt: string; reason?: "style_change" | "manual_visual_redo"; styleReference?: ImageStyleReference; characters: SeriesCharacter[]; locations: SeriesLocation[]; objects?: ObjectItem[]; productions: Array<{ episodeId: string; version: number; production: ProjectData }> }>;
+  visualHistory?: Array<{ changedAt: string; reason?: "style_change" | "manual_visual_redo"; visualStyle?: VisualStyle; styleReference?: ImageStyleReference; characters: SeriesCharacter[]; locations: SeriesLocation[]; objects?: ObjectItem[]; productions: Array<{ episodeId: string; version: number; production: ProjectData }> }>;
   id: string;
   revision: number;
   name: string;

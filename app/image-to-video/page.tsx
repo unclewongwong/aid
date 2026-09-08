@@ -9,7 +9,7 @@ import DevToolsLayout from '@/components/DevToolsLayout';
 import CameraSelector from '@/components/CameraSelector';
 import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
-import { companionVersionAtLeast, comfyUIApiUrl, downloadComfyUIVideo, H3_DIRECTOR_COMPANION_MIN_VERSION, isComfyUIClientTask, localComfyUISettings, videoStatusResponseError } from '@/lib/comfyuiClient';
+import { assertH3EightTurboSupport, companionVersionAtLeast, comfyUIApiUrl, downloadComfyUIVideo, H3_DIRECTOR_COMPANION_MIN_VERSION, isComfyUIClientTask, localComfyUISettings, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
 import { DIRECTOR_DURATIONS, validateDirectorPlan, type DirectorPlan } from '@/lib/h3Director';
 import { readApiJson } from '@/lib/apiResponse';
@@ -401,6 +401,7 @@ export default function ImageToVideoPage() {
 
     setIsGenerating(true);
     try {
+      if (isComfyUI) await assertH3EightTurboSupport(settings.comfyui);
       const fullPrompt = fullVideoPrompt;
       let plan: DirectorPlan | undefined;
       if (isDirector) {

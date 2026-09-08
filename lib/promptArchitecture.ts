@@ -1,5 +1,6 @@
 import type { CapturePreset, Storyboard, VisualStyle } from '@/types';
 import { buildImageCapturePresetContract } from './capturePresets';
+import { ADDITIONAL_STYLE_PRESETS, FEATURED_VISUAL_STYLES } from './visualStylePresets';
 
 const clean = (value?: string) => value?.trim() || 'not specified; infer only from the supplied reference image';
 
@@ -20,6 +21,7 @@ export interface ProductionStylePreset {
 }
 
 export const PRODUCTION_STYLE_PRESETS: ProductionStylePreset[] = [
+  ...ADDITIONAL_STYLE_PRESETS,
   {
     value: 'follow-reference', label: '跟随参考', description: '保留上传图片原有媒介、色彩与镜头质感',
     imageContract: 'the exact visual medium, color response, lighting philosophy, texture and lens rendering established by the supplied reference images',
@@ -65,7 +67,7 @@ export const PRODUCTION_STYLE_PRESETS: ProductionStylePreset[] = [
     h3Direction: 'Cool neo-noir pressure: textured blacks, hard motivated edges, obstruction and negative space; guarded acting, delayed reaction then decisive action, short hold before abrupt reveal.',
   },
   {
-    value: 'documentary', label: '观察纪录', description: '手持、现场感、不过度表演',
+    value: 'documentary', label: '纪录片', description: '观察式机位、现场光与真实生活痕迹',
     imageContract: 'observational documentary photography, available light, ordinary contrast, authentic skin, mild sensor noise, imperfect framing, real contact shadows, no staged commercial polish',
     gridImageDirection: 'MEDIUM/TEXTURE: unstaged observational photograph with authentic skin, clothing wear, dust and mild sensor texture. LIGHT: use only believable available daylight and location practicals, including mixed color temperatures, finite exposure and real contact shadows. LENS/DEPTH: eye-level phone, mirrorless or shoulder-camera perspective, imperfect but meaningful framing, modest depth of field and occasional foreground blockage. COLOR: ordinary location color, natural contrast and no beauty, fashion or commercial polish.',
     look: 'Available-light documentary rendering, ordinary contrast, authentic skin and surfaces, mild sensor noise, practical exposure adaptation and no cosmetic polish.',
@@ -76,7 +78,7 @@ export const PRODUCTION_STYLE_PRESETS: ProductionStylePreset[] = [
     h3Direction: 'Phone, mirrorless or shoulder-camera observation: available light, ordinary contrast, hand tremor, autofocus/exposure recovery and imperfect reframing. Unscripted behavior; cut only on discovered action or reaction.',
   },
   {
-    value: 'commercial', label: '高级商业', description: '精确光线、材质与视觉高潮',
+    value: 'commercial', label: '商业广告', description: '主角或产品突出、精确布光与精致构图',
     imageContract: 'high-end live-action commercial photography, precise material response, controlled specular highlights, clean color separation, premium production lighting, crisp subject hierarchy, no generic CGI gloss',
     gridImageDirection: 'MEDIUM/TEXTURE: premium live-action advertising still with precise skin, glass, metal, liquid and fabric response; polished but physically real. LIGHT: shaped key, controlled fill, clean rim and intentional specular placement reveal form and material. LENS/DEPTH: exact hero framing, crisp focal priority, coherent macro/telephoto compression and clean background separation. COLOR: deliberate limited hero palette, luminous exposure, clean separation and controlled contrast without plastic CGI gloss.',
     look: 'Premium commercial color pipeline, controlled specular highlights, precise material texture, clean separation, polished contrast and a consistent hero palette.',
@@ -121,6 +123,9 @@ export const PRODUCTION_STYLE_PRESETS: ProductionStylePreset[] = [
   },
 ];
 
+export const FEATURED_PRODUCTION_STYLES = FEATURED_VISUAL_STYLES.map(value => PRODUCTION_STYLE_PRESETS.find(preset => preset.value === value)!);
+export const OTHER_PRODUCTION_STYLES = PRODUCTION_STYLE_PRESETS.filter(preset => !FEATURED_VISUAL_STYLES.includes(preset.value));
+
 export function normalizeVisualStyle(style?: VisualStyle): VisualStyle {
   if (style === 'live-action') return 'cinematic-natural';
   if (style === 'illustration') return 'anime';
@@ -146,7 +151,8 @@ export function buildMediumLock(style?: VisualStyle): string {
 // 丢失的因果关系。它故意要求选择一套成像系统，而不是把所有镜头缺陷堆在一起。
 export function buildImageCaptureContract(style?: VisualStyle): string {
   const normalized = normalizeVisualStyle(style);
-  const profile = normalized === 'cinematic-natural'
+  const explicit = ADDITIONAL_STYLE_PRESETS.find(preset => preset.value === normalized);
+  const profile = explicit ? explicit.imageContract : normalized === 'cinematic-natural'
     ? 'Direct-captured natural live action. Choose one plausible cinema, mirrorless, or modern-phone capture profile implied by the scene and references; keep it coherent and never average them into generic glossy imagery.'
     : normalized === 'documentary'
       ? 'Available-light observational photography. Use imperfect but purposeful framing, finite exposure, mild sensor texture, real contact shadows, and optically caused focus falloff; exclude commercial polish and staged hero posing.'
