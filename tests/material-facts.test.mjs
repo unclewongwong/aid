@@ -61,3 +61,19 @@ test('repeated submission of identical confirmed facts is a no-op, not another r
  const next=supplementMaterialFacts(p,'o1',fact,3);
  assert.deepEqual(next,p);assert.equal(next.materialRepairHistory.length,1);
 });
+test('actual project cleaner survives save/reload and preserves provider copy plus user facts',async()=>{
+ const {cleanObject}=await import('../hooks/useProject.ts');
+ const source={...object,materialFacts:{...fact,source:'user',sourceUrl:object.imageUrl,confirmedAt:'now'},imageApiReference:{sourceUrl:object.imageUrl,model:'gpt-image-2-official',imageUrl:'https://example.com/same-pixels.webp'},imageFile:{mustNotPersist:true}};
+ const saved=JSON.parse(JSON.stringify(cleanObject(source)));
+ assert.deepEqual(saved.materialFacts,source.materialFacts);assert.deepEqual(saved.imageApiReference,source.imageApiReference);assert.equal(saved.imageFile,undefined);
+ let network=0;const prepare=createStoryImageRequestPreparer(async()=>{network++;throw Error('unexpected upload')});
+ const payload=JSON.parse(await prepare({storyboard:board,objects:[saved],characters:[],apiKey:'test',imageModel:'gpt-image-2-official',aspectRatio:'9:16'}));
+ assert.equal(network,0);assert.equal(payload.objects[0].imageUrl,source.imageApiReference.imageUrl);assert.match(payload.objects[0].description,/灰黑色纱布/);
+});
+test('saving existing facts repairs a legacy checkpoint that lost confirmed metadata',()=>{
+ const p=supplementMaterialFacts(project(),'o1',fact,3);p.objects[0].imageApiReference={sourceUrl:object.imageUrl,model:'official',imageUrl:'copy'};
+ delete p.episodes[0].production.objects[0].materialFacts;
+ const next=supplementMaterialFacts(p,'o1',fact,3);
+ assert.equal(next.episodes[0].production.objects[0].materialFacts.contents,fact.contents);
+ assert.deepEqual(next.episodes[0].production.objects[0].imageApiReference,p.objects[0].imageApiReference);
+});

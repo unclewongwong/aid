@@ -40,7 +40,8 @@ export function supplementMaterialFacts(project: SeriesProject, objectId: string
     if (url.protocol !== 'https:' || url.username || url.password) throw new Error('补充照片地址必须是HTTPS公开素材地址');
   }
   const previous = original.materialFacts;
-  if (previous?.sourceUrl === original.imageUrl && previous.contents === contents && previous.packaging === packaging && previous.usage === usage && (previous.evidenceUrl || '') === evidenceUrl) return structuredClone(project);
+  if (previous?.sourceUrl === original.imageUrl && previous.contents === contents && previous.packaging === packaging && previous.usage === usage && (previous.evidenceUrl || '') === evidenceUrl
+    && project.episodes.every(e => !e.production || (e.production.objects || []).filter(o => o.id === objectId).every(o => JSON.stringify(o.materialFacts) === JSON.stringify(previous) && JSON.stringify(o.imageApiReference) === JSON.stringify(original.imageApiReference)))) return structuredClone(project);
   const scope = materialRepairScope(project, objectId);
   const dependentVideoIds = (episode: SeriesProject['episodes'][number], shots: number[]) => {
     const boards = episode.production?.storyboards || [];
@@ -70,7 +71,7 @@ export function supplementMaterialFacts(project: SeriesProject, objectId: string
       episode.version++;
       episode.production.id = `${project.id}-${episode.id}-v${episode.version}`;
     }
-    episode.production.objects = (episode.production.objects || next.objects).map(o => o.id === objectId ? { ...o, materialFacts: fact } : o);
+    episode.production.objects = (episode.production.objects || next.objects).map(o => o.id === objectId ? { ...o, materialFacts: fact, imageApiReference: original.imageApiReference } : o);
     episode.production.storyboards = episode.production.storyboards.map(board => item.shots.includes(board.sceneNumber)
       ? { ...clearStoryboardMedia(board), videoDirection: undefined, videoDirectionSource: undefined, visualPromptRewriteId: `material-facts:${objectId}:${at}` }
       : dependent.has(board.id) ? clearVideoArtifact(board) : board);

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { CapturePreset, Character, Storyboard, ObjectItem, ProjectProductionTiming, VisualStyle } from '@/types';
+import type { CapturePreset, Character, Storyboard, ObjectItem, ProjectProductionTiming, VisualStyle } from '@/types';
 import type { StoryAspectRatio } from '@/lib/storyAspectRatio';
-import { StoryPlan, PipelineState } from '@/lib/pipeline/types';
+import type { StoryPlan, PipelineState } from '@/lib/pipeline/types';
 import { createProjectId } from '@/lib/projectIdentity';
 import type { VideoSegmentPlan } from '@/lib/videoSegments';
 import { storyStorageKeys } from '@/lib/series/storageScope';
@@ -66,13 +66,15 @@ function cleanCharacter(char: Character): Character {
 }
 
 // 清洗物件：与角色同规则（修复之前角色/物件不对称的问题）。
-function cleanObject(obj: ObjectItem): ObjectItem {
+export function cleanObject(obj: ObjectItem): ObjectItem {
   return {
     id: obj.id,
     name: obj.name,
     aliases: obj.aliases,
     description: obj.description,
     visualIdentity: obj.visualIdentity,
+    materialFacts: obj.materialFacts,
+    imageApiReference: obj.imageApiReference,
     imageUrl: obj.imageUrl || '',
     ...(hasPublicUrl(obj.imageUrl) ? {} : { imageBase64: obj.imageBase64 }),
   };
