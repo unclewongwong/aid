@@ -5,13 +5,15 @@ import type { MaterialFacts } from '@/lib/materialFacts';
 import { currentMaterialFacts } from '@/lib/materialFacts';
 import { materialRepairScope, projectMaterialQuestions } from '@/lib/series/materialRepair';
 
-export default function MaterialFactsCenter({ project, locked, save, upload, pause }: {
-  project: SeriesProject; locked: boolean;
+export default function MaterialFactsCenter({ project, locked, save, upload, pause, requestedObjectId, onClosed }: {
+  project: SeriesProject; locked: boolean; requestedObjectId?: string; onClosed: () => void;
   save: (objectId: string, facts: Partial<MaterialFacts>, revision: number) => Promise<void>;
   upload: (file: File) => Promise<string>;
   pause: () => Promise<SeriesProject>;
 }) {
   const questions = useMemo(() => projectMaterialQuestions(project), [project]);
+  const pendingIds = new Set(questions.map(q => q.objectId));
+  const choices = project.objects.filter(o => pendingIds.has(o.id) || o.id === requestedObjectId);
   const [objectId, setObjectId] = useState('');
   const [contents, setContents] = useState(''), [packaging, setPackaging] = useState(''), [usage, setUsage] = useState('');
   const [file, setFile] = useState<File>();
@@ -31,22 +33,24 @@ export default function MaterialFactsCenter({ project, locked, save, upload, pau
     revision.current = project.revision;
     setObjectId(id); setContents(facts?.contents || ''); setPackaging(facts?.packaging || ''); setUsage(facts?.usage || ''); setFile(undefined); setError('');
   };
+  useEffect(() => { if (requestedObjectId) open(requestedObjectId); }, [requestedObjectId]);
   useEffect(() => {
     const question = questions.find(q => {
       const key = dismissalKey(q.objectId);
       if (shown.current.has(key)) return false;
       try { return localStorage.getItem(key) !== 'deferred'; } catch { return true; }
     });
-    if (!objectId && question) {
+    if (!objectId && !requestedObjectId && question) {
       shown.current.add(dismissalKey(question.objectId));
       open(question.objectId);
     }
   }, [questions, project.id, objectId]); // Deferred questions remain available via the persistent entry.
   useEffect(() => { if (asset && !dialog.current?.open) dialog.current?.showModal(); }, [asset]);
-  const close = () => { if (saving) return; try { localStorage.setItem(dismissalKey(objectId), 'deferred'); } catch {} dialog.current?.close(); setObjectId(''); opener.current?.focus(); };
+  const close = () => { if (saving) return; try { localStorage.setItem(dismissalKey(objectId), 'deferred'); } catch {} dialog.current?.close(); setObjectId(''); onClosed(); opener.current?.focus(); };
+  if (!asset && !questions.length) return null;
   return <section className="my-4 rounded-xl border border-purple-400/40 p-4">
-    <div className="flex items-center justify-between gap-3"><div><strong>素材事实与修复</strong><p className="mt-1 text-sm text-gray-400">{questions.length ? `有 ${questions.length} 处镜头缺少内含物信息，生成前会保留断点。` : '发现包装、材质或使用状态不对时，在这里补充一次。'}</p></div>
-    <button ref={opener} type="button" className="rounded bg-purple-400 px-3 py-2 text-black" disabled={!project.objects.length} onClick={() => open(questions[0]?.objectId || project.objects[0].id)}>补充材料／纠正外观</button></div>
+    {questions.length > 0 && <div className="flex items-center justify-between gap-3"><div><strong>素材事实与修复</strong><p className="mt-1 text-sm text-gray-400">{questions.length ? `有 ${questions.length} 处镜头缺少内含物信息，生成前会保留断点。` : '发现包装、材质或使用状态不对时，在这里补充一次。'}</p></div>
+    <button ref={opener} type="button" className="rounded bg-purple-400 px-3 py-2 text-black" onClick={() => open(questions[0].objectId)}>补充缺失材料</button></div>}
     {asset && <dialog ref={dialog} onCancel={event => { event.preventDefault(); close(); }} className="w-[min(92vw,640px)] rounded-xl border border-gray-600 bg-[#202124] p-6 text-white backdrop:bg-black/70" aria-labelledby="material-facts-title">
       <form onSubmit={async event => {
         event.preventDefault(); setSaving(true); setError('');
@@ -54,12 +58,12 @@ export default function MaterialFactsCenter({ project, locked, save, upload, pau
           if (file && uploaded.current?.file !== file) uploaded.current = { file, url: await upload(file) };
           const evidenceUrl = file ? uploaded.current?.url : currentMaterialFacts(asset)?.evidenceUrl;
           await save(asset.id, { contents, packaging, usage, evidenceUrl }, revision.current);
-          dialog.current?.close(); setObjectId(''); opener.current?.focus();
+          dialog.current?.close(); setObjectId(''); onClosed(); opener.current?.focus();
         } catch (err) { setError(err instanceof Error ? err.message : '保存失败，填写内容已保留'); }
         finally { setSaving(false); }
       }}>
         <h2 id="material-facts-title" className="text-lg font-semibold">补充素材事实</h2>
-        <label className="my-3 block">道具<select className="mt-1 w-full rounded bg-gray-800 p-2" value={asset.id} disabled={saving} onChange={event => open(event.target.value)}>{project.objects.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+        <label className="my-3 block">道具<select className="mt-1 w-full rounded bg-gray-800 p-2" value={asset.id} disabled={saving} onChange={event => open(event.target.value)}>{choices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
         <p className="text-sm text-amber-200">{questions.find(q => q.objectId === asset.id)?.reason || '请填写实际外观，并说明原画面哪里有误。已确认事实会用于后续提示词。'}</p>
         {asset.imageUrl && <a href={asset.imageUrl} target="_blank" rel="noreferrer" className="my-2 block text-sm text-purple-300">查看原参考图</a>}
         {([['外包装外观', packaging, setPackaging], ['内含物／实际产品的颜色、材质（必填）', contents, setContents], ['使用状态与需要纠正的外观', usage, setUsage]] as const).map(([label, value, setter], i) => <label className="my-3 block text-sm" key={label}>{label}<textarea maxLength={2000} required={i === 1} disabled={saving} className="mt-1 w-full rounded bg-gray-800 p-2" value={value} onChange={event => setter(event.target.value)} /></label>)}

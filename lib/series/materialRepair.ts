@@ -10,7 +10,7 @@ export function materialRepairScope(project: SeriesProject, objectId: string) {
   return project.episodes.flatMap(episode => {
     const numbers = new Set((episode.script || []).filter(shot => seriesShotObjectIds(project, shot).includes(objectId)).map(s => s.number));
     for (const board of episode.production?.storyboards || [])
-      if (visibleStoryObjects(board, project.objects).some(o => o.id === objectId)) numbers.add(board.sceneNumber);
+      if (visibleStoryObjects(board, project.objects).some(o => o.id === objectId) || project.objects.filter(o => o.id === objectId).some(o => [o.name, ...(o.aliases || [])].some(name => name && board.description?.includes(name)))) numbers.add(board.sceneNumber);
     return numbers.size ? [{ episodeId: episode.id, episode: episode.number, shots: [...numbers].sort((a,b) => a-b) }] : [];
   });
 }

@@ -617,6 +617,7 @@ function FixedObjectCard({
   onSave,
   onDelete,
   onGenerate,
+  onMaterialFacts,
   generationPending,
   generationDisabled,
 }: {
@@ -629,6 +630,7 @@ function FixedObjectCard({
   onSave: (patch: { name: string; aliases: string; description: string; referenceMode: 'auto' | 'upload' }, file?: File) => void;
   onDelete?: () => void;
   onGenerate?: () => void;
+  onMaterialFacts?: () => void;
   generationPending?: boolean;
   generationDisabled?: boolean;
 }) {
@@ -691,6 +693,7 @@ function FixedObjectCard({
             )}
           </div>
         )}
+        {object && onMaterialFacts && <button type="button" className={button} onClick={onMaterialFacts}>纠正此道具外观</button>}
         {object?.imageIssue && !object.imageUrl && (
           <p role="status" className="rounded-lg border border-amber-300/20 bg-amber-300/5 px-3 py-2 text-xs leading-5 text-amber-200">
             {object.imageIssue.message}
@@ -777,6 +780,7 @@ export default function SeriesPage() {
   const [tab, setTab] = useState<Tab>("outline");
   const [creating, setCreating] = useState(false);
   const [trashTarget, setTrashTarget] = useState<SeriesProject>();
+  const [materialObjectId, setMaterialObjectId] = useState('');
   const [showVisualRedo, setShowVisualRedo] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [trashError, setTrashError] = useState("");
@@ -2000,6 +2004,7 @@ export default function SeriesPage() {
                           feedback={objectFeedback?.target === object.id ? objectFeedback : undefined}
                           generationPending={jobs.some(job => job.kind === 'prepare' && job.assetId === object.id && ['queued', 'running', 'paused'].includes(job.status))}
                           generationDisabled={busy || editingLocked || !connected || !project.bible}
+                          onMaterialFacts={() => setMaterialObjectId(object.id)}
                           onGenerate={()=>void enqueue('prepare', undefined, object.id)}
                           onSave={(patch,file)=>void saveFixedObject(object.id,patch,file)}
                           onDelete={()=>void action({action:'delete-object',revision:project.revision,objectId:object.id},`固定道具“${object.name}”已删除；剧本和历史成片保留。`)} />
@@ -2252,7 +2257,7 @@ export default function SeriesPage() {
           )}
         </main>
       </div>
-      {project && <MaterialFactsCenter key={project.id} project={project} locked={busy || editingLocked || !connected || !project.paused}
+      {project && <MaterialFactsCenter key={project.id} project={project} requestedObjectId={materialObjectId} onClosed={() => setMaterialObjectId('')} locked={busy || editingLocked || !connected || !project.paused}
         upload={file => uploadSeriesReference(base!, file, '补充照片')}
         pause={async () => {
           if (base === undefined) throw new Error('请先连接 Companion');

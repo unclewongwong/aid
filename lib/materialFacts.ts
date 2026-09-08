@@ -17,7 +17,8 @@ export const currentMaterialFacts = (asset: Pick<ObjectItem, 'imageUrl' | 'mater
 export interface MaterialQuestion { objectId: string; name: string; reason: string; sceneNumber: number }
 export function materialQuestions(board: Storyboard, objects: ObjectItem[]): MaterialQuestion[] {
   const text = `${board.description || ''} ${board.action || ''} ${board.prompt || ''}`;
-  return visibleStoryObjects(board, objects).flatMap(asset => {
+  const visible = new Set(visibleStoryObjects(board, objects));
+  return objects.filter(asset => visible.has(asset) || [asset.name, ...(asset.aliases || [])].some(name => name && board.description?.includes(name))).flatMap(asset => {
     const identity = currentVisualIdentity(asset);
     const facts = currentMaterialFacts(asset);
     // High-confidence packaging/content ambiguity only; arbitrary provider failures

@@ -77,3 +77,9 @@ test('saving existing facts repairs a legacy checkpoint that lost confirmed meta
  assert.equal(next.episodes[0].production.objects[0].materialFacts.contents,fact.contents);
  assert.deepEqual(next.episodes[0].production.objects[0].imageApiReference,p.objects[0].imageApiReference);
 });
+test('explicit product names in visual description survive a director dropping object IDs',()=>{
+ const p=project();p.episodes[0].script=[];
+ p.episodes[0].production.storyboards[0]={...board,objects:[],prompt:'wearing mask',description:'脸上贴着潘达面膜'};
+ assert.deepEqual(materialRepairScope(p,'o1')[0].shots,[9]);
+ assert.equal(materialQuestions(p.episodes[0].production.storyboards[0],[object]).length,1);
+});
