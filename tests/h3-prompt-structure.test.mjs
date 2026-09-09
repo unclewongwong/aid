@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildVideoSegmentPrompt } from '../lib/videoGenerator.ts';
+import { applyStoryImageFidelity, buildVideoSegmentPrompt } from '../lib/videoGenerator.ts';
 import { h3VisualPromptIsChinese } from '../lib/h3PromptLanguage.ts';
 
 const shot = (sceneNumber, extra = {}) => ({
@@ -23,6 +23,32 @@ const shot = (sceneNumber, extra = {}) => ({
 function dialogueTags(prompt) {
   return [...prompt.matchAll(/<d>\[([^\]]+)]\s*([\s\S]*?)<\/d>/g)].map(match => ({ language: match[1], text: match[2] }));
 }
+
+test('saved Story prompts gain one visual fidelity rule without rewriting dialogue or authored movement', () => {
+  const spoken = '<d>[中文] 原图保真：这句话必须原样保留。\ndetailed_description:\n别换我的衣服。</d>';
+  const saved = `subject_definitions:\n<Subject 1>是人物。\ndetailed_description:\n原图保真：旧规则\n人物转头微笑，镜头缓慢推近。${spoken}\noverall_soundscape:\n风声。\nnon_diegetic_music:\n无。`;
+  const result = applyStoryImageFidelity(saved);
+  assert.ok(result.includes(spoken));
+  assert.ok(result.includes('人物转头微笑，镜头缓慢推近。'));
+  assert.equal(applyStoryImageFidelity(result), result);
+  assert.doesNotMatch(result, /原图保真：旧规则/);
+  assert.ok(result.indexOf('五官比例') < result.indexOf('人物转头微笑'));
+  assert.match(result, /不与手或身体融合/);
+  assert.match(result, /不冻结画面/);
+  assert.match(result, /摄影或绘画质感/);
+});
+
+test('base and referenced Story prompts retain frame alignment, speech, and motion with fidelity rules', () => {
+  const boards = [shot(1, { dialogueLines: [{ character: 'Lin', text: '我们出发吧。' }] })];
+  for (const referenceAudioNames of [[], ['Lin']]) {
+    const result = buildVideoSegmentPrompt(boards, [], { duration: 8, language: 'zh', referenceAudioNames });
+    assert.equal((result.match(/^原图保真：/gm) || []).length, 1);
+    assert.match(result, /<Picture 1>/);
+    assert.match(result, /只执行剧本明确的动作、表情、口型和运镜/);
+    assert.deepEqual(dialogueTags(result).map(x => x.text), ['我们出发吧。']);
+    assert.ok(result.length <= 7000);
+  }
+});
 
 test('rejects a continuous line that cannot fit H3 15 seconds', () => {
   assert.throws(() => buildVideoSegmentPrompt([shot(4, {
@@ -292,6 +318,7 @@ test('fits a four-shot continuity segment with verbose actor direction inside th
     language: 'zh',
   });
   assert.ok(prompt.length <= 7000, `prompt was ${prompt.length} characters`);
+  assert.match(prompt, /原图保真：/);
   assert.equal((prompt.match(/\[Shot \d+]/g) || []).length >= 4, true);
   assert.equal((prompt.match(/保持队形，跟着我。/g) || []).length, 1);
   assert.equal((prompt.match(/我看见出口了。/g) || []).length, 1);

@@ -17,6 +17,25 @@ function h3Timestamp(seconds: number): string {
 
 export const H3_PROMPT_MAX_CHARACTERS = 7000;
 
+const STORY_IMAGE_FIDELITY = '原图保真：本镜分镜原图是可见外观与开场空间的首要依据，不是供重新设计的示意图。逐帧保持同一张脸的五官比例、轮廓、肤色和皮肤纹理，保持发型、饰品、服装款式、纹样与材质；多人各自对应原图中的同一人物，不串脸、不互换衣饰。道具保持形状、尺寸比例、颜色、材质和既有图案，握持、移动及遮挡前后仍是同一件实物，不与手或身体融合。沿用原图的色温、光线方向与软硬、明暗关系、景深、摄影或绘画质感和场景布局；“电影感”等泛化风格词不得触发重新打光、换色或美颜重绘。只执行剧本明确的动作、表情、口型和运镜；允许由这些变化产生的透视、遮挡、衣料形变，以及明确写出的入画、出画或物体状态变化，不冻结画面。未要求改变的外观与环境细节持续保留，禁止无因增减人物、肢体或道具。';
+
+/** Apply at the Story submission boundary too, so saved director overrides
+ * receive the same reference fidelity instruction without rewriting dialogue. */
+export function applyStoryImageFidelity(prompt: string): string {
+  const parts = prompt.split(/(<d>[\s\S]*?<\/d>)/gi);
+  let inserted = false;
+  const clean = parts.map(part => {
+    if (/^<d>/i.test(part)) return part;
+    const text = part.replace(/^原图保真：[^\n]*(?:\n|$)/gm, '');
+    if (inserted) return text;
+    return text.replace(/((?:detailed_description|integrated_multimodal_description):[ \t]*\n)/, marker => {
+      inserted = true;
+      return `${marker}${STORY_IMAGE_FIDELITY}\n`;
+    });
+  }).join('');
+  return fitH3PromptBudget(inserted ? clean : `${STORY_IMAGE_FIDELITY}\n${clean}`);
+}
+
 function fitH3PromptBudget(prompt: string): string {
   if (prompt.length <= H3_PROMPT_MAX_CHARACTERS) return prompt;
   // Dialogue tags are the screenplay authority. Compact only repeated prose
@@ -627,7 +646,7 @@ export function buildVideoSegmentPrompt(
   options: VideoSegmentPromptOptions = {},
 ): string {
   const duration = Math.min(15, Math.max(2, options.duration || estimateVideoSegmentSeconds(storyboards)));
-  return applyFilmEndingPrompt(applySeriesVideoStyle(applyVideoDuplicateRepairPrompt(buildOfficialGuidePrompt(storyboards, characterAudios, options), storyboards.map(b => b.videoDuplicateRepairPrompt || '').filter(Boolean).join(' ')), options.styleReference), duration, options.isFilmEnding === true);
+  return applyStoryImageFidelity(applyFilmEndingPrompt(applySeriesVideoStyle(applyVideoDuplicateRepairPrompt(buildOfficialGuidePrompt(storyboards, characterAudios, options), storyboards.map(b => b.videoDuplicateRepairPrompt || '').filter(Boolean).join(' ')), options.styleReference), duration, options.isFilmEnding === true));
 }
 
 /** Preserve repair direction even when the editor has a saved complete prompt override. */

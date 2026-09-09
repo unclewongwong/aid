@@ -1,7 +1,7 @@
 import { recoverApiVoiceReferences, recoverComfyUIVoiceReferences, publicAudioAvailable } from '@/lib/apiVoiceReferenceRecovery';
 import { apiVoiceReferenceUrls, selectVideoVoiceReferences } from '@/lib/videoCapabilities';
 import { NextRequest, NextResponse } from 'next/server';
-import { applyFilmEndingPrompt, applySeriesVideoStyle, applyVideoDuplicateRepairPrompt, buildStoryboardVideoPrompt, buildVideoSegmentPrompt, generateStoryboardVideo } from '@/lib/videoGenerator';
+import { applyFilmEndingPrompt, applySeriesVideoStyle, applyStoryImageFidelity, applyVideoDuplicateRepairPrompt, buildStoryboardVideoPrompt, buildVideoSegmentPrompt, generateStoryboardVideo } from '@/lib/videoGenerator';
 import { snapDurationToModel } from '@/lib/apimart';
 import { createComfyUISubtitleRemovalTask, createComfyUIVideoTask, isComfyUITask } from '@/lib/comfyui';
 import { audibleStoryboardSpeech, compileTimedSpeech } from '@/lib/speechAudioContract';
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       const editedPrompt = storyboard.videoPromptOverride ? String(storyboard.videoPrompt || '').trim() : '';
       const promptSource = editedPrompt && !isLegacyH3Prompt(editedPrompt) ? editedPrompt : generatedPrompt;
       const localizedPrompt = await localizeH3Prompt(promptSource);
-      const submittedPrompt = applyVideoDuplicateRepairPrompt(applySeriesVideoStyle(applyFilmEndingPrompt(localizedPrompt, requestedDuration, isFilmEnding === true), styleReference), storyboard.videoDuplicateRepairPrompt);
+      const submittedPrompt = applyStoryImageFidelity(applyVideoDuplicateRepairPrompt(applySeriesVideoStyle(applyFilmEndingPrompt(localizedPrompt, requestedDuration, isFilmEnding === true), styleReference), storyboard.videoDuplicateRepairPrompt));
       const firstFrame = firstFrameUrl || videoStoryboards[0].imageUrl;
       const lastStoryboardImage = videoStoryboards.at(-1)?.imageUrl;
       const endFrame = (firstFrameUrl || videoStoryboards.length > 1) ? lastStoryboardImage : undefined;
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
         ? editedPrompt
         : generatedPrompt;
       const localizedPrompt = await localizeH3Prompt(promptSource);
-      const baseSubmittedPrompt = applyVideoDuplicateRepairPrompt(applySeriesVideoStyle(applyFilmEndingPrompt(localizedPrompt, requestedDuration, isFilmEnding === true), styleReference), storyboard.videoDuplicateRepairPrompt);
+      const baseSubmittedPrompt = applyStoryImageFidelity(applyVideoDuplicateRepairPrompt(applySeriesVideoStyle(applyFilmEndingPrompt(localizedPrompt, requestedDuration, isFilmEnding === true), styleReference), storyboard.videoDuplicateRepairPrompt));
       const submittedPrompt = isMotionContinuation
         ? adaptH3PromptForMotionContinuation(baseSubmittedPrompt)
         : baseSubmittedPrompt;
