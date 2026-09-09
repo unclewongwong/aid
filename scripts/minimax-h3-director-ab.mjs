@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import ffmpegPath from 'ffmpeg-static';
 import ffprobe from 'ffprobe-static';
 import sharp from 'sharp';
-import { H3_DASIWA_8TURBO_PROFILE } from '../lib/h3GenerationProfile.ts';
+import { H3_PRODUCTION_PROFILE } from '../lib/h3GenerationProfile.ts';
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8188';
 const DEFAULT_FRAME = 'outputs/nana-broadcast-candid/nana-shanghai-clean-first-frame.png';
@@ -102,13 +102,15 @@ export function buildDirectorPrompt({
   const prompt = {};
   const hasSage = Boolean(definitions.MiniMaxH3MemoryEfficientSageAttentionPatch);
   prompt['1'] = node('UNETLoader', {
-    unet_name: H3_DASIWA_8TURBO_PROFILE.diffusionModel,
+    unet_name: H3_PRODUCTION_PROFILE.diffusionModel,
     weight_dtype: 'default',
   }, 'Director clean DaSiWa Hybrid');
   prompt['2'] = hasSage
     ? node('MiniMaxH3MemoryEfficientSageAttentionPatch', { model: ['1', 0] }, 'Director Sage patch')
     : prompt['1'];
   const cleanModelId = hasSage ? '2' : '1';
+  if (!definitions.LoraLoaderBypassModelOnly) throw new Error('Missing LoraLoaderBypassModelOnly');
+  prompt['3'] = node('LoraLoaderBypassModelOnly', { model: [cleanModelId, 0], lora_name: H3_PRODUCTION_PROFILE.lora, strength_model: H3_PRODUCTION_PROFILE.loraStrength });
   prompt['4'] = node('CLIPLoader', {
     clip_name: 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
     type: 'minimax',
@@ -160,7 +162,7 @@ export function buildDirectorPrompt({
   }
 
   prompt['30'] = node('MiniMaxH3Director', {
-    model: [cleanModelId, 0],
+    model: ['3', 0],
     video_vae: ['5', 0],
     audio_vae: ['6', 0],
     clip: ['4', 0],
@@ -177,7 +179,7 @@ export function buildDirectorPrompt({
     ref_max_size: Math.max(width, height),
     total_frames: totalFrames,
     timeline_data: timelineData({ groups, width, height, continuity: isContinuity }),
-    steps: H3_DASIWA_8TURBO_PROFILE.steps,
+    steps: H3_PRODUCTION_PROFILE.steps,
     sampler: 'euler',
     scheduler: 'simple',
     shift_video: 12,

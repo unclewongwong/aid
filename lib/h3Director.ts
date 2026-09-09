@@ -1,7 +1,7 @@
 import { enforceNoSubtitles } from './videoTextPolicy';
 import { shiftH3PromptTimecodes } from './h3MotionContext';
 import { h3VisualPromptIsChinese } from './h3PromptLanguage';
-import { H3_DASIWA_8TURBO_PROFILE } from './h3GenerationProfile';
+import { H3_PRODUCTION_PROFILE } from './h3GenerationProfile';
 
 export const DIRECTOR_DURATIONS = [30, 60] as const;
 export const DIRECTOR_SEGMENT_SECONDS = 10;
@@ -82,19 +82,20 @@ export function buildH3DirectorGraph(input: {
   if (!['16:9', '9:16', '1:1'].includes(input.aspectRatio)) throw new Error('长视频画幅无效');
   const [width, height] = input.aspectRatio === '9:16' ? [480, 864] : input.aspectRatio === '1:1' ? [640, 640] : [864, 480];
   const defs = input.definitions;
-  const required = ['MiniMaxH3Director', 'MiniMaxH3DirectorGroupImageToVideo', 'MiniMaxH3DirectorGroupsCombine', 'UNETLoader', 'CLIPLoader', 'VAELoader', 'LoadImage', 'CreateVideo', 'SaveVideo'];
+  const required = ['MiniMaxH3Director', 'MiniMaxH3DirectorGroupImageToVideo', 'MiniMaxH3DirectorGroupsCombine', 'UNETLoader', 'CLIPLoader', 'VAELoader', 'LoadImage', 'CreateVideo', 'SaveVideo', 'LoraLoaderBypassModelOnly'];
   const missing = required.filter(name => !defs[name]);
   if (missing.length) throw new Error(`云端未安装兼容的 H3 Director 长视频节点：${missing.join(', ')}。未提交视频，也不会回退成 15 秒`);
   const node = (class_type: string, inputs: Graph, title = class_type) => ({ class_type, inputs, _meta: { title } });
   const prompt: Graph = {
-    '1': node('UNETLoader', { unet_name: H3_DASIWA_8TURBO_PROFILE.diffusionModel, weight_dtype: 'default' }),
-    '4': node('CLIPLoader', { clip_name: H3_DASIWA_8TURBO_PROFILE.textEncoder, type: 'minimax', device: 'default' }),
+    '1': node('UNETLoader', { unet_name: H3_PRODUCTION_PROFILE.diffusionModel, weight_dtype: 'default' }),
+    '4': node('CLIPLoader', { clip_name: H3_PRODUCTION_PROFILE.textEncoder, type: 'minimax', device: 'default' }),
     '5': node('VAELoader', { vae_name: 'minimax_h3_video_vae_fp16.safetensors' }),
     '6': node('VAELoader', { vae_name: 'minimax_h3_audio_vae_fp32.safetensors' }),
     '10': node('LoadImage', { image: input.remoteImage }, 'Original starting frame'),
   };
   const sage = Boolean(defs.MiniMaxH3MemoryEfficientSageAttentionPatch);
   if (sage) prompt['2'] = node('MiniMaxH3MemoryEfficientSageAttentionPatch', { model: ['1', 0] });
+  prompt['3'] = node('LoraLoaderBypassModelOnly', { model: [sage ? '2' : '1', 0], lora_name: H3_PRODUCTION_PROFILE.lora, strength_model: H3_PRODUCTION_PROFILE.loraStrength });
   const frameCount = directorFrameCount(DIRECTOR_SEGMENT_SECONDS);
   const segmentPrompts = plan.segments.map((segment, index) => {
     const head = index ? DIRECTOR_CONTEXT_FRAMES / DIRECTOR_FPS : 0;
@@ -123,11 +124,11 @@ export function buildH3DirectorGraph(input: {
     runSelectEnabled: false, runSelection: [], liveTaePreview: false,
   };
   prompt[input.directorNodeId] = node('MiniMaxH3Director', {
-    model: [sage ? '2' : '1', 0], video_vae: ['5', 0], audio_vae: ['6', 0], clip: ['4', 0], i2v_groups: ['28', 0],
+    model: ['3', 0], video_vae: ['5', 0], audio_vae: ['6', 0], clip: ['4', 0], i2v_groups: ['28', 0],
     task_type: taskType, global_prompt: '', bd_grp_sample: '采样设置', cfg: 1, seed: input.seed,
     frame_rate: DIRECTOR_FPS, width, height, ref_max_size: Math.max(width, height), total_frames: totalFrames,
-    timeline_data: JSON.stringify(timeline), steps: H3_DASIWA_8TURBO_PROFILE.steps, sampler: 'euler', scheduler: H3_DASIWA_8TURBO_PROFILE.scheduler,
-    shift_video: H3_DASIWA_8TURBO_PROFILE.shiftVideo, shift_audio: H3_DASIWA_8TURBO_PROFILE.shiftAudio, clear_vram_between_segments: true, export_source_images: false,
+    timeline_data: JSON.stringify(timeline), steps: H3_PRODUCTION_PROFILE.steps, sampler: 'euler', scheduler: H3_PRODUCTION_PROFILE.scheduler,
+    shift_video: H3_PRODUCTION_PROFILE.shiftVideo, shift_audio: H3_PRODUCTION_PROFILE.shiftAudio, clear_vram_between_segments: true, export_source_images: false,
   }, 'AID continuous long video');
   prompt['31'] = node('CreateVideo', { images: [input.directorNodeId, 0], audio: [input.directorNodeId, 1], fps: [input.directorNodeId, 2], bit_depth: 8 });
   prompt['32'] = node('SaveVideo', { video: ['31', 0], filename_prefix: input.outputPrefix, format: 'auto', codec: 'auto' });

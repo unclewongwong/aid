@@ -2168,8 +2168,8 @@ export default function StoryPage() {
       try {
         const statusResponse = await fetch(comfyUIApiUrl('/api/companion/status', activeSettings.comfyui), { cache: 'no-store', signal: AbortSignal.timeout(2500) });
         const status = statusResponse.ok ? await statusResponse.json() : undefined;
-        if (!status?.ok || !companionVersionAtLeast(String(status.version || ''), SEGMENT_VIDEO_COMPANION_MIN_VERSION)) {
-          throw new Error(`H3 8Turbo 生成需要 Companion v${SEGMENT_VIDEO_COMPANION_MIN_VERSION.join('.')} 或更高版本；当前版本为 ${status?.version || '未知'}`);
+        if (!status?.ok || !status.h3DasiwaHybridPruned4 || !companionVersionAtLeast(String(status.version || ''), SEGMENT_VIDEO_COMPANION_MIN_VERSION)) {
+          throw new Error(`H3 Hybrid pruned 四步 生成需要 Companion v${SEGMENT_VIDEO_COMPANION_MIN_VERSION.join('.')} 或更高版本；当前版本为 ${status?.version || '未知'}`);
         }
       } catch (error) {
         failBeforeSubmission(error instanceof Error ? error.message : '无法确认 Companion 版本');

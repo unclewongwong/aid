@@ -1,7 +1,7 @@
 /**
  * Hybrid 8Turbo already contains acceleration distillation. Never attach the
  * retired four-step LoRA, including when loading an old saved workflow/job.
- * Shared by ordinary generation, Motion Context and Director.
+ * Retained for the separate V2V edit path and historical comparison tools.
  */
 export const H3_DASIWA_8TURBO_PROFILE = Object.freeze({
   name: 'dasiwa8' as const,
@@ -13,6 +13,24 @@ export const H3_DASIWA_8TURBO_PROFILE = Object.freeze({
   shiftVideo: 12,
   shiftAudio: 3,
   loraStrength: 0,
+  samplerName: 'dual_clock_euler',
+  scheduler: 'simple',
+});
+
+/** Verified Hybrid pruned checkpoint + its exact-checkpoint four-step adapter.
+ * Production generation must switch the complete pair, never only the steps.
+ */
+export const H3_PRODUCTION_PROFILE = Object.freeze({
+  name: 'dasiwa4' as const,
+  diffusionModel: 'DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors',
+  diffusionModelSha256: '71c61492faf65b410d0726840ac3b27b017fcfeb76b16ae11589223d81b7121c',
+  textEncoder: 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
+  lora: 'minimax_h3_turbo_4step_dasiwa_ref2va_hybrid_v1_T8.safetensors',
+  loraSha256: 'd2a9a723d97520232f17b6fec33335f9e94b03b2c67b56f91f16780355479274',
+  steps: 4,
+  shiftVideo: 12,
+  shiftAudio: 3,
+  loraStrength: 1,
   samplerName: 'dual_clock_euler',
   scheduler: 'simple',
 });

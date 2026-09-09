@@ -14,7 +14,7 @@ export const VIDEO_GENERATION_CHOICES = [
   { videoProvider: 'apimart', videoModel: 'veo3.1-quality', label: 'Veo 3.1 Quality · APIMart API' },
   { videoProvider: 'apimart', videoModel: 'wan2.7', label: 'Wan 2.7 · APIMart API' },
   { videoProvider: 'fal', videoModel: 'minimax/h3-max/image-to-video', label: 'MiniMax H3 Max · fal API' },
-  { videoProvider: 'comfyui', videoModel: 'minimax-h3', label: 'DaSiWa H3 8Turbo · ComfyUI 云卡' },
+  { videoProvider: 'comfyui', videoModel: 'minimax-h3', label: 'DaSiWa H3 Hybrid pruned · 4步 · ComfyUI 云卡' },
 ] as const;
 
 export function videoGenerationSelection(settings: Partial<VideoGenerationSelection>): VideoGenerationSelection {

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
-import { assertH3EightTurboSupport, comfyUIApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
+import { assertH3ProductionSupport, comfyUIApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
 import {
   BatchTaskStatus,
   MiniMaxBatchTask,
@@ -299,7 +299,7 @@ export default function MiniMaxBatchPage() {
       ? [await fileToDataUrl(await readProjectFile(root, task.endFrame))]
       : await Promise.all(task.referenceImages.map(async path => fileToDataUrl(await readProjectFile(root, path))));
     const audioFiles = await Promise.all(task.referenceAudios.map(async path => fileToDataUrl(await readProjectFile(root, path))));
-    await assertH3EightTurboSupport(settings.comfyui);
+    await assertH3ProductionSupport(settings.comfyui);
     const response = await fetch(comfyUIApiUrl('/api/image-to-video', settings.comfyui), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

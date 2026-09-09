@@ -37,9 +37,10 @@ test('builds a three-segment continuity prompt with one real first frame', () =>
   assert.deepEqual(built.prompt['20'].inputs.first_frame, ['10', 0]);
   assert.equal('first_frame' in built.prompt['21'].inputs, false);
   assert.equal('first_frame' in built.prompt['22'].inputs, false);
-  assert.equal(built.prompt['30'].inputs.steps, 8);
-  assert.equal(built.prompt['1'].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors');
-  assert.equal(built.prompt['3'], undefined);
+  assert.equal(built.prompt['30'].inputs.steps, 4);
+  assert.equal(built.prompt['1'].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors');
+  assert.equal(built.prompt['3'].inputs.lora_name, 'minimax_h3_turbo_4step_dasiwa_ref2va_hybrid_v1_T8.safetensors');
+  assert.deepEqual(built.prompt['30'].inputs.model, ['3', 0]);
   const timeline = JSON.parse(built.prompt['30'].inputs.timeline_data);
   assert.equal(timeline.output.continuityEnabled, true);
   assert.equal(timeline.output.continuityOverlapFrames, 22);

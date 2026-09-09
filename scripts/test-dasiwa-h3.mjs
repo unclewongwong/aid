@@ -14,7 +14,7 @@ if (!baseUrl) throw new Error('AID_COMFYUI_URL is required');
 const workflowPath = path.resolve(process.env.AID_H3_WORKFLOW || '/tmp/aid-h3-4step-workflow.json');
 const imagePath = path.resolve(process.env.AID_H3_FRAME || 'outputs/nana-broadcast-candid/nana-shanghai-clean-first-frame.png');
 const promptPath = path.resolve(process.env.AID_H3_PROMPT || 'outputs/nana-broadcast-candid/h3-submitted-prompt.txt');
-const outputDir = path.resolve(process.env.AID_H3_OUTPUT_DIR || 'outputs/nana-broadcast-candid/dasiwa8');
+const outputDir = path.resolve(process.env.AID_H3_OUTPUT_DIR || 'outputs/nana-broadcast-candid/dasiwa4');
 const testModel = String(process.env.AID_H3_TEST_MODEL || '').trim();
 const duration = Math.min(15, Math.max(2, Number(process.env.AID_H3_DURATION || 8)));
 const seed = Number(process.env.AID_H3_SEED || 8829421);
@@ -28,7 +28,7 @@ const imageBytes = fs.readFileSync(imagePath);
 const uploadBody = new FormData();
 uploadBody.append('image', new Blob([imageBytes], { type: 'image/png' }), path.basename(imagePath));
 uploadBody.append('type', 'input');
-uploadBody.append('subfolder', 'aid/dasiwa8-test');
+uploadBody.append('subfolder', 'aid/dasiwa4-test');
 uploadBody.append('overwrite', 'true');
 const uploadResponse = await fetch(`${baseUrl}/upload/image`, { method: 'POST', body: uploadBody });
 if (!uploadResponse.ok) throw new Error(`Upload failed ${uploadResponse.status}: ${await uploadResponse.text()}`);
@@ -37,7 +37,7 @@ const remoteImage = [uploaded.subfolder, uploaded.name].filter(Boolean).join('/'
 
 const workflow = JSON.parse(fs.readFileSync(workflowPath, 'utf8'));
 const promptText = fs.readFileSync(promptPath, 'utf8').trim();
-const runId = `nana-dasiwa8-${Date.now()}`;
+const runId = `nana-dasiwa4-${Date.now()}`;
 patchWorkflow(workflow, {
   variant: 'aid_single_reference',
   imageRefs: [remoteImage],
@@ -45,10 +45,10 @@ patchWorkflow(workflow, {
   duration,
   aspectRatio: '16:9',
   seed,
-  outputPrefix: `aid/dasiwa8-test/${runId}`,
+  outputPrefix: `aid/dasiwa4-test/${runId}`,
 });
 const prompt = compileFrontendWorkflow(workflow);
-const profile = applyH3Fl2vaProfile(prompt, 'aid_single_reference', 'dasiwa8');
+const profile = applyH3Fl2vaProfile(prompt, 'aid_single_reference', 'dasiwa4');
 injectReferenceImages(prompt, 'aid_single_reference', [remoteImage]);
 if (testModel) {
   const loader = Object.values(prompt).find(node => node?.class_type === 'UNETLoader');
@@ -57,7 +57,7 @@ if (testModel) {
 }
 
 const manifest = {
-  requestedProfile: 'dasiwa8',
+  requestedProfile: 'dasiwa4',
   effectiveProfile: profile,
   testModel: testModel || profile.diffusionModel,
   duration,
@@ -113,7 +113,7 @@ const query = new URLSearchParams({
 });
 const mediaResponse = await fetch(`${baseUrl}/view?${query}`);
 if (!mediaResponse.ok) throw new Error(`Download failed ${mediaResponse.status}`);
-const outputPath = path.join(outputDir, 'nana-shanghai-dasiwa8.mp4');
+const outputPath = path.join(outputDir, 'nana-shanghai-dasiwa4.mp4');
 fs.writeFileSync(outputPath, Buffer.from(await mediaResponse.arrayBuffer()));
 const result = {
   ...manifest,

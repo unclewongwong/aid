@@ -11,8 +11,8 @@ import net from 'net';
 import { Client, type SFTPWrapper } from 'ssh2';
 import { MAX_H3_REFERENCE_SPEAKERS, MAX_H3_SPEECH_TURNS } from '@/lib/speechAudioContract';
 import { buildH3DirectorGraph, directorGraphInfo, type DirectorPlan } from '@/lib/h3Director';
-import { H3_DASIWA_8TURBO_PROFILE } from '@/lib/h3GenerationProfile';
-export { H3_DASIWA_8TURBO_PROFILE } from '@/lib/h3GenerationProfile';
+import { H3_DASIWA_8TURBO_PROFILE, H3_PRODUCTION_PROFILE } from '@/lib/h3GenerationProfile';
+export { H3_DASIWA_8TURBO_PROFILE, H3_PRODUCTION_PROFILE } from '@/lib/h3GenerationProfile';
 import {
   applyT8H3MotionContext,
   h3MotionContextHeadSeconds,
@@ -135,7 +135,7 @@ function positiveInt(value: string, fallback: number, minimum = 1): number {
 
 function h3Fl2vaProfile(_value: unknown): H3Fl2vaProfile {
   // Old browser settings and queued jobs must not restore the retired stacks.
-  return 'dasiwa8';
+  return 'dasiwa4';
 }
 
 function normalizePrivateKey(value: string, source: string): string {
@@ -204,7 +204,7 @@ export function getComfyUIConfig(settings: ComfyUIClientSettings = {}): ComfyUIC
     multiImageWorkflowPath: envOrValue(settings.multiImageWorkflowPath, 'COMFYUI_MULTI_IMAGE_WORKFLOW_PATH', ''),
     firstLastWorkflowPath: envOrValue(settings.firstLastWorkflowPath, 'COMFYUI_FIRST_LAST_WORKFLOW_PATH', ''),
     h3Fl2vaProfile: h3Fl2vaProfile(
-      settings.h3Fl2vaProfile ?? process.env.COMFYUI_H3_FL2VA_PROFILE ?? 'dasiwa8',
+      settings.h3Fl2vaProfile ?? process.env.COMFYUI_H3_FL2VA_PROFILE ?? 'dasiwa4',
     ),
     characterReplaceWorkflowPath: envOrValue(
       settings.characterReplaceWorkflowPath,
@@ -921,31 +921,38 @@ function linkedFrom(node: JsonRecord, inputName: string, expectedNodeId: string)
 export function applyH3Fl2vaProfile(
   prompt: JsonRecord,
   _variant: ComfyUIWorkflow,
-  _profile: H3Fl2vaProfile = 'dasiwa8',
+  _profile: H3Fl2vaProfile = 'dasiwa4',
 ): JsonRecord {
-  const selectedProfile = H3_DASIWA_8TURBO_PROFILE;
+  const selectedProfile = H3_PRODUCTION_PROFILE;
   const [unetId, unet] = uniquePromptNode(prompt, 'UNETLoader');
   const [, clip] = uniquePromptNode(prompt, 'CLIPLoader');
   const [sageId, sage] = uniquePromptNode(prompt, 'MiniMaxH3MemoryEfficientSageAttentionPatch');
   const [, sampler] = uniquePromptNode(prompt, 'MiniMaxH3DualClockSamplerT8');
   const loras = Object.entries(prompt).filter(([, node]) => /LoraLoader/i.test(node.class_type || ''));
   if (!linkedFrom(sage, 'model', unetId) || loras.length > 1) {
-    throw new ComfyUIError('8Turbo 工作流需要唯一的 UNET → Sage → Sampler 模型链');
+    throw new ComfyUIError('H3 四步工作流需要唯一的 UNET → Sage → LoRA → Sampler 模型链');
   }
+  let loraId: string;
   if (loras.length) {
-    const [loraId, lora] = loras[0];
-    if (lora.class_type !== 'LoraLoaderBypassModelOnly' || !linkedFrom(lora, 'model', sageId) || !linkedFrom(sampler, 'model', loraId)) {
-      throw new ComfyUIError('8Turbo 无法识别旧工作流的加速 LoRA 链，未提交生成');
+    const [existingId, lora] = loras[0];
+    if (lora.class_type !== 'LoraLoaderBypassModelOnly' || !linkedFrom(lora, 'model', sageId) || !linkedFrom(sampler, 'model', existingId)) {
+      throw new ComfyUIError('H3 四步无法识别旧工作流的 LoRA 链，未提交生成');
     }
-    // Rewire every consumer before removing the legacy adapter. Removing the
-    // node also prevents Comfy from validating/loading an obsolete LoRA file.
+    loraId = existingId;
+  } else {
+    if (!linkedFrom(sampler, 'model', sageId)) {
+      throw new ComfyUIError('H3 四步工作流的采样器未连接到 Sage 模型');
+    }
+    loraId = nextNodeId(prompt);
+    // Upgrade saved 8Turbo graphs, including any additional model consumers.
     for (const node of Object.values(prompt)) for (const [key, value] of Object.entries(node.inputs || {})) {
-      if (Array.isArray(value) && String(value[0]) === loraId) node.inputs[key] = [sageId, value[1]];
+      if (Array.isArray(value) && String(value[0]) === sageId) node.inputs[key] = [loraId, value[1]];
     }
-    delete prompt[loraId];
-  } else if (!linkedFrom(sampler, 'model', sageId)) {
-    throw new ComfyUIError('8Turbo 工作流的采样器未连接到 Sage 模型');
   }
+  prompt[loraId] = {
+    class_type: 'LoraLoaderBypassModelOnly',
+    inputs: { model: [sageId, 0], lora_name: selectedProfile.lora, strength_model: selectedProfile.loraStrength },
+  };
   unet.inputs.unet_name = selectedProfile.diffusionModel;
   unet.inputs.weight_dtype = 'default';
   clip.inputs.clip_name = selectedProfile.textEncoder;

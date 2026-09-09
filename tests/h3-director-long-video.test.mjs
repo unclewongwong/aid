@@ -8,12 +8,10 @@ function definitions(legacy = false) {
   return Object.fromEntries(['MiniMaxH3Director', 'MiniMaxH3DirectorGroupImageToVideo', 'MiniMaxH3DirectorGroupsCombine', 'UNETLoader', 'CLIPLoader', 'VAELoader', 'LoadImage', 'CreateVideo', 'SaveVideo', 'LoraLoaderBypassModelOnly', 'MiniMaxH3MemoryEfficientSageAttentionPatch', 'PreviewAny'].map(name => [name, name === 'MiniMaxH3DirectorGroupsCombine' && legacy ? { input: { optional: { group_0: ['MMX_DIR_GROUP'] } } } : {}]));
 }
 
-test('8Turbo Director no longer requires any acceleration LoRA loader', () => {
+test('Hybrid four-step Director requires the matching acceleration loader', () => {
   const defs = definitions();
   delete defs.LoraLoaderBypassModelOnly;
-  const {prompt} = build(30, {definitions:defs});
-  assert.equal(Object.values(prompt).some(node => /LoraLoader/.test(node.class_type)), false);
-  assert.equal(directorGraphInfo(prompt).inputs.steps, 8);
+  assert.throws(() => build(30, {definitions:defs}), /LoraLoaderBypassModelOnly/);
 });
 const plan = duration => ({ sourcePrompt: '原稿：先抬手，再展示面膜，然后停住。', duration, segments: Array.from({ length: duration / 10 }, (_, i) => ({ prompt: `00:00.800时执行动作_${i + 1}。对白：<d>[English] LINE_${i + 1}</d>。00:09.500时自然停稳。` })) });
 const build = (duration, overrides = {}) => buildH3DirectorGraph({ plan: plan(duration), remoteImage: 'aid/assets/original.png', aspectRatio: '9:16', seed: 123, directorNodeId: '1234567890', outputPrefix: 'aid/director/test/final', definitions: definitions(), ...overrides });
@@ -35,11 +33,13 @@ test('30/60 seconds compile as 3/6 linked 10-second groups with a single real fi
     assert.equal(timeline.totalFrames, 243 * duration / 10);
     assert.equal(info.inputs.width, 480);
     assert.equal(info.inputs.height, 864);
-    assert.equal(info.inputs.steps, 8);
+    assert.equal(info.inputs.steps, 4);
     assert.equal(info.inputs.sampler, 'euler');
-    assert.equal(built.prompt['3'], undefined);
-    assert.deepEqual(info.inputs.model, ['2', 0]);
-    assert.equal(built.prompt['1'].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors');
+    assert.equal(built.prompt['3'].inputs.lora_name, 'minimax_h3_turbo_4step_dasiwa_ref2va_hybrid_v1_T8.safetensors');
+    assert.equal(built.prompt['3'].inputs.strength_model, 1);
+    assert.deepEqual(built.prompt['3'].inputs.model, ['2', 0]);
+    assert.deepEqual(info.inputs.model, ['3', 0]);
+    assert.equal(built.prompt['1'].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors');
     assert.equal(info.inputs.refine, undefined);
     for (let i = 0; i < duration / 10; i++) {
       const group = built.prompt[String(20 + i)];
@@ -122,7 +122,7 @@ test('all references resolve, no refine/QC nodes, both canvas orientations and s
   assert.equal(directorGraphInfo(prompt).inputs.height, 480);
 });
 
-test('cloud compatibility patch preserves the tested eight-step dual-clock contract', async () => {
+test('cloud compatibility patch preserves the tested four/eight-step dual-clock contract', async () => {
   const patch = await readFile(new URL('../cloud/patches/core_sampling.aid.py', import.meta.url), 'utf8');
   assert.match(patch, /MiniMaxH3DualClockSamplerT8/);
   assert.match(patch, /sampler_name\) == "euler"/);
@@ -135,7 +135,7 @@ test('cloud compatibility patch preserves the tested eight-step dual-clock contr
 test('production wiring guards older companions, keeps task IDs and only downloads final combined output', async () => {
   const [page, route, comfy, planner, middleware] = await Promise.all(['app/image-to-video/page.tsx', 'app/api/image-to-video/route.ts', 'lib/comfyui.ts', 'app/api/prepare-long-video/route.ts', 'middleware.ts'].map(file => readFile(new URL(`../${file}`, import.meta.url), 'utf8')));
   assert.match(page, /if \(!status.h3DirectorLongVideo\) throw/);
-  assert.deepEqual(H3_DIRECTOR_COMPANION_MIN_VERSION, [0, 1, 209]);
+  assert.deepEqual(H3_DIRECTOR_COMPANION_MIN_VERSION, [0, 1, 224]);
   assert.match(page, /companionVersionAtLeast\(String\(status.version \|\| ''\), H3_DIRECTOR_COMPANION_MIN_VERSION\)/);
   assert.match(page, /localStorage.setItem\(I2V_TASK_STORAGE/);
   assert.match(page, /继续查询（不重新生成）/);

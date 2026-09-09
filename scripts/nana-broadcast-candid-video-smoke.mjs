@@ -4,7 +4,7 @@ import path from 'node:path';
 import { buildVideoSegmentPrompt } from '../lib/videoGenerator.ts';
 
 const companion = process.env.AID_COMPANION_URL || 'http://127.0.0.1:3018';
-const h3Profile = process.env.AID_H3_PROFILE || 'dasiwa8';
+const h3Profile = process.env.AID_H3_PROFILE || 'dasiwa4';
 const framePath = path.resolve('outputs/nana-broadcast-candid/nana-shanghai-clean-first-frame.png');
 if (!fs.existsSync(framePath)) throw new Error(`First frame is missing: ${framePath}`);
 const firstFrame = `data:image/png;base64,${fs.readFileSync(framePath).toString('base64')}`;

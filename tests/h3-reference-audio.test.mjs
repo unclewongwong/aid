@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { assertH3EightTurboSupport } from '../lib/comfyuiClient.ts';
+import { assertH3ProductionSupport } from '../lib/comfyuiClient.ts';
 
 import {
   applyH3Fl2vaProfile,
   getComfyUIConfig,
   COMFYUI_SUBTITLE_TASK_PREFIX,
   fitH3ReferenceAudioDurations,
-  H3_DASIWA_8TURBO_PROFILE,
+  H3_PRODUCTION_PROFILE,
   h3ConditioningTaskType,
   h3AlignedDurationSeconds,
   h3AlignedFrameCount,
@@ -38,10 +38,10 @@ const MINIMUM_DURATION = 2;
 test('standalone and batch H3 reject old companions before submitting paid media', async () => {
   const original = globalThis.fetch;
   try {
-    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.208',h3DasiwaCheckpointPair:true}), {status:200});
-    await assert.rejects(assertH3EightTurboSupport(), /8Turbo/);
-    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.209',h3Dasiwa8Turbo:true}), {status:200});
-    await assert.doesNotReject(assertH3EightTurboSupport());
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.223',h3DasiwaCheckpointPair:true,h3Dasiwa8Turbo:true}), {status:200});
+    await assert.rejects(assertH3ProductionSupport(), /四步/);
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.224',h3DasiwaHybridPruned4:true}), {status:200});
+    await assert.doesNotReject(assertH3ProductionSupport());
   } finally { globalThis.fetch=original; }
 });
 
@@ -156,24 +156,25 @@ function acceleratedPrompt() {
   };
 }
 
-test('all generation variants replace retired adapters with verified 8Turbo', () => {
+test('all generation variants enforce the verified Hybrid checkpoint and matching four-step adapter', () => {
   for (const variant of ['aid_single_reference', 'aid_first_last', 'aid_multi_reference']) {
     for (const profile of [undefined, 'balanced8', 'legacy', 'dasiwa4', 'dasiwa8']) {
       const prompt = acceleratedPrompt();
       const result = applyH3Fl2vaProfile(prompt, variant, profile);
       assert.equal(result.active, true);
-      assert.equal(result.name, 'dasiwa8');
+      assert.equal(result.name, 'dasiwa4');
       assert.equal(result.sageAttention, true);
       assert.equal(result.approximateCache, false);
-      assert.equal(prompt[20].inputs.unet_name, H3_DASIWA_8TURBO_PROFILE.diffusionModel);
-      // Pin the published checkpoint independently of the mutable profile.
-      assert.equal(prompt[20].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors');
-      assert.equal(result.diffusionModelSha256, 'e0441d26414f6e0c28f43d580e6cc56fad424da0fa4d261b698ca73188aa6332');
-      assert.equal(prompt[24].inputs.clip_name, H3_DASIWA_8TURBO_PROFILE.textEncoder);
-      assert.equal(prompt[22], undefined);
-      assert.deepEqual(prompt[23].inputs.model, ['21', 0]);
-      assert.equal(result.lora, null);
-      assert.equal(prompt[23].inputs.steps, 8);
+      assert.equal(prompt[20].inputs.unet_name, 'DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors');
+      assert.equal(result.diffusionModelSha256, '71c61492faf65b410d0726840ac3b27b017fcfeb76b16ae11589223d81b7121c');
+      assert.equal(result.loraSha256, 'd2a9a723d97520232f17b6fec33335f9e94b03b2c67b56f91f16780355479274');
+      assert.equal(prompt[24].inputs.clip_name, H3_PRODUCTION_PROFILE.textEncoder);
+      assert.equal(prompt[22].class_type, 'LoraLoaderBypassModelOnly');
+      assert.equal(prompt[22].inputs.lora_name, 'minimax_h3_turbo_4step_dasiwa_ref2va_hybrid_v1_T8.safetensors');
+      assert.equal(prompt[22].inputs.strength_model, 1);
+      assert.deepEqual(prompt[22].inputs.model, ['21', 0]);
+      assert.deepEqual(prompt[23].inputs.model, ['22', 0]);
+      assert.equal(prompt[23].inputs.steps, 4);
       assert.equal(prompt[23].inputs.shift_video, 12);
       assert.equal(prompt[23].inputs.shift_audio, 3);
       assert.equal(prompt[23].inputs.sampler_name, 'dual_clock_euler');
@@ -182,21 +183,38 @@ test('all generation variants replace retired adapters with verified 8Turbo', ()
   }
 });
 
-test('old saved acceleration choices cannot restore the retired four-step stack', () => {
+test('old saved acceleration choices cannot restore eight-step production', () => {
   for (const profile of ['balanced8', 'legacy', 'dasiwa4', 'dasiwa8', undefined]) {
-    assert.equal(getComfyUIConfig({ h3Fl2vaProfile: profile }).h3Fl2vaProfile, 'dasiwa8');
+    assert.equal(getComfyUIConfig({ h3Fl2vaProfile: profile }).h3Fl2vaProfile, 'dasiwa4');
   }
 });
 
-test('8Turbo migration is idempotent and rewires all retired LoRA consumers', () => {
-  const prompt = acceleratedPrompt();
-  prompt[25] = { class_type:'BasicGuider', inputs:{model:['22',0],conditioning:['30',0]} };
-  applyH3Fl2vaProfile(prompt, 'aid_single_reference');
-  assert.deepEqual(prompt[25].inputs.model, ['21',0]);
-  const once = structuredClone(prompt);
-  applyH3Fl2vaProfile(prompt, 'aid_single_reference');
-  assert.deepEqual(prompt, once);
-  assert.equal(Object.values(prompt).some(node => /LoraLoader/.test(node.class_type)), false);
+test('both legacy-adapter and adapter-free 8Turbo migration are idempotent and preserve all consumers', () => {
+  for (const adapterFree of [false, true]) {
+    const prompt = acceleratedPrompt();
+    if (adapterFree) { delete prompt[22]; prompt[23].inputs.model = ['21', 0]; }
+    prompt[25] = { class_type:'BasicGuider', inputs:{model:[adapterFree ? '21' : '22',0],conditioning:['30',0]} };
+    applyH3Fl2vaProfile(prompt, 'aid_single_reference');
+    const loras = Object.entries(prompt).filter(([, node]) => /LoraLoader/.test(node.class_type));
+    assert.equal(loras.length, 1);
+    assert.deepEqual(prompt[25].inputs.model, [loras[0][0],0]);
+    assert.deepEqual(prompt[23].inputs.model, [loras[0][0],0]);
+    const once = structuredClone(prompt);
+    applyH3Fl2vaProfile(prompt, 'aid_single_reference');
+    assert.deepEqual(prompt, once);
+  }
+});
+
+test('ambiguous and incompatible adapter chains fail before changing the graph', () => {
+  for (const kind of ['duplicate','wrong-loader','wrong-chain']) {
+    const prompt = acceleratedPrompt();
+    if (kind === 'duplicate') prompt[26] = structuredClone(prompt[22]);
+    if (kind === 'wrong-loader') prompt[22].class_type = 'LoraLoaderModelOnly';
+    if (kind === 'wrong-chain') prompt[22].inputs.model = ['20',0];
+    const original = structuredClone(prompt);
+    assert.throws(() => applyH3Fl2vaProfile(prompt, 'aid_single_reference'), /LoRA/);
+    assert.deepEqual(prompt, original);
+  }
 });
 
 test('normalizing a multi-reference graph preserves all image, voice and seed inputs', () => {

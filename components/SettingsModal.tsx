@@ -370,7 +370,7 @@ export default function SettingsModal({
               <option value="sora-2-vip">sora-2-vip</option>
               <option value="MiniMax-H3">
                 {(localSettings.videoProvider || 'apimart') === 'comfyui'
-                  ? 'DaSiWa H3 8Turbo · 8 steps (2-15s, ~720P, native audio)'
+                  ? 'DaSiWa H3 Hybrid pruned · 4 steps (2-15s, ~720P, native audio)'
                   : 'MiniMax-H3 (4-15s, 2K, audio sync)'}
               </option>
               <option value="minimax/h3-max/image-to-video">MiniMax H3 Max · fal (5–15s, 480P/768P, native audio)</option>
@@ -516,7 +516,7 @@ export default function SettingsModal({
               <label className="block text-xs font-mono text-[var(--text-secondary)]">
                 H3 视频生成方案
                 <div className="mt-1 rounded border border-[var(--border-color)] px-3 py-2 text-sm text-[var(--text-primary)]">
-                  DaSiWa Hybrid 8Turbo · 8 步 · 单镜、多镜、首尾帧统一
+                  DaSiWa Hybrid pruned · 匹配四步 LoRA · 单镜、多镜、首尾帧统一
                 </div>
               </label>
               <div className="grid gap-3 md:grid-cols-2">
