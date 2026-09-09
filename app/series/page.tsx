@@ -961,11 +961,11 @@ export default function SeriesPage() {
       }
       if (body.settings && ['enqueue', 'resume', 'retry'].includes(String(body.action))) {
         if (!videoChoice.ready) throw new Error('视频模型选择正在加载，请稍后重试');
-        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean; h3DasiwaHybridPruned4?: boolean; seriesVisualStyleSelection?: boolean; seriesVideoModelRerun?: boolean }>(
+        const status = await readApiJson<{ seriesVideoModelSelection?: boolean; seriesSingleShotImages?: boolean; h3DasiwaHybridPruned4?: boolean; storyFrameAlignedDirection?: boolean; seriesVisualStyleSelection?: boolean; seriesVideoModelRerun?: boolean }>(
           await fetch(`${base}/api/companion/status`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }), '无法检查视频模型选择支持');
         if (body.rerunChangedVideoModel && !status.seriesVideoModelRerun) throw new Error('切换模型后重做视频需要更新 Companion，请更新后再制作。');
         if (!status.seriesVideoModelSelection) throw new Error('请更新 Companion 后再开始制作，旧版会覆盖所选视频模型。');
-        if (productionSettings.videoProvider === 'comfyui' && !status.h3DasiwaHybridPruned4) throw new Error('请更新 Companion 后开始 H3 制作，新版统一使用 DaSiWa Hybrid pruned 四步。');
+        if (productionSettings.videoProvider === 'comfyui' && (!status.h3DasiwaHybridPruned4 || !status.storyFrameAlignedDirection)) throw new Error('请更新 Companion 后开始 H3 制作，新版会按实际分镜图编排四步 H3 的动作与机位。');
         if (!status.seriesVisualStyleSelection) throw new Error('请更新 Companion 后开始制作，以便使用所选全剧视觉风格。');
         if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后再开始制作，以便按定稿镜数逐张生成 1K 分镜图。');
       }
@@ -1020,7 +1020,7 @@ export default function SeriesPage() {
         seriesVisualRedoRecovery?: boolean;
         storySingleImageShots?: boolean;
         h3DasiwaCheckpointPair?: boolean;
-        h3DasiwaHybridPruned4?: boolean;
+        h3DasiwaHybridPruned4?: boolean; storyFrameAlignedDirection?: boolean;
         seriesVisualStyleSelection?: boolean;
       }>(
         await fetch(`${base}/api/companion/status`, {
@@ -1030,7 +1030,7 @@ export default function SeriesPage() {
         "无法检查一键重做支持",
       );
       if (!status.seriesVideoModelSelection) throw new Error("请更新 Companion 后重做，旧版会覆盖所选视频模型。");
-      if (!status.seriesVisualStyleSelection || (productionSettings.videoProvider === 'comfyui' && !status.h3DasiwaHybridPruned4)) throw new Error('请更新 Companion 后重做，以便使用新风格与 H3 Hybrid pruned 四步。');
+      if (!status.seriesVisualStyleSelection || (productionSettings.videoProvider === 'comfyui' && (!status.h3DasiwaHybridPruned4 || !status.storyFrameAlignedDirection))) throw new Error('请更新 Companion 后重做，以便使用新风格与 H3 Hybrid pruned 四步。');
       if (!status.seriesSingleShotImages) throw new Error('请更新 Companion 后重做，以便逐张生成 1K 分镜图。');
       if (!status.seriesVisualRedo || !status.seriesVisualPromptRewrite || !status.seriesVisualRedoRecovery || !status.storySingleImageShots || !status.h3DasiwaCheckpointPair)
         throw new Error("一键重做需要更新 Companion 后重新连接。");
