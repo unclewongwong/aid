@@ -19,6 +19,22 @@ async function withEnv(values, operation) {
 const fixture = { MEDIA_STORAGE_PROVIDER: 'r2', R2_ACCOUNT_ID: 'a'.repeat(32), R2_ACCESS_KEY_ID: 'fixture-access', R2_SECRET_ACCESS_KEY: 'fixture-secret', R2_BUCKET: 'aid-media', R2_PUBLIC_BASE_URL: 'https://media.example.test' };
 const png = await sharp({ create: { width: 40, height: 60, channels: 4, background: '#3366ff80' } }).png().toBuffer();
 
+test('packaged Companion recognizes production reference images without storage configuration', async () => withEnv({}, async () => {
+  const { videoDirectionFrameSourceKey, videoDirectionSourceKey, needsVideoDirectionRefinement } = await import('../lib/videoDirection.ts');
+  const shot = {
+    id: 'r2-frame', imageUrl: 'https://aid-media.searchpanda.vip/aid-images/frame.png',
+    action: '女子坐在沙发上。', characters: ['女子'], objects: [], durationHint: 7,
+    videoDirection: { action: '女子保持坐姿，抬头看向右侧。', camera: '固定中景。', detail: '', ending: '女子看向右侧。' },
+  };
+  shot.videoDirectionSource = videoDirectionSourceKey(shot);
+  assert.equal(isR2MediaUrl(shot.imageUrl), true);
+  assert.equal(needsVideoDirectionRefinement(shot), true);
+  shot.videoDirectionFrameSource = videoDirectionFrameSourceKey(shot);
+  assert.match(shot.videoDirectionFrameSource, /^vdf1-/);
+  assert.equal(needsVideoDirectionRefinement(shot), false);
+  for (const url of ['https://aid-media.searchpanda.vip.evil.test/a.png', 'http://aid-media.searchpanda.vip/a.png', 'https://aid-media.searchpanda.vip:8443/a.png']) assert.equal(isR2MediaUrl(url), false);
+}));
+
 test('signing rejects obsolete clients with a recovery instruction before upload', async () => withEnv(fixture, async () => {
   const { POST } = await import('../app/api/media-upload/sign/route.ts');
   const response = await POST(new Request('https://pandais.beauty/api/media-upload/sign', { method: 'POST', body: JSON.stringify({ folder: 'aid-images', resource_type: 'image' }) }));
