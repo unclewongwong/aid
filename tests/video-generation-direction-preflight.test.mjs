@@ -13,6 +13,7 @@ test('video submission refuses absent or stale directing before any paid provide
   for (const storyboard of [
     { ...original, videoDirection: undefined },
     { ...original, durationHint: 4 },
+    { ...original, imageUrl: 'https://res.cloudinary.com/demo/image/upload/new-frame.png' },
   ]) {
     const response = await POST(new Request('http://localhost/api/generate-video', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

@@ -432,3 +432,35 @@ test('new director generation requires bounded motion briefs while legacy valida
   assert.match(source, /videoDirection: raw\?\.videoDirection/);
   assert.match(source, /videoDirectionSource = videoDirectionSourceKey/);
 });
+
+test('new video preparation aligns a pre-image brief once, preserves paid video signatures, and revisits a changed frame', async () => {
+  const { needsVideoDirectionRefinement, videoDirectionFrameSourceKey } = await import('../lib/videoDirection.ts');
+  const input = shot({ imageUrl:'https://res.cloudinary.com/demo/image/upload/frame.png', videoDirection:direction(), videoStatus:'completed', videoTaskId:'paid-task', videoUrl:'https://example.com/paid.mp4' });
+  input.videoDirectionSource=videoDirectionSourceKey(input);
+  const sig=videoSegmentGenerationSignature([input]);
+  assert.equal(needsVideoDirectionRefinement(input),true);
+  let calls=0;
+  const chat=async(prompt,images)=>{
+    calls++;assert.deepEqual(images,[input.imageUrl]);
+    assert.match(prompt,/已发生状态与手中物品/);assert.match(prompt,/占用与交接/);assert.match(prompt,/多人对应/);
+    return JSON.stringify([{id:input.id,videoDirection:direction()}]);
+  };
+  const [aligned]=await refineVideoDirections([input],chat,{useReferenceImages:true});
+  assert.equal(aligned.videoDirectionFrameSource,videoDirectionFrameSourceKey(input));
+  assert.equal(needsVideoDirectionRefinement(aligned),false);
+  assert.equal(videoSegmentGenerationSignature([aligned]),sig,'alignment metadata alone must not invalidate a completed video');
+  assert.equal(aligned.videoTaskId,input.videoTaskId);assert.equal(aligned.videoUrl,input.videoUrl);
+  await refineVideoDirections([aligned],chat,{useReferenceImages:true});assert.equal(calls,1);
+  assert.equal(needsVideoDirectionRefinement({...aligned,imageUrl:'https://res.cloudinary.com/demo/image/upload/new.png'}),true);
+  assert.equal(needsVideoDirectionRefinement(aligned,true,true),true,'ending-frame alignment differs from opening-frame alignment');
+  const [textOnly]=await refineVideoDirections([aligned],async()=>JSON.stringify([{id:input.id,videoDirection:direction()}]),{rewrite:true});
+  assert.equal(textOnly.videoDirectionFrameSource,undefined,'text-only rewrites cannot retain a claim of frame alignment');
+});
+
+test('authored overhead camera is not contradicted by a default eye-level framing sentence', () => {
+  const input=shot({videoDirection:{...direction(),camera:'俯视宽景固定机位；两人转头时保持原高度和构图。'}});
+  const prompt=buildVideoSegmentPrompt([input],[],{duration:6});
+  assert.match(prompt,/俯视宽景固定机位/);
+  assert.doesNotMatch(prompt,/自然平视机位|景别与构图：/);
+  assert.match(prompt,/运镜：/);
+});

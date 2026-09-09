@@ -11,7 +11,7 @@ import { filmEndingDuration } from '@/lib/filmEnding';
 import { adaptH3PromptForMotionContinuation } from '@/lib/h3MotionContext';
 import { buildChineseH3RewritePrompt, h3VisualPromptIsChinese, parseChineseH3Rewrite } from '@/lib/h3PromptLanguage';
 import { chatOnce } from '@/lib/pipeline/llm';
-import { currentChineseVideoDirection } from '@/lib/videoDirection';
+import { needsVideoDirectionRefinement } from '@/lib/videoDirection';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -66,13 +66,14 @@ export async function POST(request: NextRequest) {
     }
     // Resume/import callers can miss the UI's prompt-preview refinement step.
     // Never purchase a generic fallback shot when its saved directing brief no
-    // longer matches the screenplay/duration. Valid briefs incur no extra call.
+    // longer matches the screenplay/duration or its actual image. Frame-aligned
+    // briefs incur no extra call.
     if (videoProvider === 'comfyui' && !subtitleRemovalSourceTaskId) {
       const hasExplicitPrompt = storyboard.videoPromptOverride === true
         && typeof storyboard.videoPrompt === 'string' && Boolean(storyboard.videoPrompt.trim())
         && !isLegacyH3Prompt(storyboard.videoPrompt);
       let hasCurrentDirection = hasExplicitPrompt;
-      try { hasCurrentDirection ||= Boolean(currentChineseVideoDirection(storyboard)); } catch {}
+      try { hasCurrentDirection ||= !needsVideoDirectionRefinement(storyboard); } catch {}
       if (!hasCurrentDirection) return NextResponse.json({ error: '本镜导演稿缺失或已过期，请先更新视频提示词再重试；尚未提交视频生成。', code: 'VIDEO_DIRECTION_STALE' }, { status: 400 });
     }
     const localizeH3Prompt = async (value: string): Promise<string> => {

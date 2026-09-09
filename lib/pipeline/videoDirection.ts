@@ -1,23 +1,21 @@
 import type { Storyboard } from '@/types';
 import { buildDirectorCaptureContract } from '@/lib/capturePresets';
-import { currentChineseVideoDirection, isChineseVideoDirection, videoDirectionWritingContract, validateVideoDirection, videoDirectionEntityNames, videoDirectionSourceKey } from '@/lib/videoDirection';
+import { needsVideoDirectionRefinement, videoDirectionFrameSourceKey, isChineseVideoDirection, videoDirectionWritingContract, validateVideoDirection, videoDirectionEntityNames, videoDirectionSourceKey } from '@/lib/videoDirection';
 import { storyboardSpeech } from '@/lib/speechAudioContract';
 import { isStoredStoryboardSource } from '@/lib/storyboardImageSource';
 import { extractJson } from './json';
 import { applyDeterministicDirectorFieldRepairFallback, applyDirectorFieldRepairs, buildDirectorFieldRepairPrompt, directorFieldRepairs } from './directorRepair';
 
-// Preview/migration reuses valid briefs. Only an explicit rewrite requests a
-// new brief; neither path replaces images, dialogue, or completed video assets.
+// Reuse briefs already aligned with this frame. Newly attached/changed frames
+// need one directing pass; neither path replaces images, dialogue, or completed video assets.
 export async function refineVideoDirections(
   storyboards: Storyboard[],
   chat: (prompt: string, imageUrls?: string[]) => Promise<string>,
   options: { rewrite?: boolean; hasFirstFrame?: boolean; useReferenceImages?: boolean; isFilmEnding?: boolean; language?: 'zh' | 'en' } = {},
 ): Promise<Storyboard[]> {
-  const pending = storyboards.filter(shot => {
-    if (options.rewrite) return true;
-    try { return !currentChineseVideoDirection(shot); }
-    catch { return true; } // An imported malformed brief can be repaired here.
-  });
+  const firstLastMode = Boolean(options.hasFirstFrame && storyboards.length === 1);
+  const pending = storyboards.filter(shot => options.rewrite
+    || needsVideoDirectionRefinement(shot, options.useReferenceImages === true, firstLastMode));
   if (!pending.length) return storyboards;
   if (storyboards.length > 4) throw new Error('镜头细化每次最多处理4个分镜');
   if (new Set(storyboards.map(shot => shot.id)).size !== storyboards.length) throw new Error('分镜 ID 重复');
@@ -25,9 +23,8 @@ export async function refineVideoDirections(
   // vision. Never imply that an unsubmitted frame has been visually checked.
   const references = options.useReferenceImages ? pending.filter(shot => shot.imageUrl && isStoredStoryboardSource(shot.imageUrl)) : [];
   const imageUrls = references.map(shot => shot.imageUrl!);
-  const firstLastMode = options.hasFirstFrame && storyboards.length === 1;
   const referenceContext = references.length
-    ? `附图编号：${JSON.stringify(references.map((shot, index) => ({ picture: index + 1, id: shot.id })))}。按附图核对已有机位、前中后景、左右位置、焦点和手/道具接触。${firstLastMode ? '本镜附图锁定结束状态，安排中间行动到达它；未提供的开场只能按既有交接文字处理。' : '起始可见状态以图为准，后续行为以剧本为准；从已到达的动作阶段继续，不让已经入场的人再入场。'}未附图的镜头仅按文字处理，不编造看不见的空间。`
+    ? `附图编号：${JSON.stringify(references.map((shot, index) => ({ picture: index + 1, id: shot.id })))}。按附图核对已有机位、前中后景、左右位置、焦点和手/道具接触。${firstLastMode ? '把附图中必须到达的姿态与持物状态写入 ending；action 只从已知开场文字发展到它，不把终态当起点。' : '先在 action 起句写明本镜要用到的已发生状态与手中物品，再只写后续变化。'}不输出核对报告或评分。${firstLastMode ? '本镜附图锁定结束状态，安排中间行动到达它；未提供的开场只能按既有交接文字处理。' : '起始可见状态以图为准，后续行为以剧本为准；从已到达的动作阶段继续，不让已经入场的人再入场。'}未附图的镜头仅按文字处理，不编造看不见的空间。`
     : '这是文字细化，不能假装看过图片或臆造画外地形。';
   const source = pending.map(shot => ({
     id: shot.id, action: shot.action, description: options.rewrite ? undefined : shot.description, imagePrompt: shot.prompt,
@@ -68,7 +65,7 @@ ${videoDirectionWritingContract('zh')}
       const names = videoDirectionEntityNames(shot);
       const direction = validateVideoDirection(parsed[index].videoDirection, names, storyboardSpeech(shot).map(line => line.exactLine), true);
       if (!isChineseVideoDirection(direction, names)) throw new Error('videoDirection 的 action/camera/detail/ending 必须使用中文，登记专名除外');
-      return [shot.id, { ...shot, videoDirection: direction, videoDirectionSource: videoDirectionSourceKey(shot) }] as const;
+      return [shot.id, { ...shot, videoDirection: direction, videoDirectionSource: videoDirectionSourceKey(shot), videoDirectionFrameSource: references.some(reference => reference.id === shot.id) ? videoDirectionFrameSourceKey(shot, firstLastMode) : undefined }] as const;
     }));
     return storyboards.map(shot => updates.get(shot.id) || shot);
   };

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         firstFrameUrl: hasFirstFrame ? 'preview-continuity-frame' : undefined,
         language: language === 'en' ? 'en' : 'zh',
       });
-      return { videoPrompt, directions: refined.map(shot => ({ id: shot.id, videoDirection: shot.videoDirection, videoDirectionSource: shot.videoDirectionSource })) };
+      return { videoPrompt, directions: refined.map(shot => ({ id: shot.id, videoDirection: shot.videoDirection, videoDirectionSource: shot.videoDirectionSource, videoDirectionFrameSource: shot.videoDirectionFrameSource })) };
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to generate video prompt' }, { status: 500 });

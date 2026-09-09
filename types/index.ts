@@ -142,6 +142,7 @@ export interface Storyboard {
   action?: string; // 编剧阶段锁定的权威可见动作；H3 必须逐镜按时间表执行
   performance?: StoryPerformanceCue[]; // 每个出场角色的动作、微表情、视线、呼吸和反应调度
   videoDirection?: StoryVideoDirection;
+  videoDirectionFrameSource?: string; // 导演稿已结合的实际分镜图与首/尾帧模式
   videoDirectionSource?: string; // 源镜头指纹；修改动作/摄影后不复用过期导演描述
   description: string;
   prompt: string;

@@ -47,7 +47,7 @@ import { videoSubtitleRemovalSourceTaskId } from '@/lib/videoDuplicateAudit';
 import { currentVoiceReferences } from '@/lib/voiceReference';
 import { auditStoryDelivery } from '@/lib/storyDeliveryAudit';
 import { prepareStoryboardReference } from '@/lib/storyboardImagePreprocess';
-import { videoDirectionSourceKey, recoverReorderedObjectDirection, currentChineseVideoDirection } from '@/lib/videoDirection';
+import { videoDirectionSourceKey, recoverReorderedObjectDirection, needsVideoDirectionRefinement } from '@/lib/videoDirection';
 import { persistGeneratedStoryboardImage } from '@/lib/generatedImagePersistence';
 
 async function persistLocalGeneratedImage(
@@ -2070,17 +2070,17 @@ export default function StoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ styleReference: styleReferenceRef.current, storyboard: { ...storyboard, visualStyle, capturePreset: capturePresetRef.current }, segmentStoryboards, isFilmEnding: isFilmEndingSegment(storyboardsRef.current, segmentStoryboards), referenceAudioNames, voiceProfiles: videoProvider === 'fal' ? voiceProfiles : {}, language: projectLanguageRef.current, hasFirstFrame, rewriteDirection, apiKey: settingsRef.current.apiKey, dmxApiKey: settingsRef.current.dmxApiKey, scriptProvider: settingsRef.current.scriptProvider || 'auto', scriptModel: settingsRef.current.scriptModel || 'gpt-4o' })
       });
-      const data = await readApiJson<{ videoPrompt: string; directions?: Array<Pick<Storyboard, 'id' | 'videoDirection' | 'videoDirectionSource'>> }>(response, '视频提示词生成失败');
+      const data = await readApiJson<{ videoPrompt: string; directions?: Array<Pick<Storyboard, 'id' | 'videoDirection' | 'videoDirectionSource' | 'videoDirectionFrameSource'>> }>(response, '视频提示词生成失败');
       if (generationProjectId !== projectIdRef.current) return;
       if (segmentStoryboards.some(source => {
         const current = storyboardsRef.current.find(item => item.id === source.id);
-        return !current || videoDirectionSourceKey({ ...current, visualStyle, capturePreset: capturePresetRef.current }) !== videoDirectionSourceKey(source);
+        return !current || current.imageUrl !== source.imageUrl || videoDirectionSourceKey({ ...current, visualStyle, capturePreset: capturePresetRef.current }) !== videoDirectionSourceKey(source);
       })) throw new Error('镜头内容在细化期间已改变，请重新生成提示词');
       // This is the complete H3 prompt. If the user edits and saves it, the
       // generation route submits the edited text verbatim.
       const updated = storyboardsRef.current.map(sb => {
         const direction = data.directions?.find(item => item.id === sb.id);
-        const next = direction ? { ...sb, videoDirection: direction.videoDirection, videoDirectionSource: direction.videoDirectionSource } : sb;
+        const next = direction ? { ...sb, videoDirection: direction.videoDirection, videoDirectionSource: direction.videoDirectionSource, videoDirectionFrameSource: direction.videoDirectionFrameSource } : sb;
         return sb.id === storyboard.id ? { ...next, videoPrompt: data.videoPrompt, videoPromptOverride: false } : next;
       });
       storyboardsRef.current = updated;
@@ -2137,16 +2137,16 @@ export default function StoryPage() {
       .map(item => ({ ...item, ...(requestedById.get(item.id) || {}), imageUrl: item.imageUrl, videoStartMode: 'storyboard' as const, continuousFromPrev: false, ...((item.videoSegmentStoryboardIds?.length || 0) > 1 ? { videoPrompt: undefined, videoPromptOverride: false } : {}) })), effectiveStoryCast(charactersRef.current, storyPlanRef.current?.characters));
     // One-click generation must use the same source adaptation as the manual
     // prompt button. A stale/invalid brief must not silently become a generic
-    // image-action template. Valid briefs and explicit user prompts cost no call.
+    // image-action template. Frame-aligned briefs and explicit user prompts cost no call.
     if (['comfyui', 'fal'].includes(videoProvider) && segment.length && !segment[0].videoPromptOverride
-      && segment.some(item => { try { return !currentChineseVideoDirection(item); } catch { return true; } })) {
+      && segment.some(item => needsVideoDirectionRefinement(item))) {
       try {
         await handleGenerateVideoPrompt(segment[0], segment, false, { throwOnError: true });
         if (generationProjectId !== projectIdRef.current) return;
         segment = segment.map(item => {
           const updated = storyboardsRef.current.find(shot => shot.id === item.id);
-          const next = { ...item, videoDirection: updated?.videoDirection, videoDirectionSource: updated?.videoDirectionSource };
-          if (!currentChineseVideoDirection(next)) throw new Error(`第 ${item.sceneNumber} 镜动作稿仍需转换为中文；保留分镜，不提交通用模板`);
+          const next = { ...item, videoDirection: updated?.videoDirection, videoDirectionSource: updated?.videoDirectionSource, videoDirectionFrameSource: updated?.videoDirectionFrameSource };
+          if (needsVideoDirectionRefinement(next)) throw new Error(`第 ${item.sceneNumber} 镜动作稿仍需按当前分镜图细化；保留分镜，不提交通用模板`);
           return next;
         });
       } catch (error) {

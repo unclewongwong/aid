@@ -574,7 +574,7 @@ function buildOfficialGuidePrompt(
       : '镜尾以已有动作、视线或焦点落点形成可见交接；按既定运动到达落点，由下一片段接续。';
     return [
       opening,
-      `景别与构图：${castSentence}`,
+      directed ? '' : `景别与构图：${castSentence}`,
       `动作与表情：${[actionText, directed?.detail ? bind(directed.detail) : '', performance, expression, directed ? '' : officialTemporalPerformance(storyboard, range, picture, storyboards.length)].filter(Boolean).join(' ')}`,
       `运镜：${camera}`,
       `镜尾：${directed ? bind(directed.ending) : '保持已经建立的人物位置与视线关系。'} ${tailHandoff}${endFrameLanding ? ` ${endFrameLanding}` : ''}`,

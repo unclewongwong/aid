@@ -1,4 +1,5 @@
 import type { Storyboard, StoryVideoDirection } from '@/types';
+import { isStoredStoryboardSource } from './storyboardImageSource';
 
 // Per-field writing/repair targets. The provider receives prose, not these
 // fields: only the combined brief budget is a hard limit at compilation.
@@ -13,8 +14,12 @@ const VIDEO_DIRECTION_WRITING_CONTRACT_BASE = `
 - 本镜末态与下镜初态分别设计：当前镜只完成自己的动作落点；下一张分镜应接住相容的手势、目光、运动方向与道具状态。机位变化由片段间剪辑完成，不把两张分镜渐变融合，也不在当前镜提前走完下一镜动作。
 把锁定的 action、performance、stateBefore/stateAfter 与 editBridge 整理成可直接拍摄的短导演说明。不是重新编剧，不新增事件、人物、道具、对白或音效。
 - action：可见起始状态→已有触发→一个主动作→物理结果。细到能拍：必要时写明哪只手/身体部位、接触什么位置、朝哪个方向施力、速度如何变化，物体如何随之移动。只落实已有行动，不添加无关小动作；不能把完整动作退回静态图片描述。
+- 多人对应：在 action 的起始状态用最少必要的位置和区别特征明确角色名对应附图中的哪一个人（如画面左下的蓝衬衫人物），后续动作与发声沿用同一人。不把同一角色的坐姿、转头和说话分别描述成新的主体，也不为看清说话者另造一个正面人物；保持本镜已知人数与画内/画外关系。只写区分角色必需的锚点，不重复完整外观清单。
+- 动作阶段：对照实际附图，先确定这项行动哪些部分已经完成、哪些仍未发生。门已开就从门开后的反应继续，包已举起就从展示中的视线或持握变化继续；不为了照搬旧 action/stateBefore 把已完成状态倒退再演。保留事件意义、人物关系与逐字台词；具体初始姿态与已完成阶段以附图为准，不能重画原图来迁就旧动作。未附图时仅用已知文字，不虚构观察结果。
 - 手与道具的接触：以首帧已见的接触关系为起点，只写本镜需要改变的接触点、支撑关系和最终归属。靠近但不触碰的动作要有清楚的间距与停止位置；拿起、放下、交接必须有连续的支撑转换。不能为了表现手势让空手凭空多出小物件，也不添加没有剧情依据的反复抓放、开合或绕行。快速下落、撞击等短促事件保持自然速度，不能为了填满镜长改成悬浮或慢动作；若剩余时间有已批准的反应则拍反应。
+- 占用与交接：先确认参与动作的手当前是否持物，再写必要的腾手过程。手持手机时不能直接变成双手扣包；要沿已知可见支撑面交代放置/换手及手机最后位置，或选择空闲手完成既定行动。不确定左右手就描述与画面一致的持物手/空闲手，不猜方位。只补完成已有动作必需的衔接，不新增拿取、丢弃或展示事件；画外不可见的放置点不编造。
 - camera：只写一个摄影任务：起始观察位置→运动类型、方向、幅度、速度/触发→结束时看见什么。幅度用有依据的距离、角度或构图变化（双人中景到单人近景），速度用匀速、与人物同速、触发后加速/减速；不要只写 small move、slow push 或 cinematic。
+- 运镜一致性：action/camera/detail/ending 共用同一条时间线和结束构图。写固定机位就不再附加下移、横移、推进；需要跟随时按一个主要摄影任务描述连续路径，不能在末句突然跳成另一个特写。人物低头或物体遮脸时明确遮挡前后仍是原有发型与空间关系，必要时保留相邻可见轮廓作为连续依据，不靠反复要求“禁止变形”代替动作设计。
 - 运镜边界：写清运动中需要留在画内的主体范围、关键动作或物体，以及可观察的结束条件（如遮挡解除、到达已指定构图）。仅用横移揭示关系时，交代保持原高度和焦距，避免把“逐步露出”扩展成额外推近或俯仰；剧情确需改变高度、焦距或让主体出画时，明确该变化及其落点。边界服务本镜叙事，不要求每镜所有人物全身入画。
 - 为已有信息变化选择手法：横移通过前景视差揭示被遮挡的关系；推进/后撤改变主体与环境的占比；跟拍保持人物距离而让空间流过；移焦明确 A→B 和触发。不是每镜都动：locked-off camera 可让画内行动改变关系，固定机位移焦不等于移动相机。一镜到底只表示不切镜，不表示不运镜。不要把这些手法列成菜单或全部塞进一镜。
 - I2V 从已有首帧的机位、人物位置与焦点开始，只写变化和必要的不变量，不重新摆开场。运动路径必须适合已知空间和镜长，不穿墙、不越轴；物理移动产生视差，变焦不冒充推轨。一个协调弧线可包含横移与转向，但不再叠加独立运镜。首尾帧模式必须连接两个硬锚点，不另造落点或中间切镜。文字输入无法确认的画外布局不要编造。
@@ -201,6 +206,23 @@ export function currentVideoDirection(shot: Storyboard): StoryVideoDirection | u
 export function currentChineseVideoDirection(shot: Storyboard): StoryVideoDirection | undefined {
   const direction = currentVideoDirection(shot);
   return direction && isChineseVideoDirection(direction, videoDirectionEntityNames(shot)) ? direction : undefined;
+}
+
+/** Separate from the screenplay/video signature: preparing a new clip may
+ * require matching its actual frame, without invalidating already paid videos.
+ */
+export function videoDirectionFrameSourceKey(shot: Storyboard, hasFirstFrame = false): string | undefined {
+  if (!shot.imageUrl || !isStoredStoryboardSource(shot.imageUrl)) return undefined;
+  const text = JSON.stringify([videoDirectionSourceKey(shot), shot.imageUrl, hasFirstFrame ? 'ending' : 'opening']);
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
+  return `vdf1-${(hash >>> 0).toString(36)}`;
+}
+
+export function needsVideoDirectionRefinement(shot: Storyboard, useReferenceImages = true, hasFirstFrame = false): boolean {
+  try { if (!currentChineseVideoDirection(shot)) return true; } catch { return true; }
+  const frameSource = useReferenceImages ? videoDirectionFrameSourceKey(shot, hasFirstFrame) : undefined;
+  return Boolean(frameSource && shot.videoDirectionFrameSource !== frameSource);
 }
 
 /** Recover old binding-only changes, never bless a changed action/prompt as current. */
