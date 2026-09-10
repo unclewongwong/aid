@@ -40,7 +40,9 @@ test('standalone and batch H3 reject old companions before submitting paid media
   try {
     globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.223',h3DasiwaCheckpointPair:true,h3Dasiwa8Turbo:true}), {status:200});
     await assert.rejects(assertH3ProductionSupport(), /四步/);
-    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.224',h3DasiwaHybridPruned4:true}), {status:200});
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.226',h3DasiwaHybridPruned4:true}), {status:200});
+    await assert.rejects(assertH3ProductionSupport(), /首帧锚定 Hybrid/);
+    globalThis.fetch = async () => new Response(JSON.stringify({version:'0.1.227',h3DasiwaHybridPruned4:true,h3HybridMultiReference:true}), {status:200});
     await assert.doesNotReject(assertH3ProductionSupport());
   } finally { globalThis.fetch=original; }
 });

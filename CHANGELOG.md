@@ -1,3 +1,9 @@
+## 0.1.227 - 2026-09-11
+
+- Route MiniMax H3 multi-image generation through Hybrid conditioning: lock Picture 1 as the exact `first_frame` and send only the remaining images through `ref_images`, reducing redraw and identity mixing caused by treating every image as an equal Ref2VA reference.
+- Clarify first-frame and auxiliary-picture roles in standalone prompts and the Image-to-Video UI. Keep the verified DaSiWa Hybrid pruned checkpoint, matching four-step LoRA, sampling, audio and output settings unchanged.
+- Require the matching Companion capability before H3 submission and invalidate older multi-image segment cache signatures. Existing generated videos remain untouched and are regenerated only when the user explicitly starts production again.
+
 ## 0.1.202 - 2026-09-07
 
 - Make configured episode count authoritative; source screenplay recognition no longer overrides it. Use count-specific outline examples and recover single-episode phase/foreshadowing indices without changing the retained story or purchasing another repair. Reuse exact legacy outline caches after the prompt change.

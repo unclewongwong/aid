@@ -119,8 +119,8 @@ CLOUDINARY_API_SECRET=your_cloudinary_secret
 
 视频生成通道可在 Settings 中切换为 `Cloud ComfyUI · SSH Private Workflow`。该通道沿用 J18IP 的 MiniMax H3 接口链路：
 
-1. aid 通过 SSH/SCP 上传首帧、可选尾帧，以及可选的角色音色参考；
-2. 自动查找或读取单图、多图、首尾帧工作流；I2VA/FL2VA 默认锁定 pruned FL2VA、NVFP4 文本编码器、768P 专用 8-step LoRA、Sage Attention 与 6/3 调度，多参考 Ref2VA 继续使用独立路径；
+1. aid 通过 SSH/SFTP 上传首帧、可选尾帧、多图辅助参考，以及可选的角色音色参考；
+2. 单图使用 I2VA 锁定首帧，多图使用 Hybrid 将第一张接入 `first_frame`、其余图片接入 `ref_images`，首尾帧使用 FL2VA；三者统一采用 DaSiWa Hybrid pruned、匹配四步 LoRA、Sage Attention 与 12/3 调度；
 3. 将前端工作流转换为 ComfyUI API prompt，并在提交前校验模型链与实际采样参数，通过 `/prompt` 提交；
 4. 使用 `/history/{prompt_id}` 轮询，完成后从 `/view` 下载并上传到 Cloudinary。
 

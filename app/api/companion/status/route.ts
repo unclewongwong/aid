@@ -34,6 +34,7 @@ export async function GET() {
     seriesObjectEvidenceRepair: true,
     h3Dasiwa8Turbo: false,
     h3DasiwaHybridPruned4: true,
+    h3HybridMultiReference: true,
     storyFrameAlignedDirection: true,
     seriesVisualStyleSelection: true,
     seriesVideoModelRerun: true,
