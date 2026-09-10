@@ -394,9 +394,9 @@ test('keeps voice references in native mode without requiring drive audio', () =
   assert.equal(h3ReferenceAudioPolicy(0).prompt_primary_audio_ordinal, 0);
 });
 
-test('uses a true first-frame I2VA mode for one storyboard', () => {
+test('uses locked-frame modes for single and multi-reference generation', () => {
   assert.equal(h3VisualTaskType('aid_single_reference'), 'I2VA');
-  assert.equal(h3VisualTaskType('aid_multi_reference'), 'Ref2VA');
+  assert.equal(h3VisualTaskType('aid_multi_reference'), 'Hybrid');
   assert.equal(h3VisualTaskType('aid_first_last'), 'FL2VA');
 });
 
@@ -428,6 +428,33 @@ test('keeps first-frame authority while adding immutable object pictures', () =>
   assert.ok(Array.isArray(prompt[2].inputs['ref_images.ref_image_0']));
   const loader = prompt[prompt[2].inputs['ref_images.ref_image_0'][0]];
   assert.equal(loader.inputs.image, 'gold-box.png');
+});
+
+test('locks the first multi-reference picture as first_frame and keeps the rest in ref_images', () => {
+  const prompt = nativePrompt(englishPrompt);
+  prompt[2].inputs.first_frame = ['stale-first-frame', 0];
+  prompt[2].inputs['ref_images.ref_image_0'] = ['stale-reference', 0];
+  injectReferenceImages(
+    prompt,
+    'aid_multi_reference',
+    ['shot-start.png', 'actor.png', 'room.png'],
+    ['gold-box.png'],
+  );
+  assert.equal(prompt[2].inputs.task_type, 'Hybrid');
+  const firstFrameLoader = prompt[prompt[2].inputs.first_frame[0]];
+  assert.equal(firstFrameLoader.inputs.image, 'shot-start.png');
+  const references = Object.keys(prompt[2].inputs)
+    .filter(key => key.startsWith('ref_images.ref_image_'))
+    .map(key => prompt[prompt[2].inputs[key][0]].inputs.image);
+  assert.deepEqual(references, ['actor.png', 'room.png', 'gold-box.png']);
+  assert.equal(references.includes('shot-start.png'), false);
+});
+
+test('explains first-frame and auxiliary roles in an unstructured multi-reference prompt', () => {
+  const prompt = taggedPrompt('A woman opens the box.', 'aid_multi_reference', 2, 0);
+  assert.match(prompt, /<Picture 1>是00:00\.000的准确首帧/);
+  assert.match(prompt, /<Picture 2>、<Picture 3>只作为/);
+  assert.match(prompt, /不是替代首帧或候选构图/);
 });
 
 test('keeps the I2VA first frame while native voice conditioning becomes Hybrid', () => {

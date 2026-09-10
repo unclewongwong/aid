@@ -99,7 +99,7 @@ export default function ImageToVideoPage() {
   const apiReferenceMode = !isComfyUI && imageCapability.referenceImages > 0 && (!imageCapability.frameImages || referenceMode === 'reference');
   const multiReferenceMode = apiReferenceMode || (isComfyUI && comfyWorkflowMode === 'multi_reference');
   const maxReferenceImages = isComfyUI ? MAX_COMFYUI_REFERENCE_IMAGES : imageCapability.referenceImages;
-  const firstImageIsReference = apiReferenceMode || (isComfyUI && comfyWorkflowMode !== 'first_last' && !isDirector);
+  const firstImageIsReference = apiReferenceMode;
   const isMiniMaxH3 = isComfyUI || isFal || modelName.includes('minimax-h3');
   const supportsH3VoiceReference = isComfyUI || (!isFal && modelName.includes('minimax-h3'));
 
@@ -556,8 +556,8 @@ export default function ImageToVideoPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {[
-                      { value: 'single_reference' as const, label: '单图参考', detail: 'Ref2VA · 1 张参考图' },
-                      { value: 'multi_reference' as const, label: '多图参考', detail: 'Ref2VA · 2–5 张参考图' },
+                      { value: 'single_reference' as const, label: '单图参考', detail: 'I2VA · 锁定 1 张首帧' },
+                      { value: 'multi_reference' as const, label: '多图参考', detail: 'Hybrid · 首帧 + 1–4 张参考图' },
                       { value: 'first_last' as const, label: '首尾帧', detail: 'FL2VA · 精确首帧和尾帧' },
                       { value: 'director_continuous' as const, label: '连续长视频 · 实验', detail: 'H3 Director · 约 30 / 60 秒' },
                     ].map(option => (

@@ -984,7 +984,7 @@ export function injectReferenceImages(
   remoteIdentityImages: string[] = [],
 ): void {
   const inputs = conditioningNode(prompt).inputs;
-  inputs.task_type = remoteIdentityImages.length && variant !== 'aid_multi_reference'
+  inputs.task_type = remoteIdentityImages.length
     ? 'Hybrid'
     : h3VisualTaskType(variant);
   if (variant === 'aid_first_last') return;
@@ -993,9 +993,9 @@ export function injectReferenceImages(
   for (const key of Object.keys(inputs)) {
     if (key.startsWith('ref_images.ref_image_')) delete inputs[key];
   }
-  if (variant === 'aid_single_reference') {
+  if (variant === 'aid_single_reference' || variant === 'aid_multi_reference') {
     const firstFrame = remoteImages[0];
-    if (!firstFrame) throw new ComfyUIError('I2VA 工作流缺少首帧图片');
+    if (!firstFrame) throw new ComfyUIError(`${variant === 'aid_multi_reference' ? 'Hybrid' : 'I2VA'} 工作流缺少首帧图片`);
     const nodeId = nextNodeId(prompt);
     prompt[nodeId] = {
       class_type: 'LoadImage',
@@ -1006,12 +1006,15 @@ export function injectReferenceImages(
     // ref_images made the frame optional visual inspiration and allowed H3 to
     // redraw the face, wardrobe and room before motion even began.
     inputs.first_frame = [nodeId, 0];
-    remoteIdentityImages.forEach((remoteImage, index) => {
+    const referenceImages = variant === 'aid_multi_reference'
+      ? [...remoteImages.slice(1), ...remoteIdentityImages]
+      : remoteIdentityImages;
+    referenceImages.forEach((remoteImage, index) => {
       const referenceNodeId = nextNodeId(prompt);
       prompt[referenceNodeId] = {
         class_type: 'LoadImage',
         inputs: { image: remoteImage },
-        _meta: { title: `AID immutable object reference ${index + 1}` },
+        _meta: { title: `AID auxiliary reference ${index + 1}` },
       };
       inputs[`ref_images.ref_image_${index}`] = [referenceNodeId, 0];
     });
@@ -1028,19 +1031,20 @@ export function injectReferenceImages(
   });
 }
 
-export function h3VisualTaskType(variant: ComfyUIWorkflow): 'I2VA' | 'FL2VA' | 'Ref2VA' {
+export function h3VisualTaskType(variant: ComfyUIWorkflow): 'I2VA' | 'FL2VA' | 'Hybrid' {
   if (variant === 'aid_single_reference') return 'I2VA';
-  return variant === 'aid_first_last' ? 'FL2VA' : 'Ref2VA';
+  return variant === 'aid_first_last' ? 'FL2VA' : 'Hybrid';
 }
 
 export function h3ConditioningTaskType(
-  visualTaskType: 'I2VA' | 'FL2VA' | 'Ref2VA',
+  visualTaskType: 'I2VA' | 'FL2VA' | 'Ref2VA' | 'Hybrid',
   referenceAudioCount: number,
 ): 'I2VA' | 'FL2VA' | 'Ref2VA' | 'Hybrid' {
   // H3 treats voice samples as reference media too. Pure FL2VA rejects any
   // reference media. The same applies to pure I2VA, so a locked first frame
   // plus character timbre references is submitted as Hybrid while retaining
   // the actual first_frame input.
+  if (visualTaskType === 'Hybrid') return 'Hybrid';
   return visualTaskType !== 'Ref2VA' && referenceAudioCount > 0 ? 'Hybrid' : visualTaskType;
 }
 
@@ -1441,7 +1445,7 @@ export function taggedPrompt(visualPrompt: string, variant: ComfyUIWorkflow, aux
   const prompt = sanitizeSubmittedH3Prompt(
     sanitizeUnavailablePictureOrdinals(visualPrompt, availablePictureCount),
   );
-  // The Story prompt builder now emits MiniMax's official base or Ref2VA
+  // The Story prompt builder now emits MiniMax's official base or Hybrid
   // structure, including picture/audio labels and subject bindings. Appending
   // a second free-form contract would break the documented field order and
   // dilute the chronological shot description.
@@ -1453,7 +1457,7 @@ export function taggedPrompt(visualPrompt: string, variant: ComfyUIWorkflow, aux
   const rules = variant === 'aid_first_last'
     ? ['提供的首帧是准确开场画面，提供的尾帧是准确结束画面。运动中出现的每个人物和物体都必须已经存在于这两张图之一；不得新增角色或主体。']
     : auxiliaryCount
-      ? [`将${Array.from({ length: 1 + auxiliaryCount }, (_, index) => `<Picture ${index + 1}>`).join('、')}分别作为人物身份、产品、服装和场景参考。除非提示词明确要求，否则不得合并或复制其中主体；不得引入参考图中原本不存在的角色、人物或主体。`]
+      ? [`<Picture 1>是00:00.000的准确首帧，完整保持其中的人物身份、姿态、手部、道具位置、场景布局、光线、色彩和镜头构图，并从这一已有状态向前发展。${Array.from({ length: Math.max(0, availablePictureCount - 1) }, (_, index) => `<Picture ${index + 2}>`).join('、')}只作为已声明人物、产品、服装或场景细节的辅助参考，不是替代首帧或候选构图；不得把不同图片中的主体合并、复制或重新排布。`]
       : ['<Picture 1>是本镜唯一视觉事实来源。视频只把<Picture 1>中的内容转化为运动；画面内所有人物、角色、产品、物体、服装和环境元素都必须来自<Picture 1>。不得新增、删除、替换或重新选角；如有对白，只能由<Picture 1>中已经可见的角色说出。'];
   if (referenceAudioCount) {
     const bindings = (referenceAudioNames || []).slice(0, referenceAudioCount);

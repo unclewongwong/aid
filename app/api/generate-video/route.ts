@@ -229,9 +229,9 @@ export async function POST(request: NextRequest) {
       const result = await createComfyUIVideoTask({
         firstFrame,
         auxiliaryImages,
-        // Single-shot continuity can use FL2VA. Multi-beat segments instead use
-        // the multi-reference workflow so every checked storyboard remains a
-        // visible editorial reference inside the same 15-second clip.
+        // Single-shot continuity can use FL2VA. Multi-beat segments use Hybrid:
+        // the opening image remains the exact first_frame while the remaining
+        // storyboard images become auxiliary ref_images for the same clip.
         endFrame: firstFrameUrl && !isMotionContinuation && !isMultiBeatSegment ? storyboard.imageUrl : undefined,
         referenceAudios,
         referenceAudioNames,

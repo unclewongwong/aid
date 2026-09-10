@@ -8,7 +8,7 @@ export const VIDEO_SEGMENT_PLANNING_CONTRACT = 'single-image-shot-v1';
 // Bump this whenever the compiled H3 direction/audio contract changes. Paid
 // clips generated under an older contract must not be mistaken for valid cache
 // hits after a prompt-engine fix.
-export const H3_PROMPT_CONTRACT_VERSION = 'h3-v43';
+export const H3_PROMPT_CONTRACT_VERSION = 'h3-v44';
 
 export interface VideoSegmentDefinition {
   id: string;
