@@ -52,6 +52,7 @@ export default function ImageToVideoPage() {
   const modelName = settings.videoModel?.toLowerCase() || '';
   const isOmniFlashExt = !isComfyUI && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && modelName.includes('grok-imagine');
+  const isSeedanceMini = !isComfyUI && modelName === 'seedance-2.0-mini';
   const isMiniMaxH3 = isComfyUI || modelName.includes('minimax-h3');
 
   // 第二张图的语义按模型区分：
@@ -67,7 +68,7 @@ export default function ImageToVideoPage() {
       : isGrokImagine
         ? 'reference'
         : 'none';
-  const durationMin = isComfyUI ? 2 : (isOmniFlashExt ? 4 : (isGrokImagine ? 6 : (isMiniMaxH3 ? 4 : 5)));
+  const durationMin = isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isMiniMaxH3 ? 4 : 5)));
   const durationMax = isOmniFlashExt ? 10 : (isGrokImagine ? 30 : 15);
   const durationOptions = isOmniFlashExt ? [4, 6, 8, 10] : undefined;
 
@@ -301,7 +302,7 @@ export default function ImageToVideoPage() {
           prompt: fullPrompt,
           aspectRatio,
           duration,
-          quality: isGrokImagine ? quality : undefined,
+          quality: isGrokImagine || isSeedanceMini ? quality : undefined,
           apiKey: settings.apiKey,
           videoModel: settings.videoModel,
           videoFiles,
@@ -615,8 +616,8 @@ export default function ImageToVideoPage() {
                 </div>
               </div>
 
-              {/* Quality - Grok Imagine only */}
-              {isGrokImagine && (
+              {/* Quality - Grok Imagine / Seedance Mini */}
+              {(isGrokImagine || isSeedanceMini) && (
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Quality</h2>
                   <div className="grid grid-cols-2 gap-2">

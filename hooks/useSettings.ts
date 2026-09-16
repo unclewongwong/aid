@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { AppSettings } from '@/types';
+import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiProvider: 'apimart',
@@ -9,7 +10,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   scriptProvider: 'auto',
   scriptModel: 'gpt-4o',
   imageModel: 'doubao-seedream-5-0-lite',
-  videoModel: 'doubao-seedance-1-5-pro',
+  videoModel: SEEDANCE_MINI,
   videoProvider: 'apimart',
   comfyui: {
     sshHost: 'me21gb3rds8p0h44.ssh.x-gpu.com',
@@ -33,7 +34,9 @@ const LEGACY_VIDEO_MODEL_MAP: Record<string, string> = {
 };
 
 function migrateSettings(settings: AppSettings): AppSettings {
-  const migratedVideoModel = LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel;
+  const migratedVideoModel = normalizeVideoModel(
+    LEGACY_VIDEO_MODEL_MAP[settings.videoModel] || settings.videoModel || DEFAULT_SETTINGS.videoModel
+  );
   const legacyComfyUI = settings.comfyui as (AppSettings['comfyui'] & {
     sshPrivateKey?: string;
     sshPrivateKeyPassphrase?: string;

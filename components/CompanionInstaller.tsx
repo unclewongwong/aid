@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, CheckCircle2, ChevronDown, CircleAlert, Clipboard, Download, Laptop, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { companionVersionAtLeast, SEGMENT_VIDEO_COMPANION_MIN_VERSION } from '@/lib/comfyuiClient';
 
-const RELEASE_BASE = 'https://github.com/unclewongwong/aid/releases/latest/download';
+// AID Partner shares this repository and can be the repository-wide latest
+// release. Pin the Companion channel so these links never resolve to Partner.
+const COMPANION_RELEASE_TAG = 'companion-v0.1.227';
+const RELEASE_BASE = `https://github.com/unclewongwong/aid/releases/download/${COMPANION_RELEASE_TAG}`;
 const MAC_OPEN_COMMAND = "xattr -dr com.apple.quarantine '/Applications/AID Companion.app' && open '/Applications/AID Companion.app'";
 
 type Platform = 'mac-arm' | 'mac-intel' | 'windows';
@@ -126,7 +129,7 @@ export default function CompanionInstaller() {
           >
             <Download size={17} /> 下载 {selected.label}
           </a>
-          <p className="mt-2 text-center text-[11px] text-[var(--text-muted)]">{selected.detail} · 自动获取最新版</p>
+          <p className="mt-2 text-center text-[11px] text-[var(--text-muted)]">{selected.detail} · AID Companion 0.1.227</p>
           <button
             type="button"
             onClick={() => setExpanded(value => !value)}

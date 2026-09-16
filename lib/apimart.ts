@@ -8,6 +8,7 @@ import {
   type ImageGenerationAspectRatio,
   type ImageResolutionOverride,
 } from './imageModels';
+import { normalizeVideoModel } from './videoModels';
 
 const APIMART_BASE_URL = 'https://api.apimart.ai/v1';
 
@@ -187,7 +188,7 @@ function ensureCloudinaryAudioDuration(url: string): string {
  * 将期望时长（秒）对齐到指定模型允许的最近合法值。
  */
 export function snapDurationToModel(desiredSeconds: number, model: string): number {
-  const m = model.toLowerCase();
+  const m = normalizeVideoModel(model).toLowerCase();
   if (m.includes('omni-flash-ext')) {
     const steps = [4, 6, 8, 10];
     return steps.reduce((prev, cur) =>
@@ -245,6 +246,7 @@ export async function createVideoTask(
   }
 ): Promise<string> {
   try {
+    model = normalizeVideoModel(model);
     console.log('=== Video Generation Debug ===');
     console.log('Model:', model);
     console.log('Model includes doubao:', model.includes('doubao'));
