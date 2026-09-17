@@ -10,7 +10,12 @@ import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
 import { comfyUIApiUrl, downloadComfyUIVideo, isComfyUIClientTask, localComfyUISettings, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
-import { MAX_SEEDANCE_MINI_REFERENCE_IMAGES } from '@/lib/videoModels';
+import {
+  GEMINI_OMNI_1_1_FLASH,
+  MAX_GEMINI_OMNI_REFERENCE_IMAGES,
+  MAX_SEEDANCE_MINI_REFERENCE_IMAGES,
+  type GeminiOmniResolution,
+} from '@/lib/videoModels';
 
 const MAX_COMFYUI_REFERENCE_IMAGES = 5;
 
@@ -33,8 +38,10 @@ export default function ImageToVideoPage() {
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
   const [duration, setDuration] = useState(5);
   const [quality, setQuality] = useState<'480p' | '720p'>('480p');
+  const [geminiResolution, setGeminiResolution] = useState<GeminiOmniResolution>('720p');
   const [comfyWorkflowMode, setComfyWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last'>('single_reference');
   const [seedanceWorkflowMode, setSeedanceWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last'>('single_reference');
+  const [geminiWorkflowMode, setGeminiWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last'>('single_reference');
   const [isGenerating, setIsGenerating] = useState(false);
 
   useLayoutEffect(() => {
@@ -55,14 +62,23 @@ export default function ImageToVideoPage() {
   const isOmniFlashExt = !isComfyUI && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && modelName.includes('grok-imagine');
   const isSeedanceMini = !isComfyUI && modelName === 'seedance-2.0-mini';
+  const isGeminiOmniFlash = !isComfyUI && modelName === GEMINI_OMNI_1_1_FLASH;
   const isMiniMaxH3 = isComfyUI || modelName.includes('minimax-h3');
   const isMultiReferenceMode = (isComfyUI && comfyWorkflowMode === 'multi_reference') ||
-    (isSeedanceMini && seedanceWorkflowMode === 'multi_reference');
+    (isSeedanceMini && seedanceWorkflowMode === 'multi_reference') ||
+    (isGeminiOmniFlash && geminiWorkflowMode === 'multi_reference');
   const usesReferenceImageLabel = (isComfyUI && comfyWorkflowMode !== 'first_last') ||
-    (isSeedanceMini && seedanceWorkflowMode !== 'first_last');
-  const maxReferenceImages = isSeedanceMini
-    ? MAX_SEEDANCE_MINI_REFERENCE_IMAGES
-    : MAX_COMFYUI_REFERENCE_IMAGES;
+    (isSeedanceMini && seedanceWorkflowMode !== 'first_last') ||
+    (isGeminiOmniFlash && geminiWorkflowMode !== 'first_last');
+  const maxReferenceImages = isGeminiOmniFlash
+    ? MAX_GEMINI_OMNI_REFERENCE_IMAGES
+    : isSeedanceMini
+      ? MAX_SEEDANCE_MINI_REFERENCE_IMAGES
+      : MAX_COMFYUI_REFERENCE_IMAGES;
+  const effectiveAspectRatio = isGeminiOmniFlash && aspectRatio === '1:1' ? '16:9' : aspectRatio;
+  const isSecondImageRequired = (isComfyUI && comfyWorkflowMode === 'first_last') ||
+    (isSeedanceMini && seedanceWorkflowMode === 'first_last') ||
+    (isGeminiOmniFlash && geminiWorkflowMode === 'first_last');
 
   // 第二张图的语义按模型区分：
   // - seedance/doubao/wan/veo 支持首尾帧 → last_frame
@@ -73,6 +89,8 @@ export default function ImageToVideoPage() {
       ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
       : isSeedanceMini
         ? seedanceWorkflowMode === 'first_last' ? 'last_frame' : 'none'
+        : isGeminiOmniFlash
+          ? geminiWorkflowMode === 'first_last' ? 'last_frame' : 'none'
         : modelName.includes('seedance') || modelName.includes('doubao') || modelName.includes('wan') ||
     modelName.includes('veo') || isMiniMaxH3
       ? 'last_frame'
@@ -127,7 +145,7 @@ export default function ImageToVideoPage() {
     const files = Array.from(e.target.files || []);
     const available = maxReferenceImages - 1 - referenceImages.length;
     if (available <= 0) {
-      alert(`${isSeedanceMini ? 'Seedance 2.0 Mini' : 'MiniMax H3'} 多图参考最多使用 ${maxReferenceImages} 张图片`);
+      alert(`${isGeminiOmniFlash ? 'Gemini Omni 1.1 Flash' : isSeedanceMini ? 'Seedance 2.0 Mini' : 'MiniMax H3'} 多图参考最多使用 ${maxReferenceImages} 张图片`);
       e.target.value = '';
       return;
     }
@@ -152,19 +170,52 @@ export default function ImageToVideoPage() {
     e.target.value = '';
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => setVideoFiles(prev => [...prev, e.target?.result as string]);
-      reader.readAsDataURL(file);
-    });
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
+    try {
+      if (isGeminiOmniFlash && files.length > 1) {
+        throw new Error('Gemini Omni 1.1 Flash 最多支持 1 条参考视频');
+      }
+      if (isGeminiOmniFlash && files[0]) {
+        const durationSeconds = await new Promise<number>((resolve, reject) => {
+          const url = URL.createObjectURL(files[0]);
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            const value = video.duration;
+            URL.revokeObjectURL(url);
+            Number.isFinite(value) ? resolve(value) : reject(new Error('无法读取参考视频时长'));
+          };
+          video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('无法解析参考视频'));
+          };
+          video.src = url;
+        });
+        if (durationSeconds > 10.05) throw new Error('Gemini Omni 1.1 Flash 的参考视频不能超过 10 秒');
+      }
+      const values = await Promise.all(files.map(file => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target?.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      })));
+      setVideoFiles(previous => isGeminiOmniFlash ? values.slice(0, 1) : [...previous, ...values]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '参考视频读取失败');
+    } finally {
+      input.value = '';
+    }
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     try {
       const files = Array.from(input.files || []);
+      if (isGeminiOmniFlash && files.length > 0) {
+        throw new Error('Gemini Omni 1.1 Flash 不支持上传参考音频');
+      }
       if (isComfyUI) {
         const available = 3 - audioFiles.length;
         if (available <= 0) throw new Error('MiniMax H3 最多使用 3 条参考音频');
@@ -268,12 +319,12 @@ export default function ImageToVideoPage() {
     setIsGenerating(false);
   };
 
-  const uploadImageForGeneration = async (imageData: string): Promise<string> => {
-    if (/^https?:\/\//i.test(imageData)) return imageData;
+  const uploadMediaForGeneration = async (mediaData: string, resourceType: 'image' | 'video' = 'image'): Promise<string> => {
+    if (/^https?:\/\//i.test(mediaData)) return mediaData;
     const response = await fetch('/api/upload-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData }),
+      body: JSON.stringify({ imageData: mediaData, resourceType }),
     });
     if (!response.ok) {
       const error = await response.json().catch(() => null);
@@ -315,6 +366,22 @@ export default function ImageToVideoPage() {
       alert('Seedance 2.0 Mini 的首尾帧模式不能同时使用参考视频或参考音频');
       return;
     }
+    if (isGeminiOmniFlash && geminiWorkflowMode === 'multi_reference' && referenceImages.length < 1) {
+      alert('Gemini Omni 1.1 Flash 多图参考至少需要 2 张图片');
+      return;
+    }
+    if (isGeminiOmniFlash && geminiWorkflowMode === 'first_last' && !secondImage) {
+      alert('Gemini Omni 1.1 Flash 首尾帧模式需要上传尾帧');
+      return;
+    }
+    if (isGeminiOmniFlash && videoFiles.length + videoUrls.length > 1) {
+      alert('Gemini Omni 1.1 Flash 最多支持 1 条参考视频');
+      return;
+    }
+    if (isGeminiOmniFlash && audioFiles.length + audioUrls.length > 0) {
+      alert('Gemini Omni 1.1 Flash 不支持上传参考音频');
+      return;
+    }
     if (isComfyUI && audioFiles.length + audioUrls.length > 3) {
       alert('ComfyUI MiniMax H3 最多使用 3 条参考音频');
       return;
@@ -327,12 +394,15 @@ export default function ImageToVideoPage() {
         ? referenceImages
         : secondImage ? [secondImage] : [];
       // 多图素材逐张上传，避免把所有 base64 图片塞进同一个生成请求。
-      const [submittedMainImage, submittedReferenceImages] = isSeedanceMini
+      const [submittedMainImage, submittedReferenceImages] = isSeedanceMini || isGeminiOmniFlash
         ? await Promise.all([
-            uploadImageForGeneration(mainImage),
-            Promise.all(selectedReferenceImages.map(uploadImageForGeneration)),
+            uploadMediaForGeneration(mainImage),
+            Promise.all(selectedReferenceImages.map(image => uploadMediaForGeneration(image))),
           ])
         : [mainImage, selectedReferenceImages];
+      const submittedVideoFiles = isGeminiOmniFlash
+        ? await Promise.all(videoFiles.map(video => uploadMediaForGeneration(video, 'video')))
+        : videoFiles;
 
       const generationUrl = videoProvider === 'comfyui'
         ? comfyUIApiUrl('/api/image-to-video', settings.comfyui)
@@ -348,12 +418,13 @@ export default function ImageToVideoPage() {
             : secondImage ? secondImageMode : undefined,
           comfyWorkflowMode: isComfyUI ? comfyWorkflowMode : undefined,
           prompt: fullPrompt,
-          aspectRatio,
+          aspectRatio: effectiveAspectRatio,
           duration,
           quality: isGrokImagine || isSeedanceMini ? quality : undefined,
+          resolution: isGeminiOmniFlash ? geminiResolution : undefined,
           apiKey: settings.apiKey,
           videoModel: settings.videoModel,
-          videoFiles,
+          videoFiles: submittedVideoFiles,
           audioFiles,
           videoUrls,
           audioUrls,
@@ -431,7 +502,7 @@ export default function ImageToVideoPage() {
               </div>
               <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[var(--text-secondary)]">
                 <span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5">{isComfyUI ? 'COMFYUI · H3' : 'APIMART'}</span>
-                <span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5">{duration}s · {aspectRatio}</span>
+                <span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5">{isGeminiOmniFlash ? 'AUTO 3–10s' : `${duration}s`} · {effectiveAspectRatio}</span>
               </div>
             </div>
             <div className="aid-form-stack space-y-4 md:space-y-5">
@@ -473,32 +544,37 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
-              {isSeedanceMini && (
+              {(isSeedanceMini || isGeminiOmniFlash) && (
                 <div className="space-y-4 !border-[var(--accent-green)]/35">
                   <div className="flex items-start gap-3">
                     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--accent-green)]/30 bg-[var(--accent-green)]/10 text-[var(--accent-green)]"><Layers3 size={17} /></div>
                     <div>
                       <p className="aid-step-kicker">01 · 选择图片模式</p>
-                      <h2 className="mt-1 text-base font-semibold text-white">Seedance 2.0 Mini</h2>
-                      <p className="mt-1 text-xs text-[var(--text-secondary)]">多图参考用于统一人物、场景和风格；首尾帧用于控制镜头起止画面。</p>
+                      <h2 className="mt-1 text-base font-semibold text-white">{isGeminiOmniFlash ? 'Gemini Omni 1.1 Flash' : 'Seedance 2.0 Mini'}</h2>
+                      <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                        {isGeminiOmniFlash
+                          ? '支持单图、多主体参考与首尾帧；模型会生成同步音频，并按提示自动决定 3–10 秒时长。'
+                          : '多图参考用于统一人物、场景和风格；首尾帧用于控制镜头起止画面。'}
+                      </p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                     {[
                       { value: 'single_reference' as const, label: '单图参考', detail: '使用 1 张主图生成' },
-                      { value: 'multi_reference' as const, label: '多图参考', detail: '主图 + 最多 8 张辅助图' },
+                      { value: 'multi_reference' as const, label: '多图参考', detail: `主图 + 最多 ${maxReferenceImages - 1} 张辅助图` },
                       { value: 'first_last' as const, label: '首尾帧', detail: '精确指定首帧和尾帧' },
                     ].map(option => (
                       <button
                         key={option.value}
                         type="button"
                         onClick={() => {
-                          setSeedanceWorkflowMode(option.value);
+                          if (isGeminiOmniFlash) setGeminiWorkflowMode(option.value);
+                          else setSeedanceWorkflowMode(option.value);
                           setSecondImage(null);
                           setReferenceImages([]);
                         }}
                         className={`min-h-[76px] rounded-xl border p-3 text-left ${
-                          seedanceWorkflowMode === option.value
+                          (isGeminiOmniFlash ? geminiWorkflowMode : seedanceWorkflowMode) === option.value
                             ? 'border-[var(--accent-green)] bg-[var(--accent-green)]/10 shadow-[inset_0_0_0_1px_rgba(88,210,189,.08)]'
                             : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-[var(--border-strong)]'
                         }`}
@@ -508,7 +584,7 @@ export default function ImageToVideoPage() {
                       </button>
                     ))}
                   </div>
-                  {seedanceWorkflowMode === 'first_last' && (
+                  {isSeedanceMini && seedanceWorkflowMode === 'first_last' && (
                     <p className="text-[11px] leading-5 text-[var(--text-secondary)]">首尾帧模式不能同时添加参考视频或参考音频。</p>
                   )}
                 </div>
@@ -554,12 +630,12 @@ export default function ImageToVideoPage() {
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">
                     {secondImageMode === 'last_frame'
-                      ? isComfyUI ? 'Last Frame (Required)' : 'Last Frame (Optional)'
+                      ? isSecondImageRequired ? 'Last Frame (Required)' : 'Last Frame (Optional)'
                       : isComfyUI ? 'Reference Image 2 (Required)' : 'Reference Image (Optional)'}
                   </h2>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">
                     {secondImageMode === 'last_frame'
-                      ? isComfyUI ? 'H3 FL2VA 会把两张图片作为精确首帧和尾帧。Image size < 6MB' : 'Image size < 6MB'
+                      ? isComfyUI ? 'H3 FL2VA 会把两张图片作为精确首帧和尾帧。Image size < 6MB' : '两张图片会作为精确首帧和尾帧。Image size < 6MB'
                       : isComfyUI ? 'H3 Ref2VA 的第二张独立参考图。Image size < 6MB' : 'Used as style/subject reference, not as last frame. Image size < 6MB'}
                   </p>
                   <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center bg-[var(--bg-secondary)]">
@@ -651,7 +727,7 @@ export default function ImageToVideoPage() {
                     { value: '16:9' as const, label: '16:9 Landscape' },
                     { value: '9:16' as const, label: '9:16 Portrait' },
                     { value: '1:1' as const, label: '1:1 Square (Not for Veo)' }
-                  ].map((ratio) => (
+                  ].filter(ratio => !isGeminiOmniFlash || ratio.value !== '1:1').map((ratio) => (
                     <button
                       key={ratio.value}
                       onClick={() => setAspectRatio(ratio.value)}
@@ -668,7 +744,7 @@ export default function ImageToVideoPage() {
               </div>
 
               {/* Duration */}
-              <div>
+              {!isGeminiOmniFlash && <div>
                 <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Duration</h2>
                 <div className="flex items-center gap-3">
                   {durationOptions ? (
@@ -703,7 +779,30 @@ export default function ImageToVideoPage() {
                   )}
                   <span className="text-sm font-mono text-[var(--text-secondary)]">seconds</span>
                 </div>
-              </div>
+              </div>}
+
+              {isGeminiOmniFlash && (
+                <div>
+                  <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Resolution</h2>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    {(['360p', '720p', '1080p', '4k'] as GeminiOmniResolution[]).map(value => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setGeminiResolution(value)}
+                        className={`rounded border p-2 text-xs font-mono ${
+                          geminiResolution === value
+                            ? 'border-[var(--accent-blue)] bg-[var(--accent-blue)] text-white'
+                            : 'border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--text-secondary)]'
+                        }`}
+                      >
+                        {value === '4k' ? '4K' : value}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">模型会根据提示内容自动生成约 3–10 秒的视频，接口不提供固定时长参数。</p>
+                </div>
+              )}
 
               {/* Quality - Grok Imagine / Seedance Mini */}
               {(isGrokImagine || isSeedanceMini) && (
@@ -851,6 +950,39 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
+              {isGeminiOmniFlash && (
+                <div className="space-y-4 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+                  <div>
+                    <h2 className="text-sm font-mono text-[var(--accent-green)]">Reference Video (Optional)</h2>
+                    <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">可上传 1 段不超过 10 秒的视频进行编辑或续写。请在提示词中写清要保留、修改或延续的内容。</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                    id="gemini-video-upload"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <label
+                      htmlFor="gemini-video-upload"
+                      className="inline-block cursor-pointer rounded bg-[var(--accent-blue)] px-3 py-1.5 text-xs font-mono text-white hover:bg-[#006bb3]"
+                    >
+                      {videoFiles.length ? '更换参考视频' : '上传参考视频'}
+                    </label>
+                    {videoFiles.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoFiles([])}
+                        className="rounded border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-1.5 text-xs font-mono hover:bg-[var(--bg-hover)]"
+                      >
+                        清除 ({videoFiles.length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
@@ -858,7 +990,9 @@ export default function ImageToVideoPage() {
                   (isComfyUI && comfyWorkflowMode === 'first_last' && !secondImage) ||
                   (isComfyUI && comfyWorkflowMode === 'multi_reference' && referenceImages.length < 1) ||
                   (isSeedanceMini && seedanceWorkflowMode === 'first_last' && !secondImage) ||
-                  (isSeedanceMini && seedanceWorkflowMode === 'multi_reference' && referenceImages.length < 1)}
+                  (isSeedanceMini && seedanceWorkflowMode === 'multi_reference' && referenceImages.length < 1) ||
+                  (isGeminiOmniFlash && geminiWorkflowMode === 'first_last' && !secondImage) ||
+                  (isGeminiOmniFlash && geminiWorkflowMode === 'multi_reference' && referenceImages.length < 1)}
                 className="w-full py-3 bg-[var(--accent-blue)] hover:bg-[#006bb3] disabled:opacity-50 disabled:cursor-not-allowed rounded font-mono text-sm text-white flex items-center justify-center gap-2"
               >
                 <Video className="w-4 h-4" />
@@ -881,10 +1015,10 @@ export default function ImageToVideoPage() {
             </div>
             <div className={`${isPreviewOpen ? 'block' : 'hidden'} xl:block`}>
             <div className={`aid-panel mb-4 flex items-center justify-center overflow-hidden bg-black/25 ${
-              aspectRatio === '16:9' ? 'aspect-video' :
-              aspectRatio === '9:16' ? 'aspect-[9/16]' :
+              effectiveAspectRatio === '16:9' ? 'aspect-video' :
+              effectiveAspectRatio === '9:16' ? 'aspect-[9/16]' :
               'aspect-square'
-            }`} style={{ maxHeight: aspectRatio === '9:16' ? '600px' : '400px' }}>
+            }`} style={{ maxHeight: effectiveAspectRatio === '9:16' ? '600px' : '400px' }}>
               {videoUrl ? (
                 <video src={videoUrl} controls className="w-full h-full rounded-lg" />
               ) : (
@@ -898,8 +1032,8 @@ export default function ImageToVideoPage() {
 
             <div className="aid-panel mb-4 divide-y divide-[var(--border-color)] px-4">
               <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Layers3 size={14} />引擎</span><span className="font-mono text-white">{isComfyUI ? 'MiniMax H3' : settings.videoModel}</span></div>
-              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Clock3 size={14} />输出规格</span><span className="font-mono text-white">{duration}s · {aspectRatio}</span></div>
-              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Volume2 size={14} />声音</span><span className="font-mono text-white">{isMiniMaxH3 ? '原生音频' : audioFiles.length ? `${audioFiles.length} 条参考` : '按模型设置'}</span></div>
+              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Clock3 size={14} />输出规格</span><span className="font-mono text-white">{isGeminiOmniFlash ? `${geminiResolution === '4k' ? '4K' : geminiResolution} · AUTO 3–10s` : `${duration}s`} · {effectiveAspectRatio}</span></div>
+              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Volume2 size={14} />声音</span><span className="font-mono text-white">{isMiniMaxH3 || isGeminiOmniFlash ? '原生音频' : audioFiles.length ? `${audioFiles.length} 条参考` : '按模型设置'}</span></div>
             </div>
 
             {/* Action Buttons */}

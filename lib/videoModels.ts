@@ -1,5 +1,38 @@
 export const SEEDANCE_MINI = 'seedance-2.0-mini';
 export const MAX_SEEDANCE_MINI_REFERENCE_IMAGES = 9;
+export const GEMINI_OMNI_1_1_FLASH = 'gemini-omni-1.1-flash';
+export const MAX_GEMINI_OMNI_REFERENCE_IMAGES = 10;
+
+export type GeminiOmniResolution = '360p' | '720p' | '1080p' | '4k';
+
+export function normalizeGeminiOmniResolution(value: unknown): GeminiOmniResolution {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized === '2160p') return '4k';
+  return ['360p', '720p', '1080p', '4k'].includes(normalized)
+    ? normalized as GeminiOmniResolution
+    : '720p';
+}
+
+export function videoModelAcceptsExplicitDuration(model: string): boolean {
+  return normalizeVideoModel(model).toLowerCase() !== GEMINI_OMNI_1_1_FLASH;
+}
+
+export function validateGeminiOmniInputs({
+  imageCount,
+  videoCount = 0,
+  audioCount = 0,
+}: {
+  imageCount: number;
+  videoCount?: number;
+  audioCount?: number;
+}): string | null {
+  if (imageCount > MAX_GEMINI_OMNI_REFERENCE_IMAGES) {
+    return `Gemini Omni 1.1 Flash 最多支持 ${MAX_GEMINI_OMNI_REFERENCE_IMAGES} 张图片`;
+  }
+  if (videoCount > 1) return 'Gemini Omni 1.1 Flash 最多支持 1 条参考视频';
+  if (audioCount > 0) return 'Gemini Omni 1.1 Flash 不支持上传参考音频';
+  return null;
+}
 
 export function validateSeedanceMiniReferences({
   imageCount,

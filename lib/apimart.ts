@@ -8,7 +8,16 @@ import {
   type ImageGenerationAspectRatio,
   type ImageResolutionOverride,
 } from './imageModels';
-import { normalizeVideoModel, SEEDANCE_MINI, validateSeedanceMiniReferences } from './videoModels';
+import {
+  GEMINI_OMNI_1_1_FLASH,
+  normalizeGeminiOmniResolution,
+  normalizeVideoModel,
+  SEEDANCE_MINI,
+  validateGeminiOmniInputs,
+  validateSeedanceMiniReferences,
+  videoModelAcceptsExplicitDuration,
+  type GeminiOmniResolution,
+} from './videoModels';
 import { getApiMartBaseUrlForRequest } from './apimartEndpoint';
 
 // 聊天 API - 用于分析故事
@@ -243,7 +252,7 @@ export async function createVideoTask(
     audioUrls?: string[];
     generateAudio?: boolean;
     imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' }>;
-    resolution?: '720P' | '1080P';
+    resolution?: '360p' | '720p' | '720P' | '1080p' | '1080P' | '4k' | '2160p';
     quality?: '480p' | '720p';
   }
 ): Promise<string> {
@@ -256,18 +265,18 @@ export async function createVideoTask(
     console.log('Model includes seedance:', model.includes('seedance'));
     console.log('==============================');
 
-    const requestBody: any = {
-      model,
-      prompt,
-      duration: options?.duration ?? (model.includes('sora-2') ? 10 : 5),
-    };
-
+    const modelLower = model.toLowerCase();
     const isHappyHorse = model.includes('happyhorse');
-    const isOmniFlashExt = model.toLowerCase().includes('omni-flash-ext');
-    const isGrokImagine = model.toLowerCase().includes('grok-imagine');
+    const isOmniFlashExt = modelLower.includes('omni-flash-ext');
+    const isGeminiOmniFlash = modelLower === GEMINI_OMNI_1_1_FLASH;
+    const isGrokImagine = modelLower.includes('grok-imagine');
     const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
-    const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
+    const isMiniMaxH3 = modelLower.includes('minimax-h3');
     const isSeedanceMini = model === SEEDANCE_MINI;
+    const requestBody: any = { model, prompt };
+    if (videoModelAcceptsExplicitDuration(model)) {
+      requestBody.duration = options?.duration ?? (model.includes('sora-2') ? 10 : 5);
+    }
 
     if (isSeedanceMini) {
       const validationError = validateSeedanceMiniReferences({
@@ -278,9 +287,20 @@ export async function createVideoTask(
       });
       if (validationError) throw new Error(validationError);
     }
+    if (isGeminiOmniFlash) {
+      const validationError = validateGeminiOmniInputs({
+        imageCount: referenceImageUrls.length,
+        videoCount: options?.videoUrls?.length ?? 0,
+        audioCount: options?.audioUrls?.length ?? 0,
+      });
+      if (validationError) throw new Error(validationError);
+    }
 
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
-    if (isGrokImagine) {
+    if (isGeminiOmniFlash) {
+      requestBody.aspect_ratio = aspectRatio === '9:16' ? '9:16' : '16:9';
+      requestBody.resolution = normalizeGeminiOmniResolution(options?.resolution) satisfies GeminiOmniResolution;
+    } else if (isGrokImagine) {
       requestBody.size = aspectRatio;
       requestBody.quality = options?.quality ?? '480p';
       // Duration: 6-30秒
@@ -319,7 +339,16 @@ export async function createVideoTask(
     }
 
     // 根据模型类型应用参考图
-    if (isGrokImagine) {
+    if (isGeminiOmniFlash) {
+      if (options?.imageRoles && options.imageRoles.length > 0) {
+        const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
+        const lastFrame = options.imageRoles.find(img => img.role === 'last_frame');
+        if (firstFrame) requestBody.first_frame_image = firstFrame.url;
+        if (lastFrame) requestBody.last_frame_image = lastFrame.url;
+      } else if (referenceImageUrls.length > 0) {
+        requestBody.image_urls = referenceImageUrls.slice(0, 10);
+      }
+    } else if (isGrokImagine) {
       // Already handled above in Grok Imagine block
     } else if (isOmniFlashExt) {
       // Omni-Flash-Ext: 支持 0/1/3 张参考图
@@ -388,7 +417,9 @@ export async function createVideoTask(
 
     // Seedance 2.0 / HappyHorse 增强功能
     if (options?.videoUrls && options.videoUrls.length > 0) {
-      if (isHappyHorse && options.videoUrls.length === 1) {
+      if (isGeminiOmniFlash) {
+        requestBody.video_urls = options.videoUrls.slice(0, 1);
+      } else if (isHappyHorse && options.videoUrls.length === 1) {
         requestBody.video_url = options.videoUrls[0];
       } else {
         requestBody.video_urls = options.videoUrls;

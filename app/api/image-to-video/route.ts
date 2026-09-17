@@ -3,7 +3,13 @@ import { createVideoTask } from '@/lib/apimart';
 import { createComfyUIVideoTask, MAX_COMFYUI_REFERENCE_IMAGES } from '@/lib/comfyui';
 import { uploadToCloudinary } from '@/lib/cloudinaryUpload';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
-import { normalizeVideoModel, SEEDANCE_MINI, validateSeedanceMiniReferences } from '@/lib/videoModels';
+import {
+  GEMINI_OMNI_1_1_FLASH,
+  normalizeVideoModel,
+  SEEDANCE_MINI,
+  validateGeminiOmniInputs,
+  validateSeedanceMiniReferences,
+} from '@/lib/videoModels';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -33,6 +39,7 @@ export async function POST(request: NextRequest) {
       aspectRatio = '16:9',
       duration,
       quality,
+      resolution,
       apiKey,
       videoModel = 'sora-2',
       videoFiles = [],
@@ -111,6 +118,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: validationError }, { status: 400 });
       }
     }
+    if (normalizedVideoModel === GEMINI_OMNI_1_1_FLASH) {
+      const validationError = validateGeminiOmniInputs({
+        imageCount: 1 + referenceImages.length,
+        videoCount: videoFiles.length + videoUrls.length,
+        audioCount: audioFiles.length + audioUrls.length,
+      });
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+      if (secondImageRole === 'last_frame' && referenceImages.length !== 1) {
+        return NextResponse.json({ error: 'Gemini Omni 1.1 Flash 首尾帧模式需要一张首帧和一张尾帧' }, { status: 400 });
+      }
+    }
 
     console.log('Uploading main image to Cloudinary...');
     const mainImageUrl = await uploadBase64ToCloudinary(mainImage);
@@ -175,6 +195,7 @@ AUDIO: Use the provided reference audio. Natural sound effects only (footsteps, 
       {
         duration,
         quality,
+        resolution,
         videoUrls: uploadedVideoUrls,
         audioUrls: uploadedAudioUrls,
         imageRoles: effectiveImageRoles.length > 0 ? effectiveImageRoles : undefined

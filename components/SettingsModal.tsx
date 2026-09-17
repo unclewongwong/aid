@@ -5,6 +5,7 @@ import { AppSettings } from '@/types';
 import { Check, Copy, X } from 'lucide-react';
 import { comfyUIApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
 import { APIMART_IMAGE_MODEL_OPTIONS, getImageModelCapabilities } from '@/lib/imageModels';
+import { GEMINI_OMNI_1_1_FLASH } from '@/lib/videoModels';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -287,7 +288,10 @@ export default function SettingsModal({
               value={(localSettings.videoProvider || 'apimart') === 'comfyui' ? 'MiniMax-H3' : localSettings.videoModel}
               onChange={(e) => setLocalSettings({
                 ...localSettings,
-                videoModel: e.target.value
+                videoModel: e.target.value,
+                aspectRatio: e.target.value === GEMINI_OMNI_1_1_FLASH && localSettings.aspectRatio === '1:1'
+                  ? '16:9'
+                  : localSettings.aspectRatio,
               })}
               disabled={(localSettings.videoProvider || 'apimart') === 'comfyui'}
               className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded px-3 py-2 text-sm font-mono text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
@@ -300,6 +304,7 @@ export default function SettingsModal({
               </option>
               <option value="grok-imagine-1.5-video-apimart">Grok Imagine 1.5 (6-30s, 480p/720p)</option>
               <option value="Omni-Flash-Ext">Omni-Flash-Ext (4/6/8/10s, 720p/1080p/4k)</option>
+              <option value={GEMINI_OMNI_1_1_FLASH}>Gemini Omni 1.1 Flash (3–10s auto, 360p–4K, native audio)</option>
               <option value="seedance-2.0-mini">Seedance 2.0 Mini · APIMart (4–15s, 480p/720p)</option>
               <option value="happyhorse-1.0">happyhorse-1.0</option>
               <option value="veo3.1-fast">veo3.1-fast (Fast)</option>
