@@ -13,7 +13,7 @@ aid_compose 按素材顺序生成原速合成母版，保留同期声；无音�
 不要宣称未知自定义工作流已兼容、模型已下载或云环境已安装，除非工具返回实际验证证据。
 
 ## 电影制作参考：按当前任务加载
-从主题、创意或简略梗概发展故事，或用户要求创作/修改剧本时，先读取 [故事与剧本：从欲望、冲突到因果兑现](references/story-dramaturgy.md)；喜剧片、带喜剧节拍的剧情，或用户反馈“有梗但不好笑、拍得像普通正剧”时，读取 [喜剧导演与节奏：预期、揭示和反应](references/comedy-direction-and-timing.md)；多镜头、短片或连续剧需要统一设定时，读取 [影片视觉设定与素材分工](references/film-visual-continuity.md)；准备把多张连续分镜图成组送入视频模型时，读取 [连续分镜成段生成](references/storyboard-segment-generation.md)；建立或补充重复出场人物时，读取 [角色参考包](references/character-reference-pack.md)；替换设定、素材或修改已制作镜头时，读取 [镜头依赖与局部修改](references/shot-dependencies.md)；旁白决定画面节奏时，读取 [旁白与画面配对](references/narration-picture-pairing.md)。单镜简单任务只加载实际需要的指南，不强制先做完整设定表或新增参考图。
+从主题、创意或简略梗概发展故事，或用户要求创作/修改剧本时，先读取 [故事与剧本：从欲望、冲突到因果兑现](references/story-dramaturgy.md)；喜剧片、带喜剧节拍的剧情，或用户反馈“有梗但不好笑、拍得像普通正剧”时，读取 [喜剧导演与节奏：预期、揭示和反应](references/comedy-direction-and-timing.md)；用户要求电影感、统一影调、摄影设计、镜头语言或反馈“像素材拼接、像普通记录、只有滤镜没有电影感”时，读取 [电影感与风格统一：从视觉契约到镜头执行](references/cinematic-visual-direction.md)；多镜头、短片或连续剧需要统一设定时，读取 [影片视觉设定与素材分工](references/film-visual-continuity.md)；准备把多张连续分镜图成组送入视频模型时，读取 [连续分镜成段生成](references/storyboard-segment-generation.md)；建立或补充重复出场人物时，读取 [角色参考包](references/character-reference-pack.md)；替换设定、素材或修改已制作镜头时，读取 [镜头依赖与局部修改](references/shot-dependencies.md)；旁白决定画面节奏时，读取 [旁白与画面配对](references/narration-picture-pairing.md)。单镜简单任务只加载实际需要的指南，不强制先做完整设定表或新增参考图。
 这些指南补充下面的导演规则，沿用中文提示词、原有用户授权、实际工具与模型能力。文字计划保存在项目 story 中；实际生成所需约束也写入对应 prompt。不增加虚构 MCP/API 字段，不自动评分、抽帧质检或重做，不把参考资料的平台、模型与固定时长当作默认。
 
 ## 剧本与故事：先让人物选择造成后果，再写漂亮镜头
