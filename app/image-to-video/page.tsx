@@ -10,6 +10,7 @@ import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
 import { comfyUIApiUrl, downloadComfyUIVideo, isComfyUIClientTask, localComfyUISettings, videoStatusResponseError } from '@/lib/comfyuiClient';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
+import { MAX_SEEDANCE_MINI_REFERENCE_IMAGES } from '@/lib/videoModels';
 
 const MAX_COMFYUI_REFERENCE_IMAGES = 5;
 
@@ -33,6 +34,7 @@ export default function ImageToVideoPage() {
   const [duration, setDuration] = useState(5);
   const [quality, setQuality] = useState<'480p' | '720p'>('480p');
   const [comfyWorkflowMode, setComfyWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last'>('single_reference');
+  const [seedanceWorkflowMode, setSeedanceWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last'>('single_reference');
   const [isGenerating, setIsGenerating] = useState(false);
 
   useLayoutEffect(() => {
@@ -54,6 +56,13 @@ export default function ImageToVideoPage() {
   const isGrokImagine = !isComfyUI && modelName.includes('grok-imagine');
   const isSeedanceMini = !isComfyUI && modelName === 'seedance-2.0-mini';
   const isMiniMaxH3 = isComfyUI || modelName.includes('minimax-h3');
+  const isMultiReferenceMode = (isComfyUI && comfyWorkflowMode === 'multi_reference') ||
+    (isSeedanceMini && seedanceWorkflowMode === 'multi_reference');
+  const usesReferenceImageLabel = (isComfyUI && comfyWorkflowMode !== 'first_last') ||
+    (isSeedanceMini && seedanceWorkflowMode !== 'first_last');
+  const maxReferenceImages = isSeedanceMini
+    ? MAX_SEEDANCE_MINI_REFERENCE_IMAGES
+    : MAX_COMFYUI_REFERENCE_IMAGES;
 
   // 第二张图的语义按模型区分：
   // - seedance/doubao/wan/veo 支持首尾帧 → last_frame
@@ -62,7 +71,9 @@ export default function ImageToVideoPage() {
   const secondImageMode: 'last_frame' | 'reference' | 'none' =
     isComfyUI
       ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
-      : modelName.includes('seedance') || modelName.includes('doubao') || modelName.includes('wan') ||
+      : isSeedanceMini
+        ? seedanceWorkflowMode === 'first_last' ? 'last_frame' : 'none'
+        : modelName.includes('seedance') || modelName.includes('doubao') || modelName.includes('wan') ||
     modelName.includes('veo') || isMiniMaxH3
       ? 'last_frame'
       : isGrokImagine
@@ -114,15 +125,15 @@ export default function ImageToVideoPage() {
 
   const handleReferenceImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const available = MAX_COMFYUI_REFERENCE_IMAGES - 1 - referenceImages.length;
+    const available = maxReferenceImages - 1 - referenceImages.length;
     if (available <= 0) {
-      alert(`MiniMax H3 多图参考最多使用 ${MAX_COMFYUI_REFERENCE_IMAGES} 张图片`);
+      alert(`${isSeedanceMini ? 'Seedance 2.0 Mini' : 'MiniMax H3'} 多图参考最多使用 ${maxReferenceImages} 张图片`);
       e.target.value = '';
       return;
     }
     const accepted = files.slice(0, available);
     if (files.length > available) {
-      alert(`最多还能添加 ${available} 张图片（总计上限 ${MAX_COMFYUI_REFERENCE_IMAGES} 张）`);
+      alert(`最多还能添加 ${available} 张图片（总计上限 ${maxReferenceImages} 张）`);
     }
     const maxSize = 6 * 1024 * 1024;
     const oversized = accepted.find(file => file.size > maxSize);
@@ -137,7 +148,7 @@ export default function ImageToVideoPage() {
       reader.onerror = () => reject(reader.error);
       reader.readAsDataURL(file);
     })));
-    setReferenceImages(previous => [...previous, ...values].slice(0, MAX_COMFYUI_REFERENCE_IMAGES - 1));
+    setReferenceImages(previous => [...previous, ...values].slice(0, maxReferenceImages - 1));
     e.target.value = '';
   };
 
@@ -257,6 +268,22 @@ export default function ImageToVideoPage() {
     setIsGenerating(false);
   };
 
+  const uploadImageForGeneration = async (imageData: string): Promise<string> => {
+    if (/^https?:\/\//i.test(imageData)) return imageData;
+    const response = await fetch('/api/upload-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.error || '参考图上传失败');
+    }
+    const data = await response.json();
+    if (!data.url) throw new Error('参考图上传后未返回可用地址');
+    return data.url;
+  };
+
   const handleGenerate = async () => {
     if (!mainImage || !prompt) {
       alert('Please upload main image and enter motion description');
@@ -275,6 +302,19 @@ export default function ImageToVideoPage() {
       alert('多图参考工作流至少需要 2 张参考图');
       return;
     }
+    if (isSeedanceMini && seedanceWorkflowMode === 'multi_reference' && referenceImages.length < 1) {
+      alert('Seedance 2.0 Mini 多图参考至少需要 2 张图片');
+      return;
+    }
+    if (isSeedanceMini && seedanceWorkflowMode === 'first_last' && !secondImage) {
+      alert('Seedance 2.0 Mini 首尾帧模式需要上传尾帧');
+      return;
+    }
+    if (isSeedanceMini && seedanceWorkflowMode === 'first_last' &&
+      videoFiles.length + videoUrls.length + audioFiles.length + audioUrls.length > 0) {
+      alert('Seedance 2.0 Mini 的首尾帧模式不能同时使用参考视频或参考音频');
+      return;
+    }
     if (isComfyUI && audioFiles.length + audioUrls.length > 3) {
       alert('ComfyUI MiniMax H3 最多使用 3 条参考音频');
       return;
@@ -283,6 +323,16 @@ export default function ImageToVideoPage() {
     setIsGenerating(true);
     try {
       const fullPrompt = enforceNoSubtitles(cameraParams ? `${prompt}. ${cameraParams}` : prompt);
+      const selectedReferenceImages = isMultiReferenceMode
+        ? referenceImages
+        : secondImage ? [secondImage] : [];
+      // 多图素材逐张上传，避免把所有 base64 图片塞进同一个生成请求。
+      const [submittedMainImage, submittedReferenceImages] = isSeedanceMini
+        ? await Promise.all([
+            uploadImageForGeneration(mainImage),
+            Promise.all(selectedReferenceImages.map(uploadImageForGeneration)),
+          ])
+        : [mainImage, selectedReferenceImages];
 
       const generationUrl = videoProvider === 'comfyui'
         ? comfyUIApiUrl('/api/image-to-video', settings.comfyui)
@@ -291,11 +341,9 @@ export default function ImageToVideoPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mainImage,
-          referenceImages: isComfyUI && comfyWorkflowMode === 'multi_reference'
-            ? referenceImages
-            : secondImage ? [secondImage] : [],
-          secondImageRole: isComfyUI && comfyWorkflowMode === 'multi_reference'
+          mainImage: submittedMainImage,
+          referenceImages: submittedReferenceImages,
+          secondImageRole: isMultiReferenceMode
             ? 'reference'
             : secondImage ? secondImageMode : undefined,
           comfyWorkflowMode: isComfyUI ? comfyWorkflowMode : undefined,
@@ -425,12 +473,53 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
+              {isSeedanceMini && (
+                <div className="space-y-4 !border-[var(--accent-green)]/35">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--accent-green)]/30 bg-[var(--accent-green)]/10 text-[var(--accent-green)]"><Layers3 size={17} /></div>
+                    <div>
+                      <p className="aid-step-kicker">01 · 选择图片模式</p>
+                      <h2 className="mt-1 text-base font-semibold text-white">Seedance 2.0 Mini</h2>
+                      <p className="mt-1 text-xs text-[var(--text-secondary)]">多图参考用于统一人物、场景和风格；首尾帧用于控制镜头起止画面。</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                    {[
+                      { value: 'single_reference' as const, label: '单图参考', detail: '使用 1 张主图生成' },
+                      { value: 'multi_reference' as const, label: '多图参考', detail: '主图 + 最多 8 张辅助图' },
+                      { value: 'first_last' as const, label: '首尾帧', detail: '精确指定首帧和尾帧' },
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setSeedanceWorkflowMode(option.value);
+                          setSecondImage(null);
+                          setReferenceImages([]);
+                        }}
+                        className={`min-h-[76px] rounded-xl border p-3 text-left ${
+                          seedanceWorkflowMode === option.value
+                            ? 'border-[var(--accent-green)] bg-[var(--accent-green)]/10 shadow-[inset_0_0_0_1px_rgba(88,210,189,.08)]'
+                            : 'border-[var(--border-color)] bg-[var(--bg-primary)] hover:border-[var(--border-strong)]'
+                        }`}
+                      >
+                        <span className="block text-xs font-mono text-[var(--text-primary)]">{option.label}</span>
+                        <span className="mt-1 block text-[10px] font-mono text-[var(--text-secondary)]">{option.detail}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {seedanceWorkflowMode === 'first_last' && (
+                    <p className="text-[11px] leading-5 text-[var(--text-secondary)]">首尾帧模式不能同时添加参考视频或参考音频。</p>
+                  )}
+                </div>
+              )}
+
               {/* First Frame and Second Image (Last Frame / Reference) */}
               <div className={`grid grid-cols-1 ${secondImageMode !== 'none' ? 'md:grid-cols-2' : ''} gap-4`}>
                 {/* First Frame */}
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">
-                    {isComfyUI && comfyWorkflowMode !== 'first_last' ? 'Reference Image 1' : 'First Frame'}
+                    {usesReferenceImageLabel ? 'Reference Image 1' : 'First Frame'}
                   </h2>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">Image size &lt; 6MB</p>
                   <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center bg-[var(--bg-secondary)]">
@@ -440,7 +529,7 @@ export default function ImageToVideoPage() {
                       <div>
                         <Upload className="w-10 h-10 mx-auto mb-3 text-[var(--text-secondary)]" />
                         <p className="text-[var(--text-secondary)] text-sm mb-3">
-                          {isComfyUI && comfyWorkflowMode !== 'first_last' ? 'Upload reference image' : 'Upload first frame'}
+                          {usesReferenceImageLabel ? 'Upload reference image' : 'Upload first frame'}
                         </p>
                       </div>
                     )}
@@ -502,17 +591,17 @@ export default function ImageToVideoPage() {
                 )}
               </div>
 
-              {isComfyUI && comfyWorkflowMode === 'multi_reference' && (
+              {isMultiReferenceMode && (
                 <div className="space-y-3">
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <h2 className="text-sm font-mono text-[var(--text-primary)]">Additional Reference Images</h2>
                       <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                        再添加 1–4 张；与 Reference Image 1 合计 2–5 张，每张小于 6MB
+                        再添加 1–{maxReferenceImages - 1} 张；与 Reference Image 1 合计 2–{maxReferenceImages} 张，每张小于 6MB
                       </p>
                     </div>
                     <span className="shrink-0 text-xs font-mono text-[var(--accent-green)]">
-                      已选择 {(mainImage ? 1 : 0) + referenceImages.length} / {MAX_COMFYUI_REFERENCE_IMAGES}
+                      已选择 {(mainImage ? 1 : 0) + referenceImages.length} / {maxReferenceImages}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -532,9 +621,9 @@ export default function ImageToVideoPage() {
                         </button>
                       </div>
                     ))}
-                    {referenceImages.length < MAX_COMFYUI_REFERENCE_IMAGES - 1 && (
+                    {referenceImages.length < maxReferenceImages - 1 && (
                       <label
-                        htmlFor="comfyui-reference-images-upload"
+                        htmlFor="multi-reference-images-upload"
                         className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)] text-center hover:border-[var(--accent-blue)]"
                       >
                         <Upload className="mb-2 h-7 w-7 text-[var(--text-secondary)]" />
@@ -544,7 +633,7 @@ export default function ImageToVideoPage() {
                     )}
                   </div>
                   <input
-                    id="comfyui-reference-images-upload"
+                    id="multi-reference-images-upload"
                     type="file"
                     accept="image/*"
                     multiple
@@ -714,6 +803,10 @@ export default function ImageToVideoPage() {
                 <div className="space-y-4 p-4 border border-[var(--border-color)] rounded-lg bg-[var(--bg-secondary)]">
                   <h2 className="text-sm font-mono text-[var(--accent-green)]">Seedance 2.0 Enhanced Features</h2>
 
+                  {isSeedanceMini && seedanceWorkflowMode === 'first_last' && (
+                    <p className="text-xs leading-5 text-[var(--text-secondary)]">当前是首尾帧模式。参考视频和参考音频不可用；切换到单图或多图参考后即可添加。</p>
+                  )}
+
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">
                       Reference Videos (Max 3, Total ≤15s)
@@ -725,10 +818,11 @@ export default function ImageToVideoPage() {
                       onChange={handleVideoUpload}
                       className="hidden"
                       id="video-upload"
+                      disabled={isSeedanceMini && seedanceWorkflowMode === 'first_last'}
                     />
                     <label
                       htmlFor="video-upload"
-                      className="inline-block px-3 py-1.5 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded cursor-pointer"
+                      className={`inline-block rounded px-3 py-1.5 text-xs font-mono text-white ${isSeedanceMini && seedanceWorkflowMode === 'first_last' ? 'cursor-not-allowed bg-[var(--bg-tertiary)] opacity-50' : 'cursor-pointer bg-[var(--accent-blue)] hover:bg-[#006bb3]'}`}
                     >
                       Upload Videos ({videoFiles.length})
                     </label>
@@ -745,10 +839,11 @@ export default function ImageToVideoPage() {
                       onChange={handleAudioUpload}
                       className="hidden"
                       id="audio-upload"
+                      disabled={isSeedanceMini && seedanceWorkflowMode === 'first_last'}
                     />
                     <label
                       htmlFor="audio-upload"
-                      className="inline-block px-3 py-1.5 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded cursor-pointer"
+                      className={`inline-block rounded px-3 py-1.5 text-xs font-mono text-white ${isSeedanceMini && seedanceWorkflowMode === 'first_last' ? 'cursor-not-allowed bg-[var(--bg-tertiary)] opacity-50' : 'cursor-pointer bg-[var(--accent-blue)] hover:bg-[#006bb3]'}`}
                     >
                       Upload Audio ({audioFiles.length})
                     </label>
@@ -759,7 +854,11 @@ export default function ImageToVideoPage() {
               {/* Generate Button */}
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || !mainImage || !prompt || (isComfyUI && comfyWorkflowMode === 'first_last' && !secondImage) || (isComfyUI && comfyWorkflowMode === 'multi_reference' && referenceImages.length < 1)}
+                disabled={isGenerating || !mainImage || !prompt ||
+                  (isComfyUI && comfyWorkflowMode === 'first_last' && !secondImage) ||
+                  (isComfyUI && comfyWorkflowMode === 'multi_reference' && referenceImages.length < 1) ||
+                  (isSeedanceMini && seedanceWorkflowMode === 'first_last' && !secondImage) ||
+                  (isSeedanceMini && seedanceWorkflowMode === 'multi_reference' && referenceImages.length < 1)}
                 className="w-full py-3 bg-[var(--accent-blue)] hover:bg-[#006bb3] disabled:opacity-50 disabled:cursor-not-allowed rounded font-mono text-sm text-white flex items-center justify-center gap-2"
               >
                 <Video className="w-4 h-4" />

@@ -3,11 +3,13 @@ import { createVideoTask } from '@/lib/apimart';
 import { createComfyUIVideoTask, MAX_COMFYUI_REFERENCE_IMAGES } from '@/lib/comfyui';
 import { uploadToCloudinary } from '@/lib/cloudinaryUpload';
 import { enforceNoSubtitles } from '@/lib/videoTextPolicy';
+import { normalizeVideoModel, SEEDANCE_MINI, validateSeedanceMiniReferences } from '@/lib/videoModels';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 async function uploadBase64ToCloudinary(base64Data: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<string> {
+  if (/^https?:\/\//i.test(base64Data)) return base64Data;
   try {
     const result = await uploadToCloudinary(base64Data, {
       folder: 'aid-video',
@@ -97,6 +99,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '未配置 API Key' }, { status: 500 });
     }
 
+    const normalizedVideoModel = normalizeVideoModel(videoModel);
+    if (normalizedVideoModel === SEEDANCE_MINI) {
+      const validationError = validateSeedanceMiniReferences({
+        imageCount: 1 + referenceImages.length,
+        hasImageRoles: imageRoles.length > 0 || secondImageRole === 'last_frame',
+        videoCount: videoFiles.length + videoUrls.length,
+        audioCount: audioFiles.length + audioUrls.length,
+      });
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+    }
+
     console.log('Uploading main image to Cloudinary...');
     const mainImageUrl = await uploadBase64ToCloudinary(mainImage);
     console.log('Main image URL:', mainImageUrl);
@@ -155,7 +170,7 @@ AUDIO: Use the provided reference audio. Natural sound effects only (footsteps, 
       enhancedPrompt,
       allImageUrls,
       apiKey,
-      videoModel,
+      normalizedVideoModel,
       aspectRatio,
       {
         duration,

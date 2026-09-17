@@ -8,7 +8,7 @@ import {
   type ImageGenerationAspectRatio,
   type ImageResolutionOverride,
 } from './imageModels';
-import { normalizeVideoModel } from './videoModels';
+import { normalizeVideoModel, SEEDANCE_MINI, validateSeedanceMiniReferences } from './videoModels';
 import { getApiMartBaseUrlForRequest } from './apimartEndpoint';
 
 // 聊天 API - 用于分析故事
@@ -267,6 +267,17 @@ export async function createVideoTask(
     const isGrokImagine = model.toLowerCase().includes('grok-imagine');
     const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
     const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
+    const isSeedanceMini = model === SEEDANCE_MINI;
+
+    if (isSeedanceMini) {
+      const validationError = validateSeedanceMiniReferences({
+        imageCount: referenceImageUrls.length,
+        hasImageRoles: Boolean(options?.imageRoles?.length),
+        videoCount: options?.videoUrls?.length ?? 0,
+        audioCount: options?.audioUrls?.length ?? 0,
+      });
+      if (validationError) throw new Error(validationError);
+    }
 
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
     if (isGrokImagine) {
