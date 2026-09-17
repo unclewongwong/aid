@@ -9,14 +9,14 @@ import {
   type ImageResolutionOverride,
 } from './imageModels';
 import { normalizeVideoModel } from './videoModels';
-
-const APIMART_BASE_URL = 'https://api.apimart.ai/v1';
+import { getApiMartBaseUrlForRequest } from './apimartEndpoint';
 
 // 聊天 API - 用于分析故事
 export async function chatCompletion(prompt: string, apiKey: string, model: string = 'gpt-4o', timeoutMs = 120000, maxTokens = 16000): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.post<ApiMartChatResponse>(
-      `${APIMART_BASE_URL}/chat/completions`,
+      `${baseUrl}/chat/completions`,
       {
         model,
         stream: false,
@@ -69,6 +69,7 @@ export async function createImageTask(
   resolutionOverride?: ImageResolutionOverride,
 ): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const allRawUrls = Array.isArray(referenceImageUrls)
       ? referenceImageUrls
       : [referenceImageUrls];
@@ -120,7 +121,7 @@ export async function createImageTask(
     console.log('================================');
 
     const response = await axios.post(
-      `${APIMART_BASE_URL}/images/generations`,
+      `${baseUrl}/images/generations`,
       requestBody,
       {
         headers: {
@@ -148,8 +149,9 @@ export async function createImageTask(
 // 查询任务状态
 export async function getTaskStatus(taskId: string, apiKey: string): Promise<ApiMartImageStatusResponse> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.get(
-      `${APIMART_BASE_URL}/tasks/${taskId}`,
+      `${baseUrl}/tasks/${taskId}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -246,6 +248,7 @@ export async function createVideoTask(
   }
 ): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     model = normalizeVideoModel(model);
     console.log('=== Video Generation Debug ===');
     console.log('Model:', model);
@@ -409,7 +412,7 @@ export async function createVideoTask(
     console.log('================================');
 
     const response = await axios.post(
-      `${APIMART_BASE_URL}/videos/generations`,
+      `${baseUrl}/videos/generations`,
       requestBody,
       {
         headers: {
@@ -432,6 +435,7 @@ export async function createVideoTask(
 export async function uploadImageToPublic(base64Image: string, apiKey?: string): Promise<string> {
   if (!apiKey) throw new Error('API key required for image upload');
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const matches = base64Image.match(/^data:(image\/\w+);base64,(.+)$/);
     if (!matches) throw new Error('Invalid base64 image format');
     const mimeType = matches[1];
@@ -443,7 +447,7 @@ export async function uploadImageToPublic(base64Image: string, apiKey?: string):
     form.append('file', new Blob([buffer], { type: mimeType }), `image.${ext}`);
 
     const response = await axios.post(
-      `${APIMART_BASE_URL}/uploads/images`,
+      `${baseUrl}/uploads/images`,
       form,
       { headers: { 'Authorization': `Bearer ${apiKey}` } }
     );
@@ -457,8 +461,9 @@ export async function uploadImageToPublic(base64Image: string, apiKey?: string):
 
 export async function getVideoTaskStatus(taskId: string, apiKey: string): Promise<ApiMartVideoStatusResponse> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.get(
-      `${APIMART_BASE_URL}/tasks/${taskId}`,
+      `${baseUrl}/tasks/${taskId}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`

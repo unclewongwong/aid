@@ -3,10 +3,22 @@
 import { useState, useCallback, useEffect } from 'react';
 import { AppSettings } from '@/types';
 import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
+import {
+  APIMART_REGION_COOKIE,
+  DEFAULT_APIMART_REGION,
+  normalizeApiMartRegion,
+  type ApiMartRegion,
+} from '@/lib/apimartRegion';
+
+function persistApiMartRegionCookie(region: ApiMartRegion) {
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${APIMART_REGION_COOKIE}=${region}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiProvider: 'apimart',
   apiKey: process.env.NEXT_PUBLIC_APIMART_API_KEY || '',
+  apimartRegion: DEFAULT_APIMART_REGION,
   scriptProvider: 'auto',
   scriptModel: 'gpt-4o',
   imageModel: 'doubao-seedream-5-0-lite',
@@ -57,6 +69,7 @@ function migrateSettings(settings: AppSettings): AppSettings {
     ...DEFAULT_SETTINGS,
     ...settings,
     scriptProvider: settings.scriptProvider || 'auto',
+    apimartRegion: normalizeApiMartRegion(settings.apimartRegion),
     videoModel: migratedVideoModel,
     videoProvider: settings.videoProvider || 'apimart',
     comfyui,
@@ -74,9 +87,12 @@ export function useSettings() {
         const parsed = migrateSettings(JSON.parse(saved) as AppSettings);
         setSettings(parsed);
         localStorage.setItem('appSettings', JSON.stringify(parsed));
+        persistApiMartRegionCookie(normalizeApiMartRegion(parsed.apimartRegion));
       } catch (error) {
         console.error('Failed to load settings:', error);
       }
+    } else {
+      persistApiMartRegionCookie(DEFAULT_APIMART_REGION);
     }
   }, []);
 
@@ -85,12 +101,14 @@ export function useSettings() {
     const migrated = migrateSettings(newSettings);
     setSettings(migrated);
     localStorage.setItem('appSettings', JSON.stringify(migrated));
+    persistApiMartRegionCookie(normalizeApiMartRegion(migrated.apimartRegion));
   }, []);
 
   // 重置为默认设置
   const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
     localStorage.setItem('appSettings', JSON.stringify(DEFAULT_SETTINGS));
+    persistApiMartRegionCookie(DEFAULT_APIMART_REGION);
     console.log('Settings reset to defaults');
   }, []);
 
