@@ -31,3 +31,7 @@
 示例：入口立柱位于门外，人物穿已确定的深灰外套，暖光来自门内。门外近景与室内反打共用这些关系；反打不要求暖光仍在画面同一侧，更不能把立柱搬到门内以匹配构图。
 
 方法来源：参考 Higgsfield [Brand Lock](https://github.com/higgsfield-ai/skills/blob/d071406147a37b835bed09543d85ab3e9bd85c7d/higgsfield-brandkit/references/brand-lock.md) 与 [风格参考模板](https://github.com/higgsfield-ai/skills/blob/d071406147a37b835bed09543d85ab3e9bd85c7d/higgsfield-video-explainer/references/prompts.md)，为 Partner 原创改写；不继承平台调用及专用片型限制。
+
+## 动态分镜图的视觉连续性
+
+本项目分镜稿指预想动态过程的关键抽帧，同一连续镜头可以有多张图；镜号与关键画面编号分别记录。需要多状态约束时优先用 [四宫格动态分镜](four-panel-motion-storyboards.md)，四格共享空间、人物身份、服装、道具和光线，变化只来自剧情动作与真实摄影机路径。静态图之间的走位、表情、声音和信息揭示写进视频提示词；图号变化不表示切镜。角色卡、场景图只承担各自身份/空间职责，不自动进入时间序列。
