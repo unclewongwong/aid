@@ -22,6 +22,8 @@
 
 当前由 Agent 在项目文字与真实素材/任务记录之间维护对应关系。不要宣称 Partner 已有自动依赖扫描、失效传播或一键局部重建；完整自动化需要独立的数据结构和工具实现。失败恢复、未知提交和付费重做边界继续按主 Skill 执行。
 
+替换后同步更新 [制作放行与版本记录](production-acceptance-and-revision.md)：旧素材保留但标记已替代，受影响验收标记过期；合成清单绑定当前通过的源文件和入出点，视频/音频分别记录。检查修改区间两侧及回切旧段后首次人物/道具显露，防止修补末端重新接入原错误镜头。
+
 方法来源：借鉴 Higgsfield [Brand Lock 的产物依赖与修订](https://github.com/higgsfield-ai/skills/blob/d071406147a37b835bed09543d85ab3e9bd85c7d/higgsfield-brandkit/references/brand-lock.md)，为电影镜头管理原创改写，不调用其品牌状态脚本。
 
 ## 一个镜头内的多张动态分镜图
