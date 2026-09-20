@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "releases": [
     {
+      "version": "2026.09.20.2",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.20.2.json.gz",
+      "bytes": 1168929,
+      "sha256": "98c91288b65c4b87cd0081e1a6556013e489058c1b9bc5b5369cd080fdeb8bc6"
+    },
+    {
       "version": "2026.09.20.1",
       "minAppVersion": "0.1.31",
       "path": "versions/2026.09.20.1.json.gz",
