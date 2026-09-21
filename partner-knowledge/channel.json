@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "releases": [
+    {
+      "version": "2026.09.21.3",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.21.3.json.gz",
+      "bytes": 1173444,
+      "sha256": "67820d638f61e084507755551ba80f47633c1dee46059a5c23f5e4a85fc4133b"
+    },
+    {
+      "version": "2026.09.21.2",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.21.2.json.gz",
+      "bytes": 1173402,
+      "sha256": "1cddcc11aeeadf89489739da079fb5deb1101796a1c67e096d444bc40edf373e"
+    },
+    {
+      "version": "2026.09.21.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.21.1.json.gz",
+      "bytes": 1172241,
+      "sha256": "7cfa893ff1f34a9331d86c5acab0e2c832d52225f0eb87aca4314564972d8c42"
+    },
+    {
+      "version": "2026.09.20.3",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.20.3.json.gz",
+      "bytes": 1171882,
+      "sha256": "4e97b4936d21a9bc3c530cbf193a0d06ea02d24e3de15dca28f393262c76f923"
+    },
+    {
+      "version": "2026.09.20.2",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.20.2.json.gz",
+      "bytes": 1168929,
+      "sha256": "98c91288b65c4b87cd0081e1a6556013e489058c1b9bc5b5369cd080fdeb8bc6"
+    },
+    {
+      "version": "2026.09.20.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.20.1.json.gz",
+      "bytes": 1166169,
+      "sha256": "10a01178026cccfe00cbb083eaf76fc0f9f81e4e1726f7c1134afc362a39483d"
+    },
+    {
+      "version": "2026.09.19.4",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.19.4.json.gz",
+      "bytes": 1163497,
+      "sha256": "a489e42f56751a4851d66f01a07b963514ce1a676f319c80053990b836cd0b70"
+    },
+    {
+      "version": "2026.09.19.3",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.19.3.json.gz",
+      "bytes": 1155939,
+      "sha256": "2661653830b2633fdc9a0e733ef4aef3760ac8adc320dd764acd7b1162afb472"
+    },
+    {
+      "version": "2026.09.19.2",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.19.2.json.gz",
+      "bytes": 1152368,
+      "sha256": "1ef958be3668770fbc7207b35734c79e7d112cb8528aa7a7dc3a4a43147597c2"
+    },
+    {
+      "version": "2026.09.19.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.19.1.json.gz",
+      "bytes": 1147220,
+      "sha256": "5032c74ba23ad2f2c70457d18acd233f5e3814dcc149c3c379b837dd644b3a22"
+    },
+    {
+      "version": "2026.09.18.5",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.18.5.json.gz",
+      "bytes": 1141895,
+      "sha256": "83053f7472db4d5a77d286f4c35ae290e9a546ecf7b9ff90b1d42eb7be4c344e"
+    },
+    {
+      "version": "2026.09.18.4",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.18.4.json.gz",
+      "bytes": 1140106,
+      "sha256": "b3092c9155bfb9b2001b7c68dd4633624f32b5f49082068e3e2d2a1fe75bef43"
+    },
+    {
+      "version": "2026.09.18.3",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.18.3.json.gz",
+      "bytes": 1137741,
+      "sha256": "ed87bc9675e33798e5854e5b64b14bc8e87c9b65c5346734af2c26023a2218ff"
+    },
+    {
+      "version": "2026.09.18.2",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.18.2.json.gz",
+      "bytes": 1125521,
+      "sha256": "05b3bd2e49f7e205187181a4fcdcea4657091ff553fc28873da812194ff3091f"
+    },
+    {
+      "version": "2026.09.18.1",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.18.1.json.gz",
+      "bytes": 1124982,
+      "sha256": "d869f4413f34377ed68101308205e79a85bd26ac2bf4f9026e47301bb8480816"
+    },
+    {
+      "version": "2026.09.17.1",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.17.1.json.gz",
+      "bytes": 1117277,
+      "sha256": "f5c2bba539d22989f3587953202fd086fe72c9c82495e331861349a1d5154de9"
+    },
+    {
+      "version": "2026.09.16.6",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.16.6.json.gz",
+      "bytes": 1109598,
+      "sha256": "7c780913ccb9341eb88f399765422b5a666788afd4e7c875df96685b08a399d7"
+    },
+    {
+      "version": "2026.09.16.5",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.16.5.json.gz",
+      "bytes": 1104626,
+      "sha256": "e342d35e0699f9a71da4b9de290fa2419f1003598abfc53d2fb91f197ce27cab"
+    },
+    {
+      "version": "2026.09.16.4",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.16.4.json.gz",
+      "bytes": 1101079,
+      "sha256": "a99d38f7f6e33b7e2d2ec243144a57ed51ba0aedb8f3ebe19ec530456973e124"
+    },
+    {
+      "version": "2026.09.16.3",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.16.3.json.gz",
+      "bytes": 1097571,
+      "sha256": "df70218ccdce2a233ea71167b570ff1100cbba3037a55e03e1d2643fe1c65524"
+    },
+    {
+      "version": "2026.09.16.2",
+      "minAppVersion": "0.1.32",
+      "path": "versions/2026.09.16.2.json.gz",
+      "bytes": 1091058,
+      "sha256": "eae9b6e39a15e3452bbf9c643bdca57ba8796ac070045a187ed9f834aaf3341f"
+    },
+    {
+      "version": "2026.09.16.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.16.1.json.gz",
+      "bytes": 1090654,
+      "sha256": "eaedbffd5bc067b0c0269ee4e220df43b52c02ffeee67a4b770502e01a8d9c65"
+    },
+    {
+      "version": "2026.09.15.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.15.1.json.gz",
+      "bytes": 1086201,
+      "sha256": "e790b93c99b5c29dda3370adb9ee1e108f4f696ef4fcad9842dfbd0965d08710"
+    },
+    {
+      "version": "2026.09.14.1",
+      "minAppVersion": "0.1.31",
+      "path": "versions/2026.09.14.1.json.gz",
+      "bytes": 1081439,
+      "sha256": "87330db2196b738ed04830e761918c3940445d3387a1e1dd1fd90c9b4a1f3dc0"
+    }
+  ]
+}

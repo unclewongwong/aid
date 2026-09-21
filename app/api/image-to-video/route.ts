@@ -165,6 +165,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '未配置 API Key' }, { status: 500 });
     }
 
+    const normalizedVideoModel = normalizeVideoModel(videoModel);
+    if (normalizedVideoModel === SEEDANCE_MINI) {
+      const validationError = validateSeedanceMiniReferences({
+        imageCount: 1 + referenceImages.length,
+        hasImageRoles: imageRoles.length > 0 || secondImageRole === 'last_frame',
+        videoCount: videoFiles.length + videoUrls.length,
+        audioCount: audioFiles.length + audioUrls.length,
+      });
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+    }
+    if (normalizedVideoModel === GEMINI_OMNI_1_1_FLASH) {
+      const validationError = validateGeminiOmniInputs({
+        imageCount: 1 + referenceImages.length,
+        videoCount: videoFiles.length + videoUrls.length,
+        audioCount: audioFiles.length + audioUrls.length,
+      });
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+      if (secondImageRole === 'last_frame' && referenceImages.length !== 1) {
+        return NextResponse.json({ error: 'Gemini Omni 1.1 Flash 首尾帧模式需要一张首帧和一张尾帧' }, { status: 400 });
+      }
+    }
+
     console.log('Uploading main image to Cloudinary...');
     const mainImageUrl = await uploadBase64ToCloudinary(mainImage);
     console.log('Main image URL:', mainImageUrl);
@@ -225,7 +251,7 @@ export async function POST(request: NextRequest) {
       enhancedPrompt,
       effectiveImageRoles.length ? [] : allImageUrls,
       apiKey,
-      videoModel,
+      normalizedVideoModel,
       aspectRatio,
       {
         duration,

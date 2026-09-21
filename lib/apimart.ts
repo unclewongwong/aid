@@ -120,6 +120,7 @@ export async function createImageTask(
   resolutionOverride?: ImageResolutionOverride,
 ): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const allRawUrls = Array.isArray(referenceImageUrls)
       ? referenceImageUrls
       : [referenceImageUrls];
@@ -312,8 +313,9 @@ export async function getMidjourneyImageStatus(taskId: string, apiKey: string): 
 // 查询任务状态
 export async function getTaskStatus(taskId: string, apiKey: string): Promise<ApiMartImageStatusResponse> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.get(
-      `${APIMART_BASE_URL}/tasks/${taskId}`,
+      `${baseUrl}/tasks/${taskId}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`
@@ -406,6 +408,8 @@ export async function createVideoTask(
   }
 ): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
+    model = normalizeVideoModel(model);
     console.log('=== Video Generation Debug ===');
     model = normalizeVideoModel(model);
     console.log('Model:', model);
@@ -422,8 +426,9 @@ export async function createVideoTask(
     };
 
     const isHappyHorse = model.includes('happyhorse');
-    const isOmniFlashExt = model.toLowerCase().includes('omni-flash-ext');
-    const isGrokImagine = model.toLowerCase().includes('grok-imagine');
+    const isOmniFlashExt = modelLower.includes('omni-flash-ext');
+    const isGeminiOmniFlash = modelLower === GEMINI_OMNI_1_1_FLASH;
+    const isGrokImagine = modelLower.includes('grok-imagine');
     const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
     const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
     const isSeedanceMini = model === 'seedance-2.0-mini';
@@ -438,7 +443,10 @@ export async function createVideoTask(
     }
 
     // Grok Imagine 使用 /videos/generations 的 size + quality + image_urls 参数格式
-    if (isGrokImagine) {
+    if (isGeminiOmniFlash) {
+      requestBody.aspect_ratio = aspectRatio === '9:16' ? '9:16' : '16:9';
+      requestBody.resolution = normalizeGeminiOmniResolution(options?.resolution) satisfies GeminiOmniResolution;
+    } else if (isGrokImagine) {
       requestBody.size = aspectRatio;
       requestBody.quality = options?.quality ?? '480p';
       // Duration: 6-30秒
@@ -478,7 +486,16 @@ export async function createVideoTask(
     }
 
     // 根据模型类型应用参考图
-    if (isGrokImagine) {
+    if (isGeminiOmniFlash) {
+      if (options?.imageRoles && options.imageRoles.length > 0) {
+        const firstFrame = options.imageRoles.find(img => img.role === 'first_frame');
+        const lastFrame = options.imageRoles.find(img => img.role === 'last_frame');
+        if (firstFrame) requestBody.first_frame_image = firstFrame.url;
+        if (lastFrame) requestBody.last_frame_image = lastFrame.url;
+      } else if (referenceImageUrls.length > 0) {
+        requestBody.image_urls = referenceImageUrls.slice(0, 10);
+      }
+    } else if (isGrokImagine) {
       // Already handled above in Grok Imagine block
     } else if (isOmniFlashExt) {
       // Omni-Flash-Ext: 支持 0/1/3 张参考图
@@ -545,7 +562,9 @@ export async function createVideoTask(
 
     // Seedance 2.0 / HappyHorse 增强功能
     if (options?.videoUrls && options.videoUrls.length > 0) {
-      if (isHappyHorse && options.videoUrls.length === 1) {
+      if (isGeminiOmniFlash) {
+        requestBody.video_urls = options.videoUrls.slice(0, 1);
+      } else if (isHappyHorse && options.videoUrls.length === 1) {
         requestBody.video_url = options.videoUrls[0];
       } else {
         requestBody.video_urls = options.videoUrls;
@@ -636,7 +655,7 @@ export async function createVideoTask(
     console.log('================================');
 
     const response = await axios.post(
-      `${APIMART_BASE_URL}/videos/generations`,
+      `${baseUrl}/videos/generations`,
       requestBody,
       {
         headers: {
@@ -659,6 +678,7 @@ export async function createVideoTask(
 export async function uploadImageToPublic(base64Image: string, apiKey?: string): Promise<string> {
   if (!apiKey) throw new Error('API key required for image upload');
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const matches = base64Image.match(/^data:(image\/\w+);base64,(.+)$/);
     if (!matches) throw new Error('Invalid base64 image format');
     const mimeType = matches[1];
@@ -670,7 +690,7 @@ export async function uploadImageToPublic(base64Image: string, apiKey?: string):
     form.append('file', new Blob([buffer], { type: mimeType }), `image.${ext}`);
 
     const response = await axios.post(
-      `${APIMART_BASE_URL}/uploads/images`,
+      `${baseUrl}/uploads/images`,
       form,
       { headers: { 'Authorization': `Bearer ${apiKey}` } }
     );
@@ -684,8 +704,9 @@ export async function uploadImageToPublic(base64Image: string, apiKey?: string):
 
 export async function getVideoTaskStatus(taskId: string, apiKey: string): Promise<ApiMartVideoStatusResponse> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.get(
-      `${APIMART_BASE_URL}/tasks/${taskId}`,
+      `${baseUrl}/tasks/${taskId}`,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`

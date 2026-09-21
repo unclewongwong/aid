@@ -204,13 +204,43 @@ export default function ImageToVideoPage() {
     finally { input.value = ''; setIsReadingImages(false); }
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => setVideoFiles(prev => [...prev, e.target?.result as string]);
-      reader.readAsDataURL(file);
-    });
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
+    try {
+      if (isGeminiOmniFlash && files.length > 1) {
+        throw new Error('Gemini Omni 1.1 Flash 最多支持 1 条参考视频');
+      }
+      if (isGeminiOmniFlash && files[0]) {
+        const durationSeconds = await new Promise<number>((resolve, reject) => {
+          const url = URL.createObjectURL(files[0]);
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            const value = video.duration;
+            URL.revokeObjectURL(url);
+            Number.isFinite(value) ? resolve(value) : reject(new Error('无法读取参考视频时长'));
+          };
+          video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('无法解析参考视频'));
+          };
+          video.src = url;
+        });
+        if (durationSeconds > 10.05) throw new Error('Gemini Omni 1.1 Flash 的参考视频不能超过 10 秒');
+      }
+      const values = await Promise.all(files.map(file => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(event.target?.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      })));
+      setVideoFiles(previous => isGeminiOmniFlash ? values.slice(0, 1) : [...previous, ...values]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '参考视频读取失败');
+    } finally {
+      input.value = '';
+    }
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,6 +437,35 @@ export default function ImageToVideoPage() {
       alert('多图参考工作流至少需要 2 张参考图');
       return;
     }
+    if (isSeedanceMini && seedanceWorkflowMode === 'multi_reference' && referenceImages.length < 1) {
+      alert('Seedance 2.0 Mini 多图参考至少需要 2 张图片');
+      return;
+    }
+    if (isSeedanceMini && seedanceWorkflowMode === 'first_last' && !secondImage) {
+      alert('Seedance 2.0 Mini 首尾帧模式需要上传尾帧');
+      return;
+    }
+    if (isSeedanceMini && seedanceWorkflowMode === 'first_last' &&
+      videoFiles.length + videoUrls.length + audioFiles.length + audioUrls.length > 0) {
+      alert('Seedance 2.0 Mini 的首尾帧模式不能同时使用参考视频或参考音频');
+      return;
+    }
+    if (isGeminiOmniFlash && geminiWorkflowMode === 'multi_reference' && referenceImages.length < 1) {
+      alert('Gemini Omni 1.1 Flash 多图参考至少需要 2 张图片');
+      return;
+    }
+    if (isGeminiOmniFlash && geminiWorkflowMode === 'first_last' && !secondImage) {
+      alert('Gemini Omni 1.1 Flash 首尾帧模式需要上传尾帧');
+      return;
+    }
+    if (isGeminiOmniFlash && videoFiles.length + videoUrls.length > 1) {
+      alert('Gemini Omni 1.1 Flash 最多支持 1 条参考视频');
+      return;
+    }
+    if (isGeminiOmniFlash && audioFiles.length + audioUrls.length > 0) {
+      alert('Gemini Omni 1.1 Flash 不支持上传参考音频');
+      return;
+    }
     if (isComfyUI && audioFiles.length + audioUrls.length > 3) {
       alert('ComfyUI MiniMax H3 最多使用 3 条参考音频');
       return;
@@ -446,7 +505,7 @@ export default function ImageToVideoPage() {
           comfyWorkflowMode: isComfyUI ? comfyWorkflowMode : undefined,
           directorPlan: plan,
           prompt: fullPrompt,
-          aspectRatio,
+          aspectRatio: effectiveAspectRatio,
           duration,
           generationType: !isComfyUI ? apiReferenceMode ? 'reference' : 'frame' : undefined,
           quality: isGrokImagine || isFal || isSeedanceMini || isWan3 ? quality : undefined,
@@ -455,7 +514,7 @@ export default function ImageToVideoPage() {
           scriptProvider: settings.scriptProvider,
           scriptModel: settings.scriptModel,
           videoModel: settings.videoModel,
-          videoFiles,
+          videoFiles: submittedVideoFiles,
           audioFiles,
           videoUrls,
           audioUrls,
@@ -634,12 +693,12 @@ export default function ImageToVideoPage() {
                 <div>
                   <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">
                     {secondImageMode === 'last_frame'
-                      ? isComfyUI ? 'Last Frame (Required)' : 'Last Frame (Optional)'
+                      ? isSecondImageRequired ? 'Last Frame (Required)' : 'Last Frame (Optional)'
                       : isComfyUI ? 'Reference Image 2 (Required)' : 'Reference Image (Optional)'}
                   </h2>
                   <p className="text-xs text-[var(--text-secondary)] mb-2">
                     {secondImageMode === 'last_frame'
-                      ? isComfyUI ? 'H3 FL2VA 会把两张图片作为精确首帧和尾帧。Image size < 6MB' : 'Image size < 6MB'
+                      ? isComfyUI ? 'H3 FL2VA 会把两张图片作为精确首帧和尾帧。Image size < 6MB' : '两张图片会作为精确首帧和尾帧。Image size < 6MB'
                       : isComfyUI ? 'H3 Ref2VA 的第二张独立参考图。Image size < 6MB' : 'Used as style/subject reference, not as last frame. Image size < 6MB'}
                   </p>
                   <div className="border-2 border-dashed border-[var(--border-color)] rounded-lg p-6 text-center bg-[var(--bg-secondary)]">
@@ -732,7 +791,7 @@ export default function ImageToVideoPage() {
                     { value: '16:9' as const, label: '16:9 Landscape' },
                     { value: '9:16' as const, label: '9:16 Portrait' },
                     { value: '1:1' as const, label: '1:1 Square (Not for Veo)' }
-                  ].map((ratio) => (
+                  ].filter(ratio => !isGeminiOmniFlash || ratio.value !== '1:1').map((ratio) => (
                     <button
                       key={ratio.value}
                       onClick={() => setAspectRatio(ratio.value)}
@@ -749,7 +808,7 @@ export default function ImageToVideoPage() {
               </div>
 
               {/* Duration */}
-              <div>
+              {!isGeminiOmniFlash && <div>
                 <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">Duration</h2>
                 <div className="flex items-center gap-3">
                   {durationOptions ? (
@@ -784,7 +843,7 @@ export default function ImageToVideoPage() {
                   )}
                   <span className="text-sm font-mono text-[var(--text-secondary)]">seconds</span>
                 </div>
-              </div>
+              </div>}
 
               <p className="text-sm text-[var(--text-secondary)]">{videoVoiceNotice(videoProvider, settings.videoModel)}</p>
               {(audioFiles.length > 0 || audioUrls.length > 0) && <button className="text-xs text-red-300" onClick={() => { setAudioFiles([]); setAudioUrls([]); setAudioDurations([]); }}>清除参考音频（{audioFiles.length + audioUrls.length}）</button>}
@@ -919,6 +978,10 @@ export default function ImageToVideoPage() {
                   <h2 className="text-sm font-mono text-[var(--accent-green)]">{isWan3 ? 'Wan 3.0 多模态参考' : 'Seedance Mini 多模态参考'}</h2>
                   {isSeedanceMini && <p className="text-xs text-[var(--text-secondary)]">使用尾帧时，请移除参考音频和参考视频；参考图模式最多支持 9 张图片、3 个视频和 3 个音频。</p>}
 
+                  {isSeedanceMini && seedanceWorkflowMode === 'first_last' && (
+                    <p className="text-xs leading-5 text-[var(--text-secondary)]">当前是首尾帧模式。参考视频和参考音频不可用；切换到单图或多图参考后即可添加。</p>
+                  )}
+
                   <div>
                     <label className="block text-xs font-mono text-[var(--text-secondary)] mb-2">
                       Reference Videos (Max {isWan3 ? 5 : 3}, Total ≤15s)
@@ -930,10 +993,11 @@ export default function ImageToVideoPage() {
                       onChange={handleVideoUpload}
                       className="hidden"
                       id="video-upload"
+                      disabled={isSeedanceMini && seedanceWorkflowMode === 'first_last'}
                     />
                     <label
                       htmlFor="video-upload"
-                      className="inline-block px-3 py-1.5 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded cursor-pointer"
+                      className={`inline-block rounded px-3 py-1.5 text-xs font-mono text-white ${isSeedanceMini && seedanceWorkflowMode === 'first_last' ? 'cursor-not-allowed bg-[var(--bg-tertiary)] opacity-50' : 'cursor-pointer bg-[var(--accent-blue)] hover:bg-[#006bb3]'}`}
                     >
                       Upload Videos ({videoFiles.length})
                     </label>
@@ -950,10 +1014,11 @@ export default function ImageToVideoPage() {
                       onChange={handleAudioUpload}
                       className="hidden"
                       id="audio-upload"
+                      disabled={isSeedanceMini && seedanceWorkflowMode === 'first_last'}
                     />
                     <label
                       htmlFor="audio-upload"
-                      className="inline-block px-3 py-1.5 text-xs font-mono bg-[var(--accent-blue)] hover:bg-[#006bb3] text-white rounded cursor-pointer"
+                      className={`inline-block rounded px-3 py-1.5 text-xs font-mono text-white ${isSeedanceMini && seedanceWorkflowMode === 'first_last' ? 'cursor-not-allowed bg-[var(--bg-tertiary)] opacity-50' : 'cursor-pointer bg-[var(--accent-blue)] hover:bg-[#006bb3]'}`}
                     >
                       Upload Audio ({audioFiles.length})
                     </label>
@@ -1009,10 +1074,10 @@ export default function ImageToVideoPage() {
               </div>
             )}
             <div className={`aid-panel mb-4 flex items-center justify-center overflow-hidden bg-black/25 ${
-              aspectRatio === '16:9' ? 'aspect-video' :
-              aspectRatio === '9:16' ? 'aspect-[9/16]' :
+              effectiveAspectRatio === '16:9' ? 'aspect-video' :
+              effectiveAspectRatio === '9:16' ? 'aspect-[9/16]' :
               'aspect-square'
-            }`} style={{ maxHeight: aspectRatio === '9:16' ? '600px' : '400px' }}>
+            }`} style={{ maxHeight: effectiveAspectRatio === '9:16' ? '600px' : '400px' }}>
               {videoUrl ? (
                 <video src={videoUrl} controls className="w-full h-full rounded-lg" />
               ) : (

@@ -10,6 +10,7 @@ import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
 const DEFAULT_SETTINGS: AppSettings = {
   apiProvider: 'apimart',
   apiKey: process.env.NEXT_PUBLIC_APIMART_API_KEY || '',
+  apimartRegion: DEFAULT_APIMART_REGION,
   scriptProvider: 'auto',
   scriptModel: 'gpt-4o',
   imageModel: SEEDREAM_5_PRO,

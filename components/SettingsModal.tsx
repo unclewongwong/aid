@@ -189,6 +189,39 @@ export default function SettingsModal({
             </select>
           </div>
 
+          {/* APIMart routing */}
+          <div>
+            <label className="block text-sm font-mono text-[var(--text-secondary)] mb-2">
+              APIMart 请求线路
+            </label>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] p-1.5">
+              {([
+                ['overseas', '境外', 'api.apimart.ai'],
+                ['mainland', '境内', 'api.aishuch.com'],
+              ] as const).map(([value, label, host]) => {
+                const selected = (localSettings.apimartRegion || 'overseas') === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setLocalSettings({ ...localSettings, apimartRegion: value })}
+                    className={`rounded-lg border px-3 py-3 text-left transition-colors ${selected
+                      ? 'border-[var(--accent-blue)] bg-[var(--accent-blue)]/15 text-white'
+                      : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--border-color)] hover:text-white'
+                    }`}
+                  >
+                    <span className="block text-sm font-medium">{label}</span>
+                    <span className="mt-1 block font-mono text-[10px] text-[var(--text-muted)]">{host}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs leading-5 text-[var(--text-secondary)]">
+              图片、视频、上传、任务查询及 APIMart 编剧请求都会使用所选线路。
+            </p>
+          </div>
+
           {/* API Key */}
           <div>
             <label className="block text-sm font-mono text-[var(--text-secondary)] mb-2">
@@ -362,7 +395,10 @@ export default function SettingsModal({
                   : localSettings.videoModel}
               onChange={(e) => setLocalSettings({
                 ...localSettings,
-                videoModel: e.target.value
+                videoModel: e.target.value,
+                aspectRatio: e.target.value === GEMINI_OMNI_1_1_FLASH && localSettings.aspectRatio === '1:1'
+                  ? '16:9'
+                  : localSettings.aspectRatio,
               })}
               disabled={(localSettings.videoProvider || 'apimart') !== 'apimart'}
               className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded px-3 py-2 text-sm font-mono text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-blue)]"
