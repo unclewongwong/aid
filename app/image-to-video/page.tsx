@@ -15,6 +15,7 @@ import { DIRECTOR_DURATIONS, validateDirectorPlan, type DirectorPlan } from '@/l
 import { createImageReferenceUploader } from '@/lib/storyImageRequest';
 import { videoImageCapability, validateVideoImageCount } from '@/lib/videoImageCapabilities';
 import { readApiJson } from '@/lib/apiResponse';
+import { GEMINI_OMNI_1_1_FLASH, type GeminiOmniResolution } from '@/lib/videoModels';
 
 const MAX_COMFYUI_REFERENCE_IMAGES = 5;
 const I2V_TASK_STORAGE = 'aid:i2v:task:v1';
@@ -41,6 +42,7 @@ export default function ImageToVideoPage() {
   const [aspectRatio, setAspectRatio] = useState<'16:9' | '9:16' | '1:1'>('16:9');
   const [duration, setDuration] = useState(5);
   const [quality, setQuality] = useState<'480p' | '720p' | '1080p'>('480p');
+  const [geminiResolution, setGeminiResolution] = useState<GeminiOmniResolution>('720p');
   const [comfyWorkflowMode, setComfyWorkflowMode] = useState<'single_reference' | 'multi_reference' | 'first_last' | 'director_continuous'>('single_reference');
   const [isGenerating, setIsGenerating] = useState(false);
   const [directorPlan, setDirectorPlan] = useState<DirectorPlan | null>(null);
@@ -90,6 +92,7 @@ export default function ImageToVideoPage() {
   const isOmniFlashExt = !isComfyUI && !isFal && modelName.includes('omni-flash-ext');
   const isGrokImagine = !isComfyUI && !isFal && modelName.includes('grok-imagine');
   const isSeedanceMini = !isComfyUI && !isFal && modelName === 'seedance-2.0-mini';
+  const isGeminiOmniFlash = !isComfyUI && !isFal && modelName === GEMINI_OMNI_1_1_FLASH;
   const isVeo31 = !isComfyUI && !isFal && ['veo3.1-fast', 'veo3.1-quality'].includes(modelName);
   useLayoutEffect(() => { if (isVeo31) setDuration(8); }, [isVeo31]);
   const isWan3 = !isComfyUI && !isFal && modelName === 'wan3.0-video';
@@ -114,6 +117,12 @@ export default function ImageToVideoPage() {
   const secondImageMode: 'last_frame' | 'reference' | 'none' = isComfyUI
     ? comfyWorkflowMode === 'first_last' ? 'last_frame' : 'none'
     : !apiReferenceMode && imageCapability.frameImages === 2 ? 'last_frame' : 'none';
+  const seedanceWorkflowMode = apiReferenceMode ? 'multi_reference' : secondImageMode === 'last_frame' ? 'first_last' : 'single_reference';
+  const geminiWorkflowMode = seedanceWorkflowMode;
+  const isSecondImageRequired = isComfyUI
+    ? comfyWorkflowMode === 'first_last'
+    : secondImageMode === 'last_frame' && imageCapability.frameImages === 2;
+  const effectiveAspectRatio = isGeminiOmniFlash && aspectRatio === '1:1' ? '16:9' : aspectRatio;
   const durationMin = isVeo31 ? 8 : isWan3 ? 2 : isComfyUI ? 2 : (isOmniFlashExt || isSeedanceMini ? 4 : (isGrokImagine ? 6 : (isFal ? 5 : (isMiniMaxH3 ? 4 : 5))));
   const durationMax = isVeo31 ? 8 : isDirector ? 60 : isOmniFlashExt ? 10 : (isGrokImagine || isWan3 ? 30 : 15);
   const durationOptions = isVeo31 ? [8] : isDirector ? DIRECTOR_DURATIONS : isOmniFlashExt ? [4, 6, 8, 10] : undefined;
@@ -490,6 +499,7 @@ export default function ImageToVideoPage() {
       const selectedReferences = multiReferenceMode ? referenceImages : secondImage ? [secondImage] : [];
       imageUploader.current ||= createImageReferenceUploader();
       const submittedImages = isComfyUI ? [mainImage, ...selectedReferences] : await Promise.all([mainImage, ...selectedReferences].map(imageUploader.current));
+      const submittedVideoFiles = videoFiles;
       const generationUrl = videoProvider === 'comfyui'
         ? comfyUIApiUrl('/api/image-to-video', settings.comfyui)
         : '/api/image-to-video';
@@ -509,6 +519,7 @@ export default function ImageToVideoPage() {
           duration,
           generationType: !isComfyUI ? apiReferenceMode ? 'reference' : 'frame' : undefined,
           quality: isGrokImagine || isFal || isSeedanceMini || isWan3 ? quality : undefined,
+          resolution: isGeminiOmniFlash ? geminiResolution : undefined,
           apiKey: settings.apiKey,
           dmxApiKey: settings.dmxApiKey,
           scriptProvider: settings.scriptProvider,
@@ -874,6 +885,28 @@ export default function ImageToVideoPage() {
                 </div>
               )}
 
+              {isGeminiOmniFlash && (
+                <div>
+                  <h2 className="mb-3 text-sm font-mono text-[var(--text-primary)]">Resolution</h2>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['360p', '720p', '1080p', '4k'] as GeminiOmniResolution[]).map(value => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setGeminiResolution(value)}
+                        className={`rounded border p-2 text-xs font-mono ${
+                          geminiResolution === value
+                            ? 'border-[var(--accent-blue)] bg-[var(--accent-blue)] text-white'
+                            : 'border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:border-[var(--text-secondary)]'
+                        }`}
+                      >
+                        {value === '4k' ? '4K' : value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Motion Description */}
               <div>
                 <h2 className="text-sm font-mono text-[var(--text-primary)] mb-3">
@@ -1091,7 +1124,7 @@ export default function ImageToVideoPage() {
 
             <div className="aid-panel mb-4 divide-y divide-[var(--border-color)] px-4">
               <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Layers3 size={14} />引擎</span><span className="font-mono text-white">{isDirector ? 'H3 Director 连续长视频' : isComfyUI ? 'MiniMax H3' : isFal ? 'MiniMax H3 Max · fal' : settings.videoModel}</span></div>
-              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Clock3 size={14} />输出规格</span><span className="font-mono text-white">{duration}s · {aspectRatio}{isFal ? ` · ${quality === '480p' ? '480P' : '768P'}` : ''}</span></div>
+              <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Clock3 size={14} />输出规格</span><span className="font-mono text-white">{isGeminiOmniFlash ? `${geminiResolution === '4k' ? '4K' : geminiResolution} · AUTO 3–10s` : `${duration}s`} · {effectiveAspectRatio}{isFal ? ` · ${quality === '480p' ? '480P' : '768P'}` : ''}</span></div>
               <div className="flex items-center justify-between py-3 text-xs"><span className="flex items-center gap-2 text-[var(--text-secondary)]"><Volume2 size={14} />声音</span><span className="font-mono text-white">{isMiniMaxH3 ? '原生音频' : audioFiles.length ? `${audioFiles.length} 条参考` : '按模型设置'}</span></div>
             </div>
 

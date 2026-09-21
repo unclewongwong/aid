@@ -6,6 +6,7 @@ const root = resolvePath(fileURLToPath(new URL('..', import.meta.url)));
 
 export async function resolve(specifier, context, nextResolve) {
   if (specifier === 'next/server') return nextResolve('next/server.js', context);
+  if (specifier === 'next/headers') return nextResolve('next/headers.js', context);
   const candidates = [];
   if (specifier.startsWith('@/')) candidates.push(resolvePath(root, specifier.slice(2)));
   else if (specifier.startsWith('.') && context.parentURL?.startsWith('file:')) {

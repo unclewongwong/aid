@@ -25,9 +25,18 @@ import {
 } from './midjourney';
 import type { CapturePreset, VisualStyle } from '@/types';
 
-import { normalizeVideoModel } from './videoModels';
+import {
+  GEMINI_OMNI_1_1_FLASH,
+  normalizeGeminiOmniResolution,
+  normalizeVideoModel,
+  SEEDANCE_MINI,
+  validateGeminiOmniInputs,
+  validateSeedanceMiniReferences,
+  videoModelAcceptsExplicitDuration,
+  type GeminiOmniResolution,
+} from './videoModels';
+import { getApiMartBaseUrlForRequest } from './apimartEndpoint';
 
-const APIMART_BASE_URL = 'https://api.apimart.ai/v1';
 let preferSystemNetworkStack = false;
 
 function redactProviderText(value: unknown): string {
@@ -52,6 +61,7 @@ export async function chatCompletion(prompt: string, apiKey: string, model: stri
 
 export async function chatCompletionResult(prompt: string, apiKey: string, model = 'gpt-4o', timeoutMs = 120000, maxTokens = 16000, imageUrls: string[] = [], singleAttempt = false): Promise<ProviderTextResult> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const body = {
       model,
       stream: false,
@@ -66,7 +76,7 @@ export async function chatCompletionResult(prompt: string, apiKey: string, model
     let response;
     try {
       response = await axios.post<ApiMartChatResponse>(
-        `${APIMART_BASE_URL}/chat/completions`,
+        `${baseUrl}/chat/completions`,
         body,
         { headers, httpsAgent, timeout: timeoutMs },
       );
@@ -78,7 +88,7 @@ export async function chatCompletionResult(prompt: string, apiKey: string, model
       preferSystemNetworkStack = true;
       console.warn('[apimart] public-DNS transport failed before response; retrying through the system network stack');
       response = await axios.post<ApiMartChatResponse>(
-        `${APIMART_BASE_URL}/chat/completions`,
+        `${baseUrl}/chat/completions`,
         body,
         { headers, timeout: timeoutMs },
       );
@@ -174,7 +184,7 @@ export async function createImageTask(
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         response = await axios.post(
-          `${APIMART_BASE_URL}/images/generations`, requestBody,
+          `${baseUrl}/images/generations`, requestBody,
           {
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
             timeout: 45000,
@@ -227,6 +237,7 @@ export async function createMidjourneyImageTask(
   references: MidjourneyReferenceOptions = {},
 ): Promise<string> {
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const sourceImages = [...new Set(referenceImageUrls.filter(url => typeof url === 'string' && url.trim()))];
     if (sourceImages.length > 4) throw new Error('MJ 最多4张内容参考，不能静默丢弃参考图');
     const imageUrls = await Promise.all(sourceImages.map(async sourceImage => (
@@ -248,7 +259,7 @@ export async function createMidjourneyImageTask(
     const endpoint = midjourneyGenerationPath(taskMode, hasContentReferences, String(body.version), references.characterReferenceUrl ? 'character' : referenceMode);
     const submittedBody = endpoint.endsWith('/edits') ? midjourneyEditPayload(body) : body;
     const response = await axios.post(
-      `${APIMART_BASE_URL}${endpoint}`,
+      `${baseUrl}${endpoint}`,
       submittedBody,
       {
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -278,8 +289,9 @@ export async function createMidjourneyImageTask(
 export async function getMidjourneyImageStatus(taskId: string, apiKey: string): Promise<MidjourneyImageStatus> {
   const providerTaskId = unwrapMidjourneyTaskId(taskId);
   try {
+    const baseUrl = await getApiMartBaseUrlForRequest();
     const response = await axios.get(
-      `${APIMART_BASE_URL}/midjourney/${providerTaskId}`,
+      `${baseUrl}/midjourney/${providerTaskId}`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
         timeout: 20_000,
@@ -402,7 +414,7 @@ export async function createVideoTask(
     audioUrls?: string[];
     generateAudio?: boolean;
     imageRoles?: Array<{ url: string; role: 'first_frame' | 'last_frame' | 'reference_image' }>;
-    resolution?: '480P' | '720P' | '1080P';
+    resolution?: '360p' | '480P' | '720p' | '720P' | '1080p' | '1080P' | '4k' | '2160p';
     generationType?: 'frame' | 'reference';
     quality?: '480p' | '720p' | '1080p';
   }
@@ -411,27 +423,43 @@ export async function createVideoTask(
     const baseUrl = await getApiMartBaseUrlForRequest();
     model = normalizeVideoModel(model);
     console.log('=== Video Generation Debug ===');
-    model = normalizeVideoModel(model);
     console.log('Model:', model);
     console.log('Model includes doubao:', model.includes('doubao'));
     console.log('Model includes seedance:', model.includes('seedance'));
     console.log('==============================');
 
-    const audioCapability = videoAudioCapability('apimart', model);
-    if ((options?.audioUrls?.length ?? 0) > audioCapability.max) throw new Error(`当前模型最多接受 ${audioCapability.max} 个音频输入，无法使用这些参考音频`);
-    const requestBody: any = {
-      model,
-      prompt,
-      duration: options?.duration ?? (model.includes('sora-2') ? 10 : 5),
-    };
-
+    const modelLower = model.toLowerCase();
     const isHappyHorse = model.includes('happyhorse');
     const isOmniFlashExt = modelLower.includes('omni-flash-ext');
     const isGeminiOmniFlash = modelLower === GEMINI_OMNI_1_1_FLASH;
     const isGrokImagine = modelLower.includes('grok-imagine');
     const isDoubaoSeedance = model.includes('doubao') || model.includes('seedance');
-    const isMiniMaxH3 = model.toLowerCase().includes('minimax-h3');
-    const isSeedanceMini = model === 'seedance-2.0-mini';
+    const isMiniMaxH3 = modelLower.includes('minimax-h3');
+    const isSeedanceMini = model === SEEDANCE_MINI;
+    const audioCapability = videoAudioCapability('apimart', model);
+    if ((options?.audioUrls?.length ?? 0) > audioCapability.max) throw new Error(`当前模型最多接受 ${audioCapability.max} 个音频输入，无法使用这些参考音频`);
+    const requestBody: any = { model, prompt };
+    if (videoModelAcceptsExplicitDuration(model)) {
+      requestBody.duration = options?.duration ?? (model.includes('sora-2') ? 10 : 5);
+    }
+
+    if (isSeedanceMini) {
+      const validationError = validateSeedanceMiniReferences({
+        imageCount: referenceImageUrls.length,
+        hasImageRoles: Boolean(options?.imageRoles?.length),
+        videoCount: options?.videoUrls?.length ?? 0,
+        audioCount: options?.audioUrls?.length ?? 0,
+      });
+      if (validationError) throw new Error(validationError);
+    }
+    if (isGeminiOmniFlash) {
+      const validationError = validateGeminiOmniInputs({
+        imageCount: referenceImageUrls.length,
+        videoCount: options?.videoUrls?.length ?? 0,
+        audioCount: options?.audioUrls?.length ?? 0,
+      });
+      if (validationError) throw new Error(validationError);
+    }
 
     if (options?.generationType && referenceImageUrls.length) {
       validateVideoImageCount(videoImageCapability('apimart', model), options.generationType, referenceImageUrls.length);

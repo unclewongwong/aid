@@ -6,6 +6,17 @@ import { AppSettings } from '@/types';
 import { SEEDREAM_5_PRO, normalizeImageModel } from '@/lib/imageModels';
 import { storyStorageKeys } from '@/lib/series/storageScope';
 import { normalizeVideoModel, SEEDANCE_MINI } from '@/lib/videoModels';
+import {
+  APIMART_REGION_COOKIE,
+  DEFAULT_APIMART_REGION,
+  normalizeApiMartRegion,
+  type ApiMartRegion,
+} from '@/lib/apimartRegion';
+
+function persistApiMartRegionCookie(region: ApiMartRegion) {
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${APIMART_REGION_COOKIE}=${region}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiProvider: 'apimart',
@@ -75,6 +86,7 @@ function migrateSettings(settings: AppSettings): AppSettings {
     ...DEFAULT_SETTINGS,
     ...settings,
     scriptProvider: settings.scriptProvider || 'auto',
+    apimartRegion: normalizeApiMartRegion(settings.apimartRegion),
     imageModel: migratedImageModel,
     videoModel: migratedVideoModel,
     videoProvider: settings.videoProvider || 'apimart',
@@ -103,6 +115,9 @@ export function useSettings() {
         const configured = hasExplicitGenerationModels(raw);
         setHasSavedSettings(configured);
         if (configured) localStorage.setItem(storyStorageKeys().settings, JSON.stringify(parsed));
+        persistApiMartRegionCookie(normalizeApiMartRegion(parsed.apimartRegion));
+      } else {
+        persistApiMartRegionCookie(DEFAULT_APIMART_REGION);
       }
     } catch {
       setHasSavedSettings(false);
@@ -115,6 +130,7 @@ export function useSettings() {
   const saveSettings = useCallback((newSettings: AppSettings) => {
     const migrated = migrateSettings(newSettings);
     localStorage.setItem(storyStorageKeys().settings, JSON.stringify(migrated));
+    persistApiMartRegionCookie(normalizeApiMartRegion(migrated.apimartRegion));
     setSettings(migrated);
     setHasSavedSettings(hasExplicitGenerationModels(migrated));
     setSettingsReady(true);
@@ -123,6 +139,7 @@ export function useSettings() {
   // 重置为默认设置
   const resetSettings = useCallback(() => {
     localStorage.setItem(storyStorageKeys().settings, JSON.stringify(DEFAULT_SETTINGS));
+    persistApiMartRegionCookie(DEFAULT_APIMART_REGION);
     setSettings(DEFAULT_SETTINGS);
     setHasSavedSettings(true);
     setSettingsReady(true);

@@ -7,6 +7,7 @@ import { Check, Copy, X } from 'lucide-react';
 import { comfyUIApiUrl, localComfyUISettings } from '@/lib/comfyuiClient';
 import { APIMART_IMAGE_MODEL_OPTIONS, getImageModelCapabilities, isMidjourneyImageModel } from '@/lib/imageModels';
 import { DEFAULT_MIDJOURNEY_PERSONALIZATION_PROFILE, normalizeMidjourneyProfileCode } from '@/lib/midjourney';
+import { GEMINI_OMNI_1_1_FLASH } from '@/lib/videoModels';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -412,6 +413,7 @@ export default function SettingsModal({
               <option value="minimax/h3-max/image-to-video">MiniMax H3 Max · fal (5–15s, 480P/768P, native audio)</option>
               <option value="grok-imagine-1.5-video-apimart">Grok Imagine 1.5 (6-30s, 480p/720p)</option>
               <option value="Omni-Flash-Ext">Omni-Flash-Ext (4/6/8/10s, 720p/1080p/4k)</option>
+              <option value={GEMINI_OMNI_1_1_FLASH}>Gemini Omni 1.1 Flash (3–10s auto, 360p–4K, native audio)</option>
               <option value="seedance-2.0-mini">Seedance 2.0 Mini · APIMart (4–15s, 480p/720p)</option>
               <option value="happyhorse-1.0">happyhorse-1.0</option>
               <option value="veo3.1-fast">veo3.1-fast (Fast)</option>

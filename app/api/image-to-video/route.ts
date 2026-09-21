@@ -8,6 +8,13 @@ import { createFalH3MaxVideoTask } from '@/lib/falVideo';
 import { buildChineseH3RewritePrompt, h3VisualPromptIsChinese, parseChineseH3Rewrite } from '@/lib/h3PromptLanguage';
 import { chatOnce } from '@/lib/pipeline/llm';
 import { videoImageCapability, validateVideoImageCount } from '@/lib/videoImageCapabilities';
+import {
+  GEMINI_OMNI_1_1_FLASH,
+  normalizeVideoModel,
+  SEEDANCE_MINI,
+  validateGeminiOmniInputs,
+  validateSeedanceMiniReferences,
+} from '@/lib/videoModels';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -40,6 +47,7 @@ export async function POST(request: NextRequest) {
       aspectRatio = '16:9',
       duration,
       quality,
+      resolution,
       generationType,
       apiKey,
       dmxApiKey,
@@ -256,6 +264,7 @@ export async function POST(request: NextRequest) {
       {
         duration,
         quality,
+        resolution,
         generationType,
         videoUrls: uploadedVideoUrls,
         audioUrls: uploadedAudioUrls,

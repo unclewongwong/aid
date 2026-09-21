@@ -1,4 +1,4 @@
-import { normalizeVideoModel } from './videoModels';
+import { GEMINI_OMNI_1_1_FLASH, normalizeVideoModel } from './videoModels';
 
 export type VideoImageMode = 'frame' | 'reference';
 export interface VideoImageCapability {
@@ -11,6 +11,7 @@ export interface VideoImageCapability {
 export function videoImageCapability(provider = 'apimart', model = ''): VideoImageCapability {
   if (provider === 'fal') return { referenceImages: 0, frameImages: 2 };
   const name = normalizeVideoModel(model).toLowerCase();
+  if (name === GEMINI_OMNI_1_1_FLASH) return { referenceImages: 10, frameImages: 2 };
   if (name === 'seedance-2.0-mini' || name === 'minimax-h3') return { referenceImages: 9, frameImages: 2 };
   if (name === 'wan3.0-video') return { referenceImages: 10, frameImages: 2 };
   if (name.includes('grok-imagine')) return { referenceImages: 7, frameImages: 0 };
