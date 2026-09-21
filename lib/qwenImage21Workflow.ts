@@ -34,6 +34,10 @@ export function qwenImage21ApiPrompt(input: {
     '4': { class_type: 'TextEncodeQwenImage21', inputs: {
       clip: ['2', 0], prompt: input.prompt, negative_prompt: '',
       resolution: references.length ? 0 : 1024,
+      // ComfyUI Autogrow inputs are required as a container even when the
+      // container has no entries. Omitting `images` makes native T2I fail
+      // prompt validation before sampling starts.
+      images: {},
       ...(references.length ? { vae: ['3', 0] } : {}),
     } },
     '5': { class_type: 'EmptyLatentImage', inputs: { width: input.width, height: input.height, batch_size: 1 } },
@@ -50,7 +54,7 @@ export function qwenImage21ApiPrompt(input: {
   references.forEach((image, index) => {
     const nodeId = String(20 + index);
     prompt[nodeId] = { class_type: 'LoadImage', inputs: { image } };
-    prompt['4'].inputs[`images.image_${index + 1}`] = [nodeId, 0];
+    (prompt['4'].inputs.images as Record<string, unknown>)[`image_${index + 1}`] = [nodeId, 0];
   });
   return prompt;
 }

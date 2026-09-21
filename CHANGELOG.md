@@ -1,3 +1,7 @@
+## 0.1.229 - 2026-09-21
+
+- Fix Qwen-Image-2.1 text-to-image prompt validation by always sending the required empty `images` Autogrow container. Encode editing references inside that same native container so zero-reference and multi-reference graphs share the official node contract.
+
 ## 0.1.228 - 2026-09-21
 
 - Replace the retired local LLaDA image route with the official Qwen-Image-2.1 INT8 ComfyUI graph. Support text-to-image and up to ten ordered editing references while preserving historical `comfyui-image:` task polling and migrating saved Z-Image/LLaDA selections automatically.

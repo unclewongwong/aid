@@ -22,6 +22,7 @@ test('builds the official text-to-image graph independently of H3', () => {
     assert.equal(graph['5'].inputs.height % 32, 0);
     assert.equal(graph['1'].class_type, 'UNETLoader');
     assert.equal(graph['4'].class_type, 'TextEncodeQwenImage21');
+    assert.deepEqual(graph['4'].inputs.images, {});
     assert.equal(graph['6'].class_type, 'QwenImage21Cache');
     assert.deepEqual(graph['7'].inputs.latent_image, ['5', 0]);
     assert.deepEqual(graph['9'].inputs.images, ['8', 0]);
@@ -41,7 +42,7 @@ test('builds a ten-reference edit graph with official dynamic image inputs', () 
   references.forEach((reference, index) => {
     const nodeId = String(20 + index);
     assert.equal(graph[nodeId].inputs.image, reference);
-    assert.deepEqual(graph['4'].inputs[`images.image_${index + 1}`], [nodeId, 0]);
+    assert.deepEqual(graph['4'].inputs.images[`image_${index + 1}`], [nodeId, 0]);
   });
   assert.throws(() => qwenImage21ApiPrompt({
     ...qwenImage21Dimensions('1:1'), prompt: 'Too many.', seed: 42,
