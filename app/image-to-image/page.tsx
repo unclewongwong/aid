@@ -8,7 +8,7 @@ import SettingsModal from '@/components/SettingsModal';
 import { useSettings } from '@/hooks/useSettings';
 import { readApiJson } from '@/lib/apiResponse';
 import { imageCreationInputError } from '@/lib/imageCreation';
-import { getImageModelCapabilities, imageModelRequiresApiKey, isComfyUILLaDAImage, isMidjourneyImageModel } from '@/lib/imageModels';
+import { getImageModelCapabilities, imageModelRequiresApiKey, isComfyUIQwenImage21, isMidjourneyImageModel } from '@/lib/imageModels';
 import { imageApiUrl, fetchImageApi, localComfyUISettings } from '@/lib/comfyuiClient';
 import { resolveMidjourneyProfileSetting, resolveMidjourneyStyleSetting } from '@/lib/midjourney';
 
@@ -63,7 +63,7 @@ async function compressReferenceImage(file: File): Promise<string> {
 export default function ImageToImagePage() {
   const { settings, saveSettings } = useSettings();
   const referenceLimit = getImageModelCapabilities(settings.imageModel).maxReferenceImages;
-  const isLLaDA = isComfyUILLaDAImage(settings.imageModel);
+  const isQwenImage21 = isComfyUIQwenImage21(settings.imageModel);
   const isTextOnlyModel = referenceLimit === 0;
   const isMidjourney = isMidjourneyImageModel(settings.imageModel);
   const [showSettings, setShowSettings] = useState(false);
@@ -106,7 +106,7 @@ export default function ImageToImagePage() {
   };
 
   const pollImageStatus = async (taskId: string) => {
-    const attempts = isLLaDA ? 600 : 90;
+    const attempts = isQwenImage21 ? 600 : 90;
     for (let i = 0; i < attempts; i++) {
       setStatusText(`Generating studio image... ${i + 1}/${attempts}`);
       await new Promise(resolve => setTimeout(resolve, 3000));
@@ -270,12 +270,12 @@ export default function ImageToImagePage() {
           <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-6 p-4 md:p-7 xl:grid-cols-[minmax(0,1fr)_480px]">
             <div className="aid-form-stack space-y-5">
               <header className="aid-page-lead !border-0 !bg-transparent !p-0 !shadow-none">
-                <div><p className="aid-eyebrow">Image creation console</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl">{isTextOnlyModel || isMidjourney || isLLaDA ? '用文字生成创意画面' : '用参考图控制创意结果'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{isLLaDA ? 'LLaDA-Image-Turbo 可直接用文字生成，或上传一张参考图并描述修改要求。' : isTextOnlyModel ? '使用文字描述目标画面，无需上传参考图。' : isMidjourney ? 'Midjourney 优先电影质感；参考图可选，用于宽松的角色、构图或风格引导。' : '上传主体与风格参考，补充创意方向和尺寸关系，生成更稳定的商业视觉。'}</p></div>
+                <div><p className="aid-eyebrow">Image creation console</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl">{isTextOnlyModel || isMidjourney || isQwenImage21 ? '用文字生成创意画面' : '用参考图控制创意结果'}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{isQwenImage21 ? 'Qwen-Image-2.1 可直接文生图，也可上传最多 10 张参考图进行编辑与组合。' : isTextOnlyModel ? '使用文字描述目标画面，无需上传参考图。' : isMidjourney ? 'Midjourney 优先电影质感；参考图可选，用于宽松的角色、构图或风格引导。' : '上传主体与风格参考，补充创意方向和尺寸关系，生成更稳定的商业视觉。'}</p></div>
                 <span className="rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-1.5 font-mono text-[10px] text-[var(--text-secondary)]">{isTextOnlyModel ? 'TEXT ONLY' : `${referenceImages.length}/${referenceLimit} REFERENCES`}</span>
               </header>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3"><div><p className="aid-step-kicker">01 · 素材</p><h2 className="mt-1 text-base font-semibold text-white">{isTextOnlyModel ? '文生图模式' : '参考图片'}</h2></div><span className="text-xs text-[var(--text-muted)]">{isTextOnlyModel ? '无需参考图' : isLLaDA ? '可选 1 张编辑参考 · 单张 8MB' : isMidjourney ? `可选 1 张软参考 · 单张 8MB` : `最多 ${referenceLimit} 张 · 单张 8MB`}</span></div>
+                <div className="flex items-center justify-between gap-3"><div><p className="aid-step-kicker">01 · 素材</p><h2 className="mt-1 text-base font-semibold text-white">{isTextOnlyModel ? '文生图模式' : '参考图片'}</h2></div><span className="text-xs text-[var(--text-muted)]">{isTextOnlyModel ? '无需参考图' : isQwenImage21 ? '可选最多 10 张编辑参考 · 单张 8MB' : isMidjourney ? `可选 1 张软参考 · 单张 8MB` : `最多 ${referenceLimit} 张 · 单张 8MB`}</span></div>
                 {isTextOnlyModel ? (
                   <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] p-5">
                     <p className="text-sm font-medium text-[var(--text-primary)]">可直接用文字生成</p>

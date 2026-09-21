@@ -5,7 +5,7 @@ import type { Storyboard, Character, ObjectItem, VisualStyle, CapturePreset } fr
 import { buildCompactImageCaptureContract, buildImageCaptureContract, buildMediumLock } from './promptArchitecture';
 import { buildImageCapturePresetContract } from './capturePresets';
 import { buildGptImage2PhotographicContract, buildGptImage2StoryPrompt } from './gptImagePrompt';
-import { getImageModelCapabilities, isComfyUILLaDAImage, isGptImage2Model, isMidjourneyImageModel, type ImageResolutionOverride } from './imageModels';
+import { getImageModelCapabilities, isComfyUIQwenImage21, isGptImage2Model, isMidjourneyImageModel, type ImageResolutionOverride } from './imageModels';
 import { visibleImageCast } from './series/imageCastContract';
 import { isMidjourneyTask, type MidjourneyStyleReference } from './midjourney';
 import { midjourneyShotInput } from './midjourneyStory';
@@ -167,7 +167,7 @@ Strict rules: obey EXACT CAST literally; maintain exact face, hairstyle, clothin
       .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '')
       .replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-    const promptLimit = isComfyUILLaDAImage(selectedImageModel) ? 16000 : 4000;
+    const promptLimit = isComfyUIQwenImage21(selectedImageModel) ? 16000 : 4000;
     // Structured grids already contain their ordered cast/reference mapping.
     // Keep it intact, but do not drop the GPT-specific photographic treatment.
     const missingRoles = referenceDescriptions.filter((_, index) => !effectiveReferenceLabels[index] || !cleanPrompt.includes(effectiveReferenceLabels[index]));
@@ -392,7 +392,7 @@ Obey EXACT CAST literally. Maintain exact face, body proportions, hairstyle, clo
   // The legacy 4,000-character budget predates GPT Image. Cutting a structured
   // GPT prompt here drops the CAST/reference map and trailing output rules,
   // even though its photographic prefix survives. Send that contract intact.
-  const promptLimit = isComfyUILLaDAImage(selectedImageModel) ? 16000 : 4000;
+  const promptLimit = isComfyUIQwenImage21(selectedImageModel) ? 16000 : 4000;
   // Shorten only repeated boilerplate, never authored action or asset facts.
   const compactReferences = selectedReferenceEntries.map((entry, i) => `Reference image ${i + 1}: ${entry.compact}`);
   const compactLookContract = inheritReferenceLook ? referencedLookContract : `${buildCompactImageCaptureContract(visualStyle)}\n${buildImageCapturePresetContract(capturePreset || storyboard.capturePreset)}`;

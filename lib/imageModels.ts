@@ -13,16 +13,20 @@ export interface ImageModelCapabilities {
 const GROK_IMAGE_2 = 'grok-imagine-image-2.0';
 export const NANO_BANANA_2 = 'gemini-3.1-flash-image-preview';
 export const SEEDREAM_5_PRO = 'seedream-5-0-pro';
-export const COMFYUI_LLADA_IMAGE_TURBO = 'comfyui-llada-image-turbo';
+export const COMFYUI_QWEN_IMAGE_21 = 'comfyui-qwen-image-2-1';
+const LEGACY_COMFYUI_LLADA_IMAGE_TURBO = 'comfyui-llada-image-turbo';
 const LEGACY_COMFYUI_Z_IMAGE_TURBO = 'comfyui-z-image-turbo';
 
 export function normalizeImageModel(model: string): string {
-  return model.trim().toLowerCase() === LEGACY_COMFYUI_Z_IMAGE_TURBO ? COMFYUI_LLADA_IMAGE_TURBO : model;
+  const normalized = model.trim().toLowerCase();
+  return normalized === LEGACY_COMFYUI_Z_IMAGE_TURBO || normalized === LEGACY_COMFYUI_LLADA_IMAGE_TURBO
+    ? COMFYUI_QWEN_IMAGE_21
+    : model;
 }
 export const MIDJOURNEY_IMAGE_MODEL = 'midjourney';
 
 export const APIMART_IMAGE_MODEL_OPTIONS = [
-  { value: COMFYUI_LLADA_IMAGE_TURBO, label: 'ComfyUI · LLaDA-Image-Turbo（文生图 / 单图编辑）' },
+  { value: COMFYUI_QWEN_IMAGE_21, label: 'ComfyUI · Qwen-Image-2.1（文生图 / 最多 10 图编辑）' },
   { value: MIDJOURNEY_IMAGE_MODEL, label: 'Midjourney v8.2 · 电影质感（可选 Profile）' },
   { value: SEEDREAM_5_PRO, label: 'Seedream 5.0 Pro · 质量优先' },
   { value: 'doubao-seedance-4-5', label: 'Seedream 4.5（兼容旧设置）' },
@@ -33,8 +37,8 @@ export const APIMART_IMAGE_MODEL_OPTIONS = [
   { value: 'gpt-image-2-official', label: 'GPT-Image-2 · 官方高保真' },
 ] as const;
 
-export function isComfyUILLaDAImage(model: string): boolean {
-  return normalizeImageModel(model).trim().toLowerCase() === COMFYUI_LLADA_IMAGE_TURBO;
+export function isComfyUIQwenImage21(model: string): boolean {
+  return normalizeImageModel(model).trim().toLowerCase() === COMFYUI_QWEN_IMAGE_21;
 }
 
 export function isMidjourneyImageModel(model: string): boolean {
@@ -51,7 +55,7 @@ export function resolveStoryboardGridImageModel(model: string): string {
 }
 
 export function imageModelRequiresApiKey(model: string): boolean {
-  return !isComfyUILLaDAImage(model);
+  return !isComfyUIQwenImage21(model);
 }
 
 export function isGrokImagineImage2(model: string): boolean {
@@ -78,11 +82,11 @@ export function isOfficialGptImage2(model: string): boolean {
 }
 
 export function getImageModelCapabilities(model: string): ImageModelCapabilities {
-  if (isComfyUILLaDAImage(model)) {
+  if (isComfyUIQwenImage21(model)) {
     return {
-      model: COMFYUI_LLADA_IMAGE_TURBO,
-      label: 'ComfyUI · LLaDA-Image-Turbo（文生图 / 单图编辑）',
-      maxReferenceImages: 1,
+      model: COMFYUI_QWEN_IMAGE_21,
+      label: 'ComfyUI · Qwen-Image-2.1（文生图 / 最多 10 图编辑）',
+      maxReferenceImages: 10,
       maxResolution: '2K',
       aspectRatioField: 'size',
     };

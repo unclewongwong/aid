@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       if (hasCloudinaryUploadTarget()) {
         const id = taskId.replace(/^comfyui-image:/, '').replace(/[^a-zA-Z0-9_-]/g, '');
         const uploaded = await uploadBufferToCloudinary(buffer, {
-          folder: 'aid-images/comfyui-z-image', public_id: id, resource_type: 'image', overwrite: true,
+          folder: 'aid-images/comfyui-qwen-image-2-1', public_id: id, resource_type: 'image', overwrite: true,
         });
         return NextResponse.json({ status: 'completed', imageUrl: uploaded.secure_url, provider: 'comfyui-image' });
       }

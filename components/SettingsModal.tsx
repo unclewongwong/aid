@@ -271,9 +271,9 @@ export default function SettingsModal({
                 return `${capability.label} · 最高 ${capability.maxResolution} · 最多 ${capability.maxReferenceImages} 张参考图`;
               })()}
             </p>
-            {localSettings.imageModel === 'comfyui-z-image-turbo' && (
+            {localSettings.imageModel === 'comfyui-qwen-image-2-1' && (
               <p className="mt-1.5 text-xs leading-5 text-[var(--accent-yellow)]">
-                通过本机 Companion 调用仙宫云官方 Z-Image-Turbo BF16 工作流。当前分支是纯文生图；Story 会使用角色/物体文字设定，图生图与严格参考图身份锁定请切换 APIMart 模型。
+                通过本机 Companion 调用仙宫云 Qwen-Image-2.1 官方 INT8 工作流，支持纯文生图与最多 10 张参考图编辑。该模型使用 Qwen Research License，商业用途需要另行取得授权。
               </p>
             )}
             {isMidjourneyImageModel(localSettings.imageModel) && (
@@ -451,7 +451,7 @@ export default function SettingsModal({
             </div>
           )}
 
-          {((localSettings.videoProvider || 'apimart') === 'comfyui' || localSettings.imageModel === 'comfyui-z-image-turbo') && (
+          {((localSettings.videoProvider || 'apimart') === 'comfyui' || localSettings.imageModel === 'comfyui-qwen-image-2-1') && (
             <div className="space-y-4 p-4 border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
               <div>
                 <h3 className="text-sm font-mono text-[var(--accent-green)]">ComfyUI SSH Connection</h3>

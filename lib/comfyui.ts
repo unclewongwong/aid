@@ -1,4 +1,4 @@
-import { lladaImageApiPrompt, lladaImageDimensions } from './lladaImageWorkflow';
+import { qwenImage21ApiPrompt, qwenImage21Dimensions } from './qwenImage21Workflow';
 import { createHash, randomBytes } from 'crypto';
 import { execFile, spawn, type ChildProcess } from 'child_process';
 import { gunzipSync } from 'zlib';
@@ -2276,8 +2276,9 @@ export async function createComfyUISubtitleRemovalTask(input: {
 
 export async function createComfyUIImageTask(input: {
   prompt: string;
-  referenceImage?: string;
+  referenceImages?: string[];
   aspectRatio?: string;
+  resolution?: '1K' | '2K';
   seed?: number;
   settings?: ComfyUIClientSettings;
 }): Promise<{ taskId: string; promptId: string; width: number; height: number }> {
@@ -2285,32 +2286,39 @@ export async function createComfyUIImageTask(input: {
   try {
     if (!config.sshHost) throw new ComfyUIError('ComfyUI SSH Host 未配置');
     const promptText = String(input.prompt || '').trim();
-    if (!promptText) throw new ComfyUIError('LLaDA-Image-Turbo 提示词不能为空');
-    const { width, height } = lladaImageDimensions(input.aspectRatio || '1:1');
+    if (!promptText) throw new ComfyUIError('Qwen-Image-2.1 提示词不能为空');
+    const referenceImages = (input.referenceImages || []).filter(Boolean);
+    if (referenceImages.length > 10) throw new ComfyUIError('Qwen-Image-2.1 最多支持 10 张参考图');
+    const { width, height } = qwenImage21Dimensions(input.aspectRatio || '1:1', input.resolution || '1K');
     const runId = randomBytes(6).toString('hex');
     const seed = Number.isFinite(input.seed)
       ? Math.max(0, Math.floor(Number(input.seed)))
       : Number(BigInt(`0x${randomBytes(7).toString('hex')}`));
-    const prompt = lladaImageApiPrompt({
-      prompt: promptText,
-      width,
-      height,
-      seed,
-      outputPrefix: `aid/llada_image/${runId}/result`,
-    });
-    const directory = await mkdtemp(path.join(tmpdir(), 'aid-llada-'));
+    const referenceGuide = referenceImages.length
+      ? `\n\nREFERENCE ORDER:\n${referenceImages.map((_, index) => `<image${index + 1}> is reference image ${index + 1}.`).join('\n')}\nUse every referenced image only for the role described by the request.`
+      : '';
+    const directory = await mkdtemp(path.join(tmpdir(), 'aid-qwen-image-21-'));
     try {
-      if (input.referenceImage) {
-        const localImage = await materializeSource(input.referenceImage, directory, 'reference');
-        prompt['1'].inputs.reference_image = await uploadAsset(config, localImage, 'aid/assets', { contentAddressed: true });
+      const remoteImages: string[] = [];
+      for (let index = 0; index < referenceImages.length; index += 1) {
+        const localImage = await materializeSource(referenceImages[index], directory, `reference-${index + 1}`);
+        remoteImages.push(await uploadAsset(config, localImage, 'aid/assets', { contentAddressed: true }));
       }
+      const queuedPrompt = qwenImage21ApiPrompt({
+        prompt: `${promptText}${referenceGuide}`,
+        width,
+        height,
+        seed,
+        referenceImages: remoteImages,
+        outputPrefix: `aid/qwen_image_2_1/${runId}/result`,
+      });
       const promptId = await withTunnel(config, async baseUrl => {
         const definitions = await readRemoteDefinitions(config);
-        validatePrompt(prompt, definitions);
+        validatePrompt(queuedPrompt, definitions);
         const response = await fetchJson(baseUrl, '/prompt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, client_id: `aid-llada-${runId}` }),
+          body: JSON.stringify({ prompt: queuedPrompt, client_id: `aid-qwen-image-21-${runId}` }),
         });
         const submittedId = String(response.prompt_id || '').trim();
         if (!submittedId) throw new ComfyUIError('ComfyUI 提交响应没有 prompt_id');

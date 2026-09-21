@@ -13,7 +13,7 @@ import { readMediaSource } from './mediaSource';
 // short-lived signature and send media directly to R2 or Cloudinary (no serverless
 // body-size limit, and no Fish/LLM credentials sent to the website).
 const SIGNING_URL = 'https://pandais.beauty/api/media-upload/sign';
-const MEDIA_FOLDERS = new Set(['aid-voice-refs', 'aid-audio', 'aid-images', 'aid-images/comfyui-z-image', 'aid-video', 'aid-videos', 'aid-videos/comfyui', 'aid-videos/fal-h3-max', 'aid-grid-sources', 'aid-grid-cells']);
+const MEDIA_FOLDERS = new Set(['aid-voice-refs', 'aid-audio', 'aid-images', 'aid-images/comfyui-z-image', 'aid-images/comfyui-qwen-image-2-1', 'aid-video', 'aid-videos', 'aid-videos/comfyui', 'aid-videos/fal-h3-max', 'aid-grid-sources', 'aid-grid-cells']);
 type UploadTicket = MediaUploadTicket;
 
 export async function createStorageUploadTickets(options: UploadApiOptions, contentType?: string): Promise<UploadTicket[]> {

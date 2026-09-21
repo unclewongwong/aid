@@ -9,7 +9,7 @@ export async function GET() {
     version: process.env.AID_COMPANION_VERSION || 'development',
     nativeVideoExport: true,
     r2MediaStorage: true,
-    lladaImageTurbo: true,
+    qwenImage21: true,
     h3DirectorLongVideo: true,
     storyOriginalAssetGrounding: true,
     seriesProduction: true,

@@ -5,7 +5,7 @@ import type { UploadApiOptions, UploadApiResponse } from 'cloudinary';
 import type { MediaUploadTicket } from './mediaUploadTicket';
 import { readMediaSource } from './mediaSource';
 
-export const MEDIA_FOLDERS = new Set(['aid-voice-refs', 'aid-audio', 'aid-images', 'aid-images/comfyui-z-image', 'aid-video', 'aid-videos', 'aid-videos/comfyui', 'aid-videos/fal-h3-max', 'aid-grid-sources', 'aid-grid-cells']);
+export const MEDIA_FOLDERS = new Set(['aid-voice-refs', 'aid-audio', 'aid-images', 'aid-images/comfyui-z-image', 'aid-images/comfyui-qwen-image-2-1', 'aid-video', 'aid-videos', 'aid-videos/comfyui', 'aid-videos/fal-h3-max', 'aid-grid-sources', 'aid-grid-cells']);
 const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/ogg': 'ogg', 'audio/flac': 'flac', 'audio/mp4': 'm4a', 'audio/aac': 'aac' };
 

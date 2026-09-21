@@ -24,7 +24,8 @@ test('exposes both new providers in the global image-model selector', () => {
   const models = APIMART_IMAGE_MODEL_OPTIONS.map(option => option.value);
   assert.ok(models.includes('grok-imagine-image-2.0'));
   assert.ok(models.includes('gemini-3.1-flash-image-preview'));
-  assert.ok(models.includes('comfyui-llada-image-turbo'));
+  assert.ok(models.includes('comfyui-qwen-image-2-1'));
+  assert.ok(!models.includes('comfyui-llada-image-turbo'));
   assert.ok(!models.includes('comfyui-z-image-turbo'));
   assert.ok(models.includes('midjourney'));
   assert.ok(models.includes('seedream-5-0-pro'));
@@ -198,14 +199,15 @@ test('keeps Midjourney task identities distinguishable from unified APIMart task
   assert.equal(isMidjourneyTask('task_123'), false);
 });
 
-test('migrates the retired Z-Image provider to local LLaDA with one editing reference', () => {
+test('migrates retired local image providers to Qwen Image 2.1 with ten editing references', () => {
   const capabilities = getImageModelCapabilities('comfyui-z-image-turbo');
-  assert.equal(capabilities.maxReferenceImages, 1);
+  assert.equal(capabilities.model, 'comfyui-qwen-image-2-1');
+  assert.equal(capabilities.maxReferenceImages, 10);
   assert.equal(capabilities.maxResolution, '2K');
   assert.equal(imageModelRequiresApiKey('comfyui-z-image-turbo'), false);
 });
 
-test('allows Z-Image-Turbo generation without references once a prompt is provided', () => {
+test('allows migrated local Qwen generation without references once a prompt is provided', () => {
   assert.equal(imageCreationInputError({
     model: 'comfyui-z-image-turbo',
     referenceCount: 0,
@@ -223,7 +225,7 @@ test('allows Z-Image-Turbo generation without references once a prompt is provid
   }), /参考图片/);
 });
 
-test('builds a reference-free prompt for Z-Image-Turbo', () => {
+test('builds a reference-free prompt for local Qwen Image 2.1', () => {
   const prompt = buildStudioImagePrompt({
     userIntent: 'A red ceramic vase in window light',
     scaleNotes: 'The vase is 30 cm tall',

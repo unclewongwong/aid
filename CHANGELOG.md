@@ -1,3 +1,9 @@
+## 0.1.228 - 2026-09-21
+
+- Replace the retired local LLaDA image route with the official Qwen-Image-2.1 INT8 ComfyUI graph. Support text-to-image and up to ten ordered editing references while preserving historical `comfyui-image:` task polling and migrating saved Z-Image/LLaDA selections automatically.
+- Install the official Qwen-Image-2.1 transformer, Qwen3-VL text encoder and RGBA VAE with verified SHA-256 hashes. Keep MiniMax H3 on its existing independent workflow, Hybrid pruned checkpoint, matching four-step LoRA and sampling contract.
+- Add a Companion capability gate and update image-creation copy. Qwen-Image-2.1 uses the Qwen Research License; commercial use requires separate authorization from the licensor.
+
 ## 0.1.227 - 2026-09-11
 
 - Route MiniMax H3 multi-image generation through Hybrid conditioning: lock Picture 1 as the exact `first_frame` and send only the remaining images through `ref_images`, reducing redraw and identity mixing caused by treating every image as an equal Ref2VA reference.
