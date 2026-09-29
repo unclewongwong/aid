@@ -9,7 +9,7 @@ description: 使用 AID Partner 本地制作服务，把需求、故事或分镜
 
 ## 制作默认与工具边界
 字幕默认关闭：只有用户明确提出需要字幕时，才制作、生成或烧录对白/旁白字幕；视频中有对白、用户要求包装、短视频发布或平台惯例都不构成字幕授权。标题卡、剧情内可见文字、产品界面标签、品牌标识和CTA属于不同图形元素，不得偷偷当作字幕添加；仍须由用户要求或明确的内容/品牌目标支持。
-执行制作或核对运行能力时先调用 aid_status、aid_workflows，按实际配置工作；用户明确提到私人通道、好友通道或积分路线时再调用 aid_channels。仅审阅或维护本知识文件时不要求启动制作服务。此工具不提供创作者的账户，所有资源属于当前用户。
+执行制作或核对运行能力时，当前 MCP 明确提供 `aid_route_plan` 就先调用它，让 Partner 统一盘点本机和共享路线；旧版未提供该工具时才回退到 `aid_status`、`aid_workflows`，并在工具存在时读取 `aid_channels`。用户说“共享通道、共享路线、私人通道、好友通道、积分路线”都表示同一类已加入通道，不能只因未提“私人通道”而忽略。仅审阅或维护本知识文件时不要求启动制作服务。此工具不提供创作者的账户，所有资源属于当前用户。
 用户可从需求、完整剧本或分镜任意阶段开始；已提供内容不重复改写。Agent 负责故事、分镜和提示词，无须另配文本 API。
 通过 aid_save_project 保存制作方案。每镜保留唯一 id、prompt、逐字 dialogue、duration 和 references。制作状态以 Partner 保存的项目与任务为准。
 处理生产工作区项目且当前MCP明确提供 `aid_update_factory_status` 时，在进入每个真实阶段时调用它，并在完成、暂停或失败后再次更新；按当前集填写 `phase`：读取需求 `reading_requirements`、编写剧本 `writing_script`、导演剧情 `directing_story`、设计分镜 `designing_storyboard`、编写提示词 `writing_prompts`、生成参考图 `generating_references`、资料就绪 `ready`、安排视频 `queueing_video`、生成视频 `generating_video`、下载视频 `downloading_video`、合成成片 `composing`，以及 `completed`、`paused`、`failed`。`detail`只写当前可核验动作，不使用定时空更新伪造活跃状态；工具未暴露时不虚构调用，也不因此阻断普通项目制作。
@@ -23,8 +23,8 @@ aid_compose 按素材顺序生成原速合成母版，保留同期声；无音�
 本知识包兼容 AID Partner 0.1.31 及以上版本。剧本、喜剧节拍、长片钩子、电影摄影和分段衔接方法可直接使用；知识更新不会增加客户端工具、供应商适配器或工作流输入。读取 `aid_status` 的实际服务版本，并以当前会话暴露的 MCP 工具及参数、`aid_workflows` 返回的输入、所选适配器的只读请求预览为准；不能根据知识版本、磁盘上的应用版本或案例中出现的模型名称推定运行能力。
 0.1.31 的 fal 适配器仅支持 `minimax/h3-max/image-to-video`，不支持 fal Reference-to-Video；它的 MCP 也没有 `referenceImageUrls`、`referenceVideoUrls`、`referenceAudioUrls`、`promptExpansionMode` 和 APIMart `videoUrls` 参数。不要向旧工具传这些字段，也不要改塞进 `inputs`、改名或直接绕过 Partner 调供应商。下文新版参考模式仅在当前工具明确提供对应字段、适配器只读预览接受该模型和素材角色时适用；工作流必须另查其实际输入。能力不足时说明具体缺项，继续完成可用的故事和分镜规划；实际生成保持用户选定路线，不擅自换服务、丢弃参考或宣称已执行多参考生成。
 
-## 私人通道：只使用公开能力与积分价格
-AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_channels`、`aid_channel_generate` 和 `aid_channel_task` 时，可以加入熟人创建的私人通道。先调用 `aid_channels`，只按返回的连接 ID、公开路线 ID、能力、积分价格和余额工作；不得猜测或索取通道主的真实模型、供应商 Endpoint、API Key、SSH、工作流 ID、本地路径或好友令牌。通道未连接、路线未公开、余额不足或主节点离线时报告实际状态，不自行切回本机服务或其他供应商。
+## 共享/私人通道：只使用公开能力与积分价格
+AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_channels`、`aid_channel_generate` 和 `aid_channel_task` 时，可以加入熟人创建的共享/私人通道。先让 `aid_route_plan` 决策；需要查看候选明细时再调用 `aid_channels`。只按返回的连接 ID、公开路线 ID、能力、积分价格和余额工作；不得猜测或索取通道主的真实模型、供应商 Endpoint、API Key、SSH、工作流 ID、本地路径或好友令牌。通道未连接、路线未公开、余额不足或主节点离线时报告实际状态，不自行切回本机服务或其他供应商。
 
 私人通道生成同样属于有成本的真实生成。提交前向用户说明所选公开路线和积分价格，取得本次生成授权后调用 `aid_channel_generate`；本地参考素材必须先经 `aid_import_asset` 得到素材 ID，再按公开路线声明的输入和素材角色传递。同一请求保持稳定 `idempotencyKey`，超时、连接中断或结果不确定时只用 `aid_channel_task` 查询原任务，不换编号重提。任务失败由通道按其规则退款；`needs_attention`、`paused` 或仍在处理不等于已退款。
 
@@ -191,9 +191,9 @@ Partner 将本地参考素材编码为 Data URI，经 fal 队列提交并保存 
 当前没有现有 AID 全套 H3 音色、首尾帧、长续接、四宫格自动切图适配。不要把创作入口存在等同于全部专用生产流程已迁移。
 
 ## 接入验收与默认路径
-用户请求“接入验收”时，先读本Skill，再调用 aid_verify_connection，skillCode 传 aid-partner-routing-v3。该工具验证当前客户端调用与存储，不生成、不扣费。只有读到返回结果才能报告通过。找不到MCP工具时，明确提示去客户端启用/信任 aid-partner；WorkBuddy可能把外部写入配置视为未信任。不能擅自改用其内置VideoGen或其他付费服务。
+用户请求“接入验收”时，先读本Skill，再调用 `aid_verify_connection`。当前 MCP 提供 `aid_route_plan` 时 skillCode 传 `aid-partner-routing-v4`；旧版没有该工具时传 `aid-partner-routing-v3`，不要把新版代码传给旧服务。新版验收会验证当前客户端调用、存储并返回 image/video/speech 的统一路线计划，不生成、不扣费。没有本机默认路线不等于验收失败：若返回的共享路线可用，应如实说明可以通过共享通道制作；只有读到返回结果才能报告通过。找不到MCP工具时，明确提示去客户端启用/信任 aid-partner；WorkBuddy可能把外部写入配置视为未信任。不能擅自改用其内置VideoGen或其他付费服务。
 本地调用异常时先重试一次 aid_status；成功后调用 aid_diagnostics 查看当前 PID、运行时长、窗口驻留策略与最近生命周期事件。connection.json 只是本地连接记录，PID 或端口变化只能说明进程被重新启动，不能单独证明“反复崩溃”。Agent 不得循环启动、结束或替换 AID Partner；一次重试仍失败时，提示用户打开桌面端，并检查用户目录 `.aid-partner/desktop.log`。Windows 关闭窗口后服务应驻留系统托盘，必须从托盘菜单明确退出。
-生成前调用 aid_preview_route，告诉用户实际用途/服务/模型/工作流。优先级：本次明确指定 > 项目 routes > Partner defaults。用户已指定或已确认默认路线后不用反复询问，但不能因不可用而自行切换。aid_generate 可传 kind=image/video/speech，不传 serviceId/workflowId 时由服务端按默认路径解析；务必传项目ID（如果有）。
+初始化和每次路线未明确的生成前，在当前 MCP 明确提供时调用 `aid_route_plan`。统一优先级：本次明确指定 > 项目 routes > 本机默认 > 唯一兼容本机路线 > 唯一可用共享路线；本机与共享同时存在时默认选本机。返回 `selected` 后按 `selection.executor` 使用 `aid_generate` 或 `aid_channel_generate`；返回 `needs_selection` 时只在多个本机候选或价格/固定规格不同的共享候选间请用户选择一次。若选择本机 API，再调用 `aid_preview_route` 和 `aid_preview_api_request` 核对实际请求。旧版没有 `aid_route_plan` 时，按本次明确指定 > 项目 routes > Partner defaults 预览本机路线；若存在 `aid_channels` 且本机没有可用路线，再读取共享候选，不把缺少本机默认误报为整个 Partner 无法制作。用户已指定或已确认路线后不用反复询问；明确路线、项目绑定、已配置默认路线不可用，或任务失败/状态不确定时，不静默切换来源、供应商或防重复编号。`aid_generate` 可传 kind=image/video/speech，不传 serviceId/workflowId 时由服务端按本机默认路径解析；务必传项目ID（如果有）。
 语音默认路线支持已实现 /audio/speech 的API及适配好的ComfyUI工作流，voice是供应商音色ID。克隆音色未实现，不能把参考录音自动声称为已克隆。视频原生对白与独立语音是不同能力。
 补充/替换素材：aid_import_asset后，读取项目版本，aid_update_references指定镜头与新旧素材；保留旧版本和已生成成品，不自动重跑。角色录音可通过aid_save_character的voiceAssetId登记。
 API模型列表检查不证明对应媒体协议已实现。通用 OpenAI 风格服务不按模型名称设置白名单；使用供应商提供的准确模型 ID。fal 在0.1.31仅适配 H3 Max 图生视频；新版的 Reference-to-Video 须先按前述能力检查确认，其他 fal 模型仍需各自对应的适配契约。异步生图使用 `/images/generations`，异步生视频使用 `/videos/generations`；二者都会先用 `/uploads/images` 把本地参考图直传用户选择的模型服务，再通过 `/tasks/{task_id}` 轮询和下载结果，不经过其他中转存储。使用对应默认路径正常调用 `aid_generate`，不要因模型名称未知而绕过 Partner。视频可传 `duration`、`size`、`resolution`、`seed`、`generateAudio` 和 `returnLastFrame`，具体范围由所选服务判断；失败时报告服务端实际错误。首尾帧模式只用`assets.first_frame`与`assets.last_frame`；已确认支持的fal多参考模式只用其带媒介名称和连续编号的素材键，不把两种模式混在同一请求。
