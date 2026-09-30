@@ -46,7 +46,7 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 | 重复人物；同一连续镜头多状态/四宫格 | [角色参考包](references/character-reference-pack.md)、[四宫格动态分镜](references/four-panel-motion-storyboards.md)：身份与状态分开，图格不自动等于切镜 |
 | 一张九宫格作风格/多镜母版，计划转为满屏视频 | [九宫格视觉母版](references/nine-panel-editorial-storyboard.md)：逐格锁人物或产品身份与版式，建立格号→镜号映射；整板不是自动时间轴 |
 | 已完成分镜准备分段；相邻生成段接缝跳跃；AI动作/运镜冲突或过载 | [连续分镜成段生成](references/storyboard-segment-generation.md)、[AI叙事镜头设计](references/ai-shot-design-and-prompt-engineering.md)：按剧情时长与真实能力分组；先判真实切镜还是同镜续接，再选择景别/视点接力或实际尾帧续接 |
-| 图片或视频提示词编写 | [案例迁移与H3编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)：按本镜难点检索、迁移方法、编译实际prompt |
+| 图片或视频提示词编写 | [案例迁移与H3编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)：按本镜难点检索、迁移方法、编译实际prompt；目标为 GPT-Image 静态图时再读[静态图构图与材质](references/gpt-image-still-prompt-design.md) |
 | 首次接手叙事短片，或需要看清整条链路 | [端到端示例](references/worked-example-short-film.md)：故事契约→节奏图/BPM→逐秒视听→段落与素材职责→两段 H3 prompt；只示范依赖顺序，不是模板 |
 | 风格化媒介、动作分相或精确声画事件 | [媒介与声画事件](references/medium-native-story-and-cues.md)：风格作为行为规则参与叙事，动作与声音按同一事件表对齐；写实片不套用 |
 | 动作、表情、交互或运镜随时间变化 | [动作七槽](references/action-seven-slot-precision.md)：可定位、可观察、可计时；静态图只写指定时刻状态，不强填动作过程 |
