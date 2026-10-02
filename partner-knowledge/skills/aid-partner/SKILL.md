@@ -35,7 +35,7 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 
 | 当前工作 | 必读指南与产物 |
 | --- | --- |
-| 原创、扩写、修订故事或多集项目 | [故事先行与跨集连续](references/story-first-and-series-continuity.md) → [故事剧作](references/story-dramaturgy.md)：先完整因果正文；长篇先覆盖结局的总纲再分批正文，多集保留跨集状态 |
+| 原创、参考视频改编、扩写、修订故事或多集项目 | [故事先行与跨集连续](references/story-first-and-series-continuity.md) → [故事剧作](references/story-dramaturgy.md)：参考片先分清可见事实与推断，再迁移叙事机制而非换皮；先完整因果正文，长篇先覆盖结局的总纲再分批正文，多集保留跨集状态 |
 | 完整剧本进入两个以上叙事镜头 | [镜头因果](references/director-storytelling-and-shot-causality.md)决定剧情拍、观众知情和表达/切镜理由 → [全片逐秒视听设计](references/whole-film-second-by-second.md)决定绝对时间、表演/摄影/声音与BPM；不在两份指南重复做同一张表 |
 | 长篇、多个叙事段落或连续剧情 | [长片故事导演](references/long-form-story-direction.md)：主线、钩子、阶段结果与下一段接力 |
 | 商业短剧选题、比较创意、低成本样片 | [商业短剧选题](references/commercial-short-story-selection.md)：观看承诺、因果兑现和制作负担；示例人数、秒数与镜数不升级为默认 |

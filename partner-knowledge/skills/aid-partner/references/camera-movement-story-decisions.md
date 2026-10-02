@@ -30,6 +30,8 @@
 - **甩镜 vs 有效揭示**：甩镜可以搬运注意力和速度，但最后要稳住，让目标足够清楚；重要道具、表情、文字不能只藏在模糊区间。
 - **手持是观察者的身体，不是后期随机抖动**：指定观察者站位、步伐或呼吸怎样引出微晃、何时短暂失焦、何时重新对到目标。偷拍感还需要受限视点和遮挡，不能只加抖动。
 
+极近人像后退镜头先确定首帧允许裁切到哪里、最后要到什么景别、哪一段表情是观看重点，再写机身与人物的相对路径。固定焦段物理后退时，脸在画内逐渐缩小，肩部、衣服与原本被裁掉的背景按空间关系依次露出；背景灯、阴影与眼中光点属于场景光源，不应凭空换位或逐帧钉在屏幕坐标。若写实机焦段和厘米距离，须核对该镜头在最近距离能否合焦；例如普通85mm人像镜与可近摄的85mm微距镜能力不同。未指定设备时优先写首尾景别、面部占比、正常透视和可实现的移动方向，不把“4K”“85mm”“35cm”当作可由提示词保证的品质咒语；真实输出尺寸交给生成参数核验。
+
 推拉变焦（dolly zoom）是少量关键时刻的特殊对照：机身前后移动、镜头反向变焦，让主体大小大致不变而背景透视改变。若无法明确它对应人物何时意识到哪件事，或当前生成流程不能稳定控制两种同步运动，用表演、剪辑或普通推轨更可靠。不要把“主体忽大忽小”误判为成功。
 
 ## 目击式一镜：让意外有可见证据链
@@ -66,3 +68,5 @@
 ## 来源与验证边界
 
 2026-09-28 阅读 [Melies Cinematic Techniques 总目录](https://melies.co/cinematic-techniques)及其运镜/焦点/剪辑条目，重点比较 [Dolly In](https://melies.co/cinematic-techniques/camera-movement/dolly-in)、[Dolly Out](https://melies.co/cinematic-techniques/camera-movement/dolly-out)、[Slow Zoom Out](https://melies.co/cinematic-techniques/camera-movement/slow-zoom-out)、[Pan Left](https://melies.co/cinematic-techniques/camera-movement/pan-left)、[Tracking](https://melies.co/cinematic-techniques/camera-movement/tracking)、[Crane Up](https://melies.co/cinematic-techniques/camera-movement/crane-up)、[Whip Pan](https://melies.co/cinematic-techniques/camera-movement/whip-pan)、[Static](https://melies.co/cinematic-techniques/camera-movement/static)、[Rack Focus](https://melies.co/cinematic-techniques/effects/rack-focus)和[Axial Cut](https://melies.co/cinematic-techniques/editing/axial-cut)的“叙事用途—物理机制—易错混淆”组织方式。上文的决策表、六步交代单和值班员示范是 Partner 按现有故事因果、H3和素材边界原创改写，不是站点提示词转录，也不声称已逐帧核验站点电影例子或通过生成实测。教程不是“真实优秀提示词案例”正文，不导入官方提示词案例库。
+
+2026-10-02 用户提供的 [jackzhang123vip 近景人像提示词](https://x.com/jackzhang123vip/status/2105942951390265667)启发本页的极近人像后退检查。实机最近对焦距离依镜头而异：[Sony FE 85mm F1.8 为0.8m](https://www.sony.com/en-lb/electronics/camera-lenses/sel85f18/specifications)，[Canon RF85mm F2 Macro 为0.35m](https://files.canon-europe.com/files/webcontent/rf-lens-world/features/rf-lineup/index.html?pop=pop18)。这只说明示例中的85mm与35–50cm不能当通用可行组合；没有取得该帖成片或在H3实测。
