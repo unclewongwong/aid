@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "2026.10.06.1",
+  "version": "2026.10.07.1",
   "minAppVersion": "0.1.31",
-  "createdAt": "2026-10-06T10:00:00.000Z",
-  "summary": "新增按实际客户端能力使用 Seedance/H3 音频参考、fal 固定原声与 ComfyUI H3 本地录音的说明；保留旧版兼容边界。"
+  "createdAt": "2026-10-07T00:32:45.336Z",
+  "summary": "吸收huashu-art-motion的解释动画方法：按信息任务选画法、按讲解落点展开图形、角色分层保留定位与数据语义；保持Partner路线和放行边界。"
 }
