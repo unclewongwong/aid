@@ -43,6 +43,7 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 | 学习导演手法或比较关键剧情的视听表达 | [导演场面拆解与迁移](references/director-shot-methods.md)：将方法落实到镜号、调度、揭示、切点和声音，不靠导演姓名出片 |
 | 已有剧情，需要比较推轨/变焦/摇摄/跟拍/升降/固定等运镜 | [运镜决策](references/camera-movement-story-decisions.md)：先定观看任务，再选物理机制、路径与落点；不把术语当故事 |
 | 电影摄影、影调统一；多镜头视觉设定 | [电影感与风格统一](references/cinematic-visual-direction.md)、[影片视觉连续](references/film-visual-continuity.md)：按实际需求建立视觉契约和素材职责 |
+| 点名画风、比较风格或使用预设模式 | [视觉风格预设](references/visual-style-presets.md)：沿用既有水墨至写实剧照十种方向，增加彩色日系二次元、皮克斯动画、文艺电影LUT、iPhone vlog、低像素CMOS复古Nokia、纪实纪录片、梦幻仙侠、奢侈品广告、文艺复兴油画与3A UE；将造型、材质、影调和动态规则编入实际prompt |
 | 重复人物；同一连续镜头多状态/四宫格 | [角色参考包](references/character-reference-pack.md)、[四宫格动态分镜](references/four-panel-motion-storyboards.md)：身份与状态分开，图格不自动等于切镜 |
 | 一张九宫格作风格/多镜母版，计划转为满屏视频 | [九宫格视觉母版](references/nine-panel-editorial-storyboard.md)：逐格锁人物或产品身份与版式，建立格号→镜号映射；整板不是自动时间轴 |
 | 已完成分镜准备分段；相邻生成段接缝跳跃；AI动作/运镜冲突或过载 | [连续分镜成段生成](references/storyboard-segment-generation.md)、[AI叙事镜头设计](references/ai-shot-design-and-prompt-engineering.md)：按剧情时长与真实能力分组；先判真实切镜还是同镜续接，再选择景别/视点接力或实际尾帧续接 |
