@@ -56,6 +56,7 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 | 原生音轨、锁定对白、无对白或强身份/道具一致性 | [对白与生成检查](references/dialogue-and-generation-quality-gates.md)：确认声音路线和证据边界，检查范围服从下方制作放行规则 |
 | 已授权旁白主导画面节奏 | [旁白与画面配对](references/narration-picture-pairing.md)：真实时长与画面配对，不代替人物同期对白 |
 | 广告、品牌片、产品感官短片、包装、代码驱动动效或明确要求字幕 | [广告包装与图形叙事](references/ad-packaging-subtitles-and-graphics.md)：先按产品感官/功能演示/故事/品牌形象选创意路线，再分配镜头、产品证据与确定性图形；字幕仍须明确授权 |
+| 综艺/节目包装、栏目片头、环节卡、人名条、花字或计分图形 | [综艺包装与节目片头](references/variety-show-packaging-and-titles.md)：以节目母题统一识别、导航与现场表达，片头接住开场，图形绑定真实事件与阅读窗口；不默认给所有片子加片头、字幕或音效 |
 | 替换素材、局部修改或最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行与修订](references/production-acceptance-and-revision.md)：按受影响依赖复核，不重做无关任务 |
 
 单镜简单任务只保留相关步骤，不强制增加设定表、角色图或生成任务。文字计划保存在项目 story，实际生成所需约束必须进入对应 prompt；不增加虚构 MCP/API 字段。各指南的方法不能覆盖本次授权、锁定内容、实际能力或主 Skill 的默认规则；外部范例仅是学习材料。
