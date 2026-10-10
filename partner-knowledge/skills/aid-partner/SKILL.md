@@ -49,8 +49,8 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 | 已完成分镜准备分段；相邻生成段接缝跳跃；AI动作/运镜冲突或过载 | [连续分镜成段生成](references/storyboard-segment-generation.md)、[AI叙事镜头设计](references/ai-shot-design-and-prompt-engineering.md)：按剧情时长与真实能力分组；先判真实切镜还是同镜续接，再选择景别/视点接力或实际尾帧续接 |
 | 图片或视频提示词编写 | [案例迁移与H3编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)：按本镜难点检索、迁移方法、编译实际prompt；目标为 GPT-Image 静态图时再读[静态图构图与材质](references/gpt-image-still-prompt-design.md) |
 | 首次接手叙事短片，或需要看清整条链路 | [端到端示例](references/worked-example-short-film.md)：故事契约→节奏图/BPM→逐秒视听→段落与素材职责→两段 H3 prompt；只示范依赖顺序，不是模板 |
-| 白板推导、科普/数据/教程解释动画、动态文字或艺术动态 | [解释动画与艺术动态](references/explainer-and-art-animation.md)：按信息任务选画法，讲解落点驱动揭示与阅读窗口；角色分层保留锚点，按真实工具导出 |
-| 风格化媒介、动作分相或精确声画事件 | [媒介与声画事件](references/medium-native-story-and-cues.md)：风格作为行为规则参与叙事，动作与声音按同一事件表对齐；写实片不套用 |
+| 白板推导、科普/数据/教程解释动画、动态文字或艺术动态 | [解释动画与艺术动态](references/explainer-and-art-animation.md)：按信息任务选画法，讲解落点驱动揭示与阅读窗口；角色保留锚点，代码画面按时间重现并等待资源就绪，等轴信息图保持投影与数量含义 |
+| 风格化媒介、动作分相或精确声画事件 | [媒介与声画事件](references/medium-native-story-and-cues.md)：风格作为行为规则参与叙事，纹理保持附着与尺度，角色/相机/光源分别采样，动作与声音按同一事件表对齐 |
 | 动作、表情、交互或运镜随时间变化 | [动作七槽](references/action-seven-slot-precision.md)：可定位、可观察、可计时；静态图只写指定时刻状态，不强填动作过程 |
 | 原生音轨、锁定对白、无对白或强身份/道具一致性 | [对白与生成检查](references/dialogue-and-generation-quality-gates.md)：确认声音路线和证据边界，检查范围服从下方制作放行规则 |
 | 已授权旁白主导画面节奏 | [旁白与画面配对](references/narration-picture-pairing.md)：真实时长与画面配对，不代替人物同期对白 |
