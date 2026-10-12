@@ -2,6 +2,12 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
+## 最新知识：2026.10.12.3
+
+本版汇总约20秒口播分段、LongCat准备与恢复流程、十套按需综艺包装等最新主Skill和配套指南。口播30秒不是硬门槛；只有Agent收到本片明确的包装指令时才使用包装，近期默认只决定风格。详细变化见[更新记录](CHANGELOG.md)。
+
+使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
+
 ## 维护与发布
 
 1. 在 Partner 源码的 `partner-knowledge/` 修改 `skills/aid-partner/SKILL.md`、可选的 `references/` 与 `prompts/examples.json`。根目录 `skills/` 和应用内提示词 gzip 是构建副本，不应分别手改。
@@ -9,6 +15,8 @@
 3. 在 Partner 源码运行 `npm run knowledge:build` 和 `npm test`。构建生成不可变的 `versions/<版本>.json.gz`、包含校验值的 `channel.json`，并同步安装包的离线基础知识。
 4. 准备官方 `unclewongwong/aid` 仓库的独立、干净检出目录。`npm run knowledge:publish -- --checkout <目录>` 仅准备并暂存本目录的变更，供审阅；显式添加 `--publish` 才会在干净检出目录中构建、提交并推送。已准备的变更也可审阅后在该独立检出目录中正常 git commit / git push。
 5. `channel.json` 与对应版本文件必须同一提交发布。GitHub 的 main 分支是正式更新通道，开发分支与本地草稿不进入客户端更新。发布后核对目录与版本文件可达、摘要及字节数匹配，再验证兼容客户端的一键更新。
+
+若本地累积了未公开的中间候选，不直接批量复制本地`versions/`与`channel.json`。应在独立检出目录中仅加入本次完整最新版及其目录记录，保留所有已公开记录和历史包不变；审阅暂存差异后提交。2026.10.12.3按此方式合并发布，中间候选不单独上架。
 
 ## 客户端行为
 

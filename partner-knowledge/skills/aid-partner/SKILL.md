@@ -1,6 +1,6 @@
 ---
 name: aid-partner
-description: 使用 AID Partner 本地制作服务，把需求、故事或分镜转为图片与视频。用户调用 AID Partner 或请求用已接入工作流制作时使用。
+description: 使用 AID Partner 本地制作服务，把需求、故事或分镜转为图片、视频、声音与数字人口播。用户调用 AID Partner 或请求用已接入工作流制作时使用。
 ---
 # AID Partner
 ## 适用边界与规则优先级
@@ -9,14 +9,15 @@ description: 使用 AID Partner 本地制作服务，把需求、故事或分镜
 
 ## 制作默认与工具边界
 字幕默认关闭：只有用户明确提出需要字幕时，才制作、生成或烧录对白/旁白字幕；视频中有对白、用户要求包装、短视频发布或平台惯例都不构成字幕授权。标题卡、剧情内可见文字、产品界面标签、品牌标识和CTA属于不同图形元素，不得偷偷当作字幕添加；仍须由用户要求或明确的内容/品牌目标支持。
-执行制作或核对运行能力时，当前 MCP 明确提供 `aid_route_plan` 就先调用它，让 Partner 统一盘点本机和共享路线；旧版未提供该工具时才回退到 `aid_status`、`aid_workflows`，并在工具存在时读取 `aid_channels`。用户说“共享通道、共享路线、私人通道、好友通道、积分路线”都表示同一类已加入通道，不能只因未提“私人通道”而忽略。仅审阅或维护本知识文件时不要求启动制作服务。此工具不提供创作者的账户，所有资源属于当前用户。
+需要生成新素材或核对生成能力时，当前 MCP 明确提供 `aid_route_plan` 就先调用它，让 Partner 统一盘点本机和共享路线；旧版未提供该工具时才回退到 `aid_status`、`aid_workflows`，并在工具存在时读取 `aid_channels`。已有素材的本地综艺包装先查实际存在的 `aid_packaging_catalog`，不要求模型路线或 API Key。用户说“共享通道、共享路线、私人通道、好友通道、积分路线”都表示同一类已加入通道，不能只因未提“私人通道”而忽略。仅审阅或维护本知识文件时不要求启动制作服务。此工具不提供创作者的账户，所有资源属于当前用户。
+新版 `aid_status` 是紧凑摘要，只返回服务、能力、数量、活动任务和少量最近任务，避免历史素材过多时撑断 Agent 连接。已知任务编号用 `aid_task` 精确查询；提交后查询或下载中断仍按下方恢复规则使用 `aid_resume_task`，不要为了翻历史要求 `aid_status` 返回整库素材，也不要换防重复编号重提。
 用户可从需求、完整剧本或分镜任意阶段开始；已提供内容不重复改写。Agent 负责故事、分镜和提示词，无须另配文本 API。
 通过 aid_save_project 保存制作方案。每镜保留唯一 id、prompt、逐字 dialogue、duration 和 references。制作状态以 Partner 保存的项目与任务为准。
 处理生产工作区项目且当前MCP明确提供 `aid_update_factory_status` 时，在进入每个真实阶段时调用它，并在完成、暂停或失败后再次更新；按当前集填写 `phase`：读取需求 `reading_requirements`、编写剧本 `writing_script`、导演剧情 `directing_story`、设计分镜 `designing_storyboard`、编写提示词 `writing_prompts`、生成参考图 `generating_references`、资料就绪 `ready`、安排视频 `queueing_video`、生成视频 `generating_video`、下载视频 `downloading_video`、合成成片 `composing`，以及 `completed`、`paused`、`failed`。`detail`只写当前可核验动作，不使用定时空更新伪造活跃状态；工具未暴露时不虚构调用，也不因此阻断普通项目制作。
 工作流仅支持声明的输入映射；不要把 H3 的音色、首尾帧或长续接规则用于其他工作流。aid_check_workflow 成功只代表静态依赖检查，不等于已跑过小样。
 生成须有用户授权。aid_generate 的 idempotencyKey 对同一请求保持稳定；超时先查任务，禁止换编号盲目重提。缺少密钥时引导到 Partner 的服务设置，绝不读取或索取旧 AID 的凭据。
 使用 aid_import_asset 导入用户指定文件。只引用真实素材 ID；输出经 aid_asset_path 取得本地路径并交付。
-aid_compose 按素材顺序生成原速合成母版，保留同期声；无音轨片段补静音，输出比例跟随首片段。沿用已确认的多段合成默认：最终母版只做一次1.2倍速，视频时间戳除以1.2，音频同步变速并保持音高，再导入Partner交付；本次明确原速或项目另有确认设置时优先遵从。单段预览和中间母版不提前加速，也不能重复加速。严格成片时长须在规划中区分标准速度与交付时长（纯恒速时交付时长=母版时长/倍率），不能交付后才发现超时。当前`aid_compose`不含变速参数，须使用已验证的本地媒体处理能力；没有工具时报告限制，不把原速母版声称为1.2倍成片。
+内部母版使用 aid_compose 时，若工具支持 delivery 必须传 intermediate（中间不包装）；aid_compose 按素材顺序生成原速合成母版，保留同期声；无音轨片段补静音，输出比例跟随首片段。沿用已确认的多段合成默认：最终母版只做一次1.2倍速，视频时间戳除以1.2，音频同步变速并保持音高，再导入Partner交付；本次明确原速或项目另有确认设置时优先遵从。单段预览和中间母版不提前加速，也不能重复加速。严格成片时长须在规划中区分标准速度与交付时长（纯恒速时交付时长=母版时长/倍率），不能交付后才发现超时。当前`aid_compose`不含变速参数，须使用已验证的本地媒体处理能力；没有工具时报告限制，不把原速母版声称为1.2倍成片。 综艺包装默认不触发。只有用户在 Agent 中明确要求为本片加综艺包装（或明确要求具体包装元素）时，才读 aid_packaging_catalog 的 effective，并以 packaging.mode=auto 调用 aid_finalize_video；近期默认/项目风格只决定用哪套，不是开启授权。未要求时省略 packaging 或传 mode=off，不因片型、喜剧效果或已有默认而自动添加，也不必追问。已要求后由 Agent 自动安排方案、时间与合成，包装在最终速度处理后仅做一次，详见[本地综艺包装库](references/local-variety-packaging-kit.md)。
 不要宣称未知自定义工作流已兼容、模型已下载或云环境已安装，除非工具返回实际验证证据。
 
 ## 知识与客户端能力
@@ -57,7 +58,7 @@ AID Partner 0.3.1 Preview 在当前 MCP 明确提供 `aid_route_plan`、`aid_cha
 | 原生音轨、锁定对白、无对白或强身份/道具一致性 | [对白与生成检查](references/dialogue-and-generation-quality-gates.md)：确认声音路线和证据边界，检查范围服从下方制作放行规则 |
 | 已授权旁白主导画面节奏 | [旁白与画面配对](references/narration-picture-pairing.md)：真实时长与画面配对，不代替人物同期对白 |
 | 广告、品牌片、产品感官短片、包装、代码驱动动效或明确要求字幕 | [广告包装与图形叙事](references/ad-packaging-subtitles-and-graphics.md)：先按产品感官/功能演示/故事/品牌形象选创意路线，再分配镜头、产品证据与确定性图形；字幕仍须明确授权 |
-| 综艺/节目包装、栏目片头、环节卡、人名条、花字或计分图形 | [综艺包装与节目片头](references/variety-show-packaging-and-titles.md)：以节目母题统一识别、导航与现场表达，片头接住开场，图形绑定真实事件与阅读窗口；不默认给所有片子加片头、字幕或音效 |
+| 综艺/节目包装、栏目片头、环节卡、人名条、花字或计分图形 | [综艺包装与节目片头](references/variety-show-packaging-and-titles.md)：统一识别、导航与现场表达；实际制作读[本地综艺包装库](references/local-variety-packaging-kit.md)，按实际 MCP 发现P01–P10十套风格、四类组件及三画幅，仅用户明确要求本片综艺包装时触发，再按本次/项目/近期默认选风格，方案和合成由 Agent 完成；保存默认不等于开启，未要求就不包装；计分等额外能力不能虚构，仍不默认加对白字幕或音效，知识更新不等于工具安装 |
 | 替换素材、局部修改或最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行与修订](references/production-acceptance-and-revision.md)：按受影响依赖复核，不重做无关任务 |
 
 单镜简单任务只保留相关步骤，不强制增加设定表、角色图或生成任务。文字计划保存在项目 story，实际生成所需约束必须进入对应 prompt；不增加虚构 MCP/API 字段。各指南的方法不能覆盖本次授权、锁定内容、实际能力或主 Skill 的默认规则；外部范例仅是学习材料。
@@ -198,9 +199,9 @@ Partner 将本地参考素材编码为 Data URI，经 fal 队列提交并保存 
 当前没有现有 AID 全套 H3 音色、首尾帧、长续接、四宫格自动切图适配。不要把创作入口存在等同于全部专用生产流程已迁移。
 
 ## 接入验收与默认路径
-用户请求“接入验收”时，先读本Skill，再调用 `aid_verify_connection`。当前 MCP 提供 `aid_route_plan` 时 skillCode 传 `aid-partner-routing-v4`；旧版没有该工具时传 `aid-partner-routing-v3`，不要把新版代码传给旧服务。新版验收会验证当前客户端调用、存储并返回 image/video/speech 的统一路线计划，不生成、不扣费。没有本机默认路线不等于验收失败：若返回的共享路线可用，应如实说明可以通过共享通道制作；只有读到返回结果才能报告通过。找不到MCP工具时，明确提示去客户端启用/信任 aid-partner；WorkBuddy可能把外部写入配置视为未信任。不能擅自改用其内置VideoGen或其他付费服务。
+用户请求“接入验收”时，先读本Skill，再调用 `aid_verify_connection`。当前 MCP 提供 `aid_route_plan` 时 skillCode 传 `aid-partner-routing-v4`；旧版没有该工具时传 `aid-partner-routing-v3`，不要把新版代码传给旧服务。新版验收会验证当前客户端调用、存储并返回 image/video/speech/avatar 的统一路线计划；LongCat Avatar 是仅供 Agent 使用的独立 avatar 服务，不要求出现在桌面生成表单里。验收本身不生成、不扣费。没有本机默认路线不等于验收失败：若返回的共享路线可用，应如实说明可以通过共享通道制作；只有读到返回结果才能报告通过。找不到MCP工具时，明确提示去客户端启用/信任 aid-partner；WorkBuddy可能把外部写入配置视为未信任。不能擅自改用其内置VideoGen或其他付费服务。
 本地调用异常时先重试一次 aid_status；成功后调用 aid_diagnostics 查看当前 PID、运行时长、窗口驻留策略与最近生命周期事件。connection.json 只是本地连接记录，PID 或端口变化只能说明进程被重新启动，不能单独证明“反复崩溃”。Agent 不得循环启动、结束或替换 AID Partner；一次重试仍失败时，提示用户打开桌面端，并检查用户目录 `.aid-partner/desktop.log`。Windows 关闭窗口后服务应驻留系统托盘，必须从托盘菜单明确退出。
-初始化和每次路线未明确的生成前，在当前 MCP 明确提供时调用 `aid_route_plan`。统一优先级：本次明确指定 > 项目 routes > 本机默认 > 唯一兼容本机路线 > 唯一可用共享路线；本机与共享同时存在时默认选本机。返回 `selected` 后按 `selection.executor` 使用 `aid_generate` 或 `aid_channel_generate`；返回 `needs_selection` 时只在多个本机候选或价格/固定规格不同的共享候选间请用户选择一次。若选择本机 API，再调用 `aid_preview_route` 和 `aid_preview_api_request` 核对实际请求。旧版没有 `aid_route_plan` 时，按本次明确指定 > 项目 routes > Partner defaults 预览本机路线；若存在 `aid_channels` 且本机没有可用路线，再读取共享候选，不把缺少本机默认误报为整个 Partner 无法制作。用户已指定或已确认路线后不用反复询问；明确路线、项目绑定、已配置默认路线不可用，或任务失败/状态不确定时，不静默切换来源、供应商或防重复编号。`aid_generate` 可传 kind=image/video/speech，不传 serviceId/workflowId 时由服务端按本机默认路径解析；务必传项目ID（如果有）。
+初始化和每次路线未明确的生成前，在当前 MCP 明确提供时调用 `aid_route_plan`。统一优先级：本次明确指定 > 项目 routes > 本机默认 > 唯一兼容本机路线 > 唯一可用共享路线；本机与共享同时存在时默认选本机。返回 `selected` 后按 `selection.executor` 使用 `aid_generate` 或 `aid_channel_generate`；返回 `needs_selection` 时只在多个本机候选或价格/固定规格不同的共享候选间请用户选择一次。若选择本机 API，再调用 `aid_preview_route` 和 `aid_preview_api_request` 核对实际请求。旧版没有 `aid_route_plan` 时，按本次明确指定 > 项目 routes > Partner defaults 预览本机路线；若存在 `aid_channels` 且本机没有可用路线，再读取共享候选，不把缺少本机默认误报为整个 Partner 无法制作。用户已指定或已确认路线后不用反复询问；明确路线、项目绑定、已配置路线失败或任务状态不确定时，不静默切换来源、供应商或防重复编号。`aid_generate` 可传 kind=image/video/speech/avatar，不传 serviceId/workflowId 时由服务端按本机默认路径解析；务必传项目ID（如果有）。
 语音默认路线支持已实现 /audio/speech 的API及适配好的ComfyUI工作流，voice是供应商音色ID。克隆音色未实现，不能把参考录音自动声称为已克隆。视频原生对白与独立语音是不同能力。
 补充/替换素材：aid_import_asset后，读取项目版本，aid_update_references指定镜头与新旧素材；保留旧版本和已生成成品，不自动重跑。角色录音可通过aid_save_character的voiceAssetId登记。
 API模型列表检查不证明对应媒体协议已实现。通用 OpenAI 风格服务不按模型名称设置白名单；使用供应商提供的准确模型 ID。fal 在0.1.31仅适配 H3 Max 图生视频；新版的 Reference-to-Video 须先按前述能力检查确认，其他 fal 模型仍需各自对应的适配契约。异步生图使用 `/images/generations`，异步生视频使用 `/videos/generations`；二者都会先用 `/uploads/images` 把本地参考图直传用户选择的模型服务，再通过 `/tasks/{task_id}` 轮询和下载结果，不经过其他中转存储。使用对应默认路径正常调用 `aid_generate`，不要因模型名称未知而绕过 Partner。视频可传 `duration`、`size`、`resolution`、`seed`、`generateAudio` 和 `returnLastFrame`，具体范围由所选服务判断；失败时报告服务端实际错误。首尾帧模式只用`assets.first_frame`与`assets.last_frame`；已确认支持的fal多参考模式只用其带媒介名称和连续编号的素材键，不把两种模式混在同一请求。
@@ -210,6 +211,15 @@ Partner 不依赖 Companion。远程 ComfyUI 服务由 Partner 通过 SSH 隧道
 ## 音频参考生成视频
 用户要求按录音、声音或节奏生成视频时，先核对当前工具的音频字段、所选服务和工作流输入，按 [音频参考与固定原声](references/audio-reference-generation.md) 编译真实请求。APIMart 的参考音频、fal 的声音参考/固定原声、ComfyUI H3 的本地音频输入各用独立契约。知识更新不会给旧客户端增加音频参数；缺少能力时保留用户素材与选定路线，说明需要兼容应用。
 可见人物口播再读[人物口播与走动讲述](references/talking-head-and-walk-and-talk.md)。指定具体音色或录音时，先锁定成品声音，再用已核实的音频驱动或专用唇同步路线；原生同期对白仍用于符合本片声音要求的场景。替换输出声轨不证明嘴型由录音驱动，指南里的模型名称不代表当前Partner已接入。
+
+## LongCat Avatar：Agent 专用与显式切卡
+LongCat-Video-Avatar-1.5 在新版 Partner 中是与 image/video/speech 平级的 `avatar` 模型服务，不是普通 ComfyUI 工作流，也不进入桌面生成表单。首次接入由 Agent 调用 `aid_register_longcat_service`，指定现有 SSH ComfyUI 服务作为同一张云卡的连接来源；不得读取、复制或回显 SSH 凭据。
+
+准备口播文稿和新语音时，按[人物口播指南](references/talking-head-and-walk-and-talk.md)先用字数粗估每段约20秒；30秒不是硬上限，实际语音到30秒左右或稍长不因此自动重做。实际音频时长决定驱动画面的时间轴，所选接口的真实限制仍需满足。
+
+用户提出“口播视频”“数字人口播”或图片＋录音驱动人物时，若用户尚未指定路线，先用 `aid_route_plan` 确认 LongCat 路线确实可用，再简短说明它会临时占用同一张云卡、完成后自动切回，并询问是否使用；不能仅凭“口播”二字直接切卡或提交。把缺少的人物图、成品录音/音色与 LongCat 选择合并成一次必要询问，已经提供的内容不重复问。用户确认使用 LongCat 后，该确认即授权 Agent 自动执行本次完整算力流程，无须再让用户手动点桌面按钮或逐步确认：先完成文稿、录音和图片准备，只在即将提交时检查任务与队列空闲 → 调用 `aid_switch_compute_mode` 切到 `longcat` → 提交并等待/恢复交付 → 在收尾阶段切回 `comfyui`。这样尽量缩短 ComfyUI 被占用的时间。
+
+同一云卡的默认运行模式永远是 `comfyui`。没有上述确认或用户明确指定 LongCat 时，不得切到 `longcat`；不能让两个重模型运行时并存。切换会先检查 Partner 活动任务与源运行时队列，非空时必须停止并报告，不能强制杀掉任务。LongCat 任务要求 `assets.image` 与 `assets.audio`，可选 `assets.audio2`；`kind`/`purpose` 使用 `avatar`，模型固定为 `LongCat-Video-Avatar-1.5`。提交后保留原 taskId、providerId 与 idempotencyKey；若查询或下载中断而任务进入 `paused`，修复连接后只调用 `aid_resume_task` 恢复原任务，不能换编号重提或重复生成。生成结束、失败或本次测试收尾后，若云卡上没有活动任务，应显式切回 `comfyui`，并以返回的实际 `mode` 为准，不能只凭调用成功就宣称已恢复。
 
 ## AID H3 工作流与自行准备指引
 用户要求给新主机使用当前标准工作流时，先从 `aid_status` 取得 ComfyUI 服务 ID，再调用 `aid_plan_h3_setup` 做只读检查。把缺少节点、不可用模型、准确文件名、ComfyUI 放置目录、原始来源、SHA-256（若提供）和模型许可告诉用户。这一步不会修改主机，也不会下载、上传或安装任何文件。
