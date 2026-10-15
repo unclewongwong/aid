@@ -1,3 +1,73 @@
+# 2026.10.15.4
+
+- 合并2026.10.12.3之后的最新主Skill与配套指南统一发布；下方10.14.1至10.15.3为历史本地候选，不逐个加入公共更新通道。
+- 主入口统一规则索引、阶段导航与A–H成果交接；完整剧本、逐字对白和锁定素材贯穿后续，简单任务可合并，不强制八张表或每镜反转。增加贯通实例的拍点/镜头/任务/段内时间映射。
+- 增加内容驱动片头策划、可变文案美术与已选择的Three.js方法；强调按视觉目标组合生图、视频模型和代码，不把技术演示或未采用小样当作成功模板。
+- 补充AFTERGLOW和五套Mac本地片头的能力检查与调用说明。执行脚本、字体和渲染器不在知识包内，其他电脑须另备相应运行资源；不能把知识更新说成自动安装所有片头功能。
+- 包含MiniMax官方兼容V2、原有供应商/素材契约与恢复规则，保持本机优先、共享路线能力发现、约20秒口播粗估、字幕/包装/动效/超分按需的边界。知识最低兼容0.1.31，应用版本仍为0.3.5 Preview。
+- English: Publishes the consolidated Skill with lighter stage-based guidance, complete-story handoffs and practical shot/task timing examples. Adds content-led title direction and conditional Mac runtime guidance without shipping executables in knowledge. Preserves provider contracts, route priority and explicit opt-in production rules.
+
+# 2026.10.15.3（历史本地候选，未单独发布）
+
+- 吸收用户提供v2优化方案的统一规则索引、阶段导航与A–H成果链，主入口减少重复，保留工具事实、声音授权与本机/共享路由优先级。
+- 不照搬“只读上一张表/不许跳步”：完整故事正文与锁定要求贯穿各层，已有成果直接接手，简单任务可合并/跳过不适用环节，用户不必填写八张表或逐项审批。
+- 新增按需成果交接指南与同一《雨夜送粥》示例的C拍→F镜→G任务→H局部时间映射、差到好与定向返修，链接原完整正文和两段prompt，不把摘要冒充成稿。
+- 不采用未经验证的BPM主观公式、每镜必须反转/三镜停工等机械门禁；保留有效停留、非叙事片型与用户锁定内容，修正正文变速后再加固定片头的时长计算。
+- 原专项与Mac六命名片头资源说明保留；不整包覆盖用户提案中的37份改写参考，避免倒退当前能力和引入未经验证的数值。应用/运行资源与公共频道不变。
+- English: Adapts the proposed production handoffs without imposing eight forms, replacing story prose, dropping locked inputs or treating subjective pacing formulas as verified rules. Preserves tool contracts and local motion modules; local candidate only.
+
+# 2026.10.15.2（本地候选，尚未公开发布）
+
+- 用户提供的五套Mac片头及共用core已接入独立本地资源：极简编辑、电影金属、探索纪实、酸性拼贴、国际新闻；保留原设计，不替换AFTERGLOW或P01–P10。
+- 统一入口支持按风格发现、正式文案配置、静帧/MP4另存和声音显式开启；校验空色板、BPM、字段与类型，拒绝覆盖和失败编码。知识仅含调用指南，不含执行脚本或字体。
+- 五套原生固定5秒/1080p30横版，其他画幅需另设计；正式配置未提供的示例日期、署名、地理/直播及信息条文案清空，避免演示事实进入生产。
+- English: Adds five user-supplied Mac title designs behind a validated local adapter. Runtime resources remain separate from knowledge; original designs, opt-in scope, sound authorization and no-overwrite protections are preserved. No public release.
+
+# 2026.10.15.1（本地候选，尚未公开发布）
+
+- 用户提供AFTERGLOW片头并授权Mac本地复用；独立资源安装，按需检查依赖后调用，默认静音和原片保护不变。
+- 规范指南加入图像、视频模型和代码按视觉目标组合的原则，不强制每片用齐工具，不把全代码示例升级为所有制作的唯一方案。
+
+# 2026.10.14.5（本地候选，尚未公开发布）
+
+- 用户认可《爱迪皮视界·换个角度》完整片头；沉淀统一创意、构图、字形、材质、镜头发展与识别落版的方法，不固定该样片名称、配色、时长或玻璃效果。
+- 新增定制片头美术指南：按影片主题/受众选择艺术与商业包装侧重，提供光学编辑、新闻时事、纪实探索、电影艺术、品牌商业、当代娱乐六类可发展语法；不是六个已部署的渲染模板，不改P01–P10。
+- 主副标题、栏目/章节信息来自真实项目，无正式片名且授权创意时可自行起名；保留锁定文案，缺省层级不补占位。根据实际字形、语义分行与画幅重排，不静默截字、拉伸或沿用旧三维字形。
+- 保留明确片头指令才触发、只做所需元素、无默认字幕/音乐及能力核验边界。41份Skill文件、974条原有案例，最低应用0.1.31；仅本地候选，不替换App或公开频道。
+- English: Turns an approved opener into a content-led design benchmark, with artistic/commercial visual grammars and project-specific title typography, rather than fixed demo copy or a universal glass template.
+
+# 2026.10.14.4（本地候选，尚未公开发布）
+
+- 根据用户对Three.js小样的直接反馈，完整片头先完成节目定位、创意母题、视觉发展、美术系统、分镜和最终识别落版，再选择引擎；物体/材质展示后加标题不自动构成片头。
+- 参考需迁移构图、材质、光色、动态语法或镜头组织，而非只取形容词。代表关键视觉先于完整动画；用户审稿按本次约定，不新增全局逐项审批。已否定小样保留但不作为默认模板/成功案例。
+- 保留10.14.3全部空间设计指南、按需触发与执行边界；40份Skill文件、974条案例，应用版本仍0.3.5。本地候选，不公开或替换App。
+- English: Plan a complete title sequence before implementation: programme identity, visual concept, progression, art direction, storyboard and title lockup. A technical material demo is not an approved opener.
+
+# 2026.10.14.3（本地候选，尚未公开发布）
+
+- 用户确认将Three.js案例方法作为AIDP动效片头能力，新增按需空间设计指南：真实几何、玻璃/金属材质与布光、摄影机路径、空间动态排字、场景与预制/烘焙动画的分工。
+- 明确Three.js不是审美保证，先建立轮廓、构图、材质与标题可读窗口；模型影像、API素材和三维工程按任务分工，透明PNG位移不冒充真实3D。16:9、9:16、1:1分别调整相机、主体和文字区域。
+- 记录一手案例与来源边界，要求资源就绪、按时间确定性导出和实际WebGL/媒体检查；宿主缺依赖如实报告。维护者源码有独立原创测试工程，但纯知识包不分发执行代码，不新增MCP或自动安装引擎。
+- 保留MiniMax官方兼容契约、明确请求才触发、无默认字幕/音乐及既有P01–P10；应用版本仍0.3.5，知识最低兼容0.1.31，官方案例974条不变。本次本地候选，不修改公开知识频道或网站。
+- English: Adds opt-in Three.js spatial motion-design guidance, including materials, lighting, cameras, typography and prebaked assets. A knowledge update does not install a renderer; runtime tests and aesthetic approval remain separate.
+
+# 2026.10.14.2（本地候选，尚未公开发布）
+
+- 新增 `MiniMax官方兼容` 专用直连契约：仅在实际服务适配器为 `minimax-h3-v2` 时使用，直接提交兼容基地址的V2接口，不经过ComfyUI、APIMart或fal。
+- 明确 `MiniMax-H3` / `MiniMax-H3-Max` 的时长、分辨率和画幅；区分首尾帧与多模态参考两种互斥模式，定义本地图片、视频、音频键及公网URL数组。
+- 本地素材经文件上传接口转换为 `mm_file://`，Agent先查接口文档并做只读请求预览；官方V2不传`seed`，提示词扩展仅用于H3-Max，水印为可选布尔值。
+- 补充音频参考表，防止模型同名时误用APIMart、fal或ComfyUI字段。保留10.14.1的按需动效片头内容，应用版本仍为0.3.5，知识兼容下限仍为0.1.31；本次只构建和安装本地候选，不发布公开通道。
+- English: Documents the locally installed MiniMax official-compatible V2 adapter, including uploads, multimodal roles, limits and Agent preview guards. No public release.
+
+# 2026.10.14.1（本地候选，尚未公开发布）
+
+- 在现有 `aid-partner` 中合并“动效片头与混合成片”专项，保留一个Skill入口、按需读取参考文件；不新增必须点名的独立Skill。
+- 只有明确要求动效片头/动态字标或指定图形转场、叠层才使用相应专项；普通视频、开头抓人、保存默认、讨论/引用/否定不构成制作授权。只要片头不扩大为全片包装，只要方案不渲染，字幕、配乐和音效不自动开启。
+- 区分内置P01–P10短片头与宿主已具备工具实现的定制代码动效；列明确定性时间、可编辑源文件、资源就绪、三画幅重排和导入限制，不虚构通用代码渲染API。
+- 区分独立插片、首镜叠加和双镜转场；先完成正文既定变速，再合入按最终时长渲染的片头，防止重复标题、二次加速或隐式改变总片长。原片和模型路线保持不变。
+- 原创整理Prompt Motion等公开方法并保留来源边界，未复制模板、网站视频或安装外部引擎。应用版本保持0.3.5，知识兼容下限仍为0.1.31，974条案例不变；本次不发布应用或网站。
+- English: Adds an opt-in motion-intro guide inside AIDP. Separate model footage, built-in titles and custom local code renders; preserve scope, timing and source media. No new rendering engine is installed by a knowledge update.
+
 # 2026.10.12.3
 
 - 合并2026.10.10.7之后的最新主Skill和全部配套指南，统一公开发布；下方10.11.2至10.12.2是本地候选记录，不逐个加入公共更新通道。

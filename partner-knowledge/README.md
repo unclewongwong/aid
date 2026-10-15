@@ -2,9 +2,13 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 最新知识：2026.10.12.3
+## 最新知识：2026.10.15.4
 
-本版汇总约20秒口播分段、LongCat准备与恢复流程、十套按需综艺包装等最新主Skill和配套指南。口播30秒不是硬门槛；只有Agent收到本片明确的包装指令时才使用包装，近期默认只决定风格。详细变化见[更新记录](CHANGELOG.md)。
+本版合并上一公开版之后的完整更新：整理核心规则和阶段导航，增加故事→导演→分镜→任务→提示词的成果交接实例，完整正文和锁定要求不会被卡片替代，简单任务不必填写八张表。片头按影片主题选择艺术/商业设计语言，标题可变，生图、视频模型与代码按视觉目标分工，不把演示片的配色、片名或时长当通用默认。保留 `MiniMax官方兼容`、约20秒口播粗估、LongCat准备与恢复、十套按需综艺包装；30秒不是硬门槛，保存默认风格不构成开启指令。详细变化见[更新记录](CHANGELOG.md)。
+
+**知识更新与运行资源分开。**包内含42个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提，不是新MCP工具；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。应用版本仍为0.3.5 Preview，知识的日期版本号不是应用降级或升级。
+
+English: The consolidated Skill adds stage-based production handoffs and content-led title design. Knowledge contains guidance and examples only; local motion runtimes, fonts and application features remain separate installations.
 
 使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
 

@@ -1,5 +1,7 @@
 # 端到端示例：从一句话到两段 H3 提示词
 
+需要统一A–H成果名称、拍号→镜号→任务→局部时间的已填写映射时，配合[制作成果交接与实例](production-handoffs-and-examples.md)阅读；该页只补交接，不替代本页完整正文、逐秒过程与prompt。A–H可合并使用，不是八张必填表。
+
 用于第一次接手叙事短片、需要看清"故事→逐秒视听→分镜→生成段落→实际 prompt"如何逐层回指，或用户想学习整条链路时。它演示依赖顺序，**不是模板**：20秒、两段、镜数、BPM、机位和台词都由本片内容决定，不升级为默认（见主 Skill 规则优先级）。各环节的完整规则仍以对应指南为准：[故事剧作](story-dramaturgy.md)、[全片逐秒视听](whole-film-second-by-second.md)、[成段生成](storyboard-segment-generation.md)、[动作七槽](action-seven-slot-precision.md)、[H3编译](prompt-case-transfer-and-h3-compilation.md)。
 
 本例假设：9:16，写实，原生同期声与对白，所选工作流接受10秒段落并支持首帧加两张辅助参考。实际时长、参考容量和图号以 `aid_status`、`aid_workflows` 与请求预览为准；本例未生成、未验证成片效果。

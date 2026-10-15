@@ -4,11 +4,14 @@
 
 | 路线 | 音频入口 | 实际作用与限制 |
 | --- | --- | --- |
+| MiniMax官方兼容 `MiniMax-H3` / `MiniMax-H3-Max` | `assets.reference_audio_1` 至 `_3`，或顶层 `referenceAudioUrls` | 本地 WAV/MP3 上传为 `mm_file://` 后直传官方兼容V2；每段2–15秒、合计最多15秒，可作为多模态参考且不能与首尾帧混用 |
 | APIMart Seedance 2.0 / fast / mini、MiniMax-H3 | 顶层 `audioUrls`；`referenceAudioUrls` 为别名，两者只传一个 | 映射 `audio_urls`，最多3段，须配普通参考图片或视频 |
 | APIMart Seedance 2.5 | 顶层 `audioUrls` | 最多10段，可仅用音频参考 |
 | fal `minimax/h3-max/reference-to-video` | `assets.reference_audio_1` 至连续编号的本地素材，或 `referenceAudioUrls` | 声音/节奏参考；每段2–15秒，音频合计最多15秒；图片/视频/音频合计最多12个 |
 | fal `minimax/h3-max/image-to-video` | `assets.target_audio` 或顶层 `targetAudioUrl`，只传一个 | 固定输出原始声轨，按视频时长截取或补静音；不据此认定口型受音频驱动。本地音轨至少2秒、最多15MB，视频至少2秒 |
 | 已识别的 ComfyUI H3 | `assets.reference_audio_1` 至 `reference_audio_3`；`reference_audio` 是首段别名 | 只在工作流声明相应输入时使用；每段2–15秒、合计最多15秒；连续编号且不重复传首段别名 |
+
+MiniMax官方兼容的本地录音先经 `aid_import_asset` 导入，再用连续的 `reference_audio_N` 素材键交给所选服务上传；公网音频用 `referenceAudioUrls`，不能把本地路径或 Data URI 塞入顶层数组。提示词中的 `Audio 1` 等编号按只读预览中的真实 `content` 顺序核对；不能因为模型同名而改用 APIMart 或 fal 的字段。
 
 APIMart 音频须使用无需登录的 HTTPS 地址或供应商 `asset://` 地址；本地音频不能经过图片上传接口，也不能未经用户授权自动发布到第三方存储。APIMart 当前适配器不接受音频与 `first_frame` / `last_frame` 混用；保留用户需求并说明该契约限制，不能静默丢弃首尾帧。
 
