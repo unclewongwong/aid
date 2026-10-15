@@ -96,7 +96,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 按录音/节奏生成 | [音频参考](references/audio-reference-generation.md) |
 | 广告、品牌片、明确要求字幕 | [广告包装与字幕](references/ad-packaging-subtitles-and-graphics.md) |
 | R5 授权的动效片头 | [动效片头](references/motion-intros-and-hybrid-composition.md)；内容驱动美术读[定制片头设计](references/bespoke-title-art-direction.md)，实际三维再读[Three.js](references/threejs-spatial-motion-design.md)。Mac可选AFTERGLOW及五套节目片头按该指南核验独立资源，不把知识更新当安装器 |
-| R4 授权的综艺包装 | [综艺包装](references/variety-show-packaging-and-titles.md) → [本地包装库](references/local-variety-packaging-kit.md) |
+| R4 授权的综艺包装 | [综艺包装](references/variety-show-packaging-and-titles.md) → [本地包装库](references/local-variety-packaging-kit.md)；代码定制或任务卡/比分/角标读[可编程 Variety Kit](references/programmable-variety-kit.md)；片头/包装的预览与默认统一在[App包装页](references/app-motion-library.md)，按实际工具与执行资源调用 |
 | 替换素材、局部修改、最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行](references/production-acceptance-and-revision.md) |
 
 ## §3 创作方法要点（按片型与当前阶段使用）

@@ -1,5 +1,11 @@
 # 2026.10.15.4
 
+## 2026.10.15.7 — AID Partner 0.3.6
+
+- 中文：统一App片头与包装预览，两个默认分别保存；新增实际动效工具的按需调用指南。Mac安装版内置执行资源，本机Python依赖按实际检查，知识本身不安装执行器。
+- English: Add guidance for the unified motion library, independent intro and packaging defaults, and explicit-request native rendering. macOS 0.3.6 bundles motion resources; Python dependencies are checked locally. Knowledge updates alone do not install executors.
+
+
 - 合并2026.10.12.3之后的最新主Skill与配套指南统一发布；下方10.14.1至10.15.3为历史本地候选，不逐个加入公共更新通道。
 - 主入口统一规则索引、阶段导航与A–H成果交接；完整剧本、逐字对白和锁定素材贯穿后续，简单任务可合并，不强制八张表或每镜反转。增加贯通实例的拍点/镜头/任务/段内时间映射。
 - 增加内容驱动片头策划、可变文案美术与已选择的Three.js方法；强调按视觉目标组合生图、视频模型和代码，不把技术演示或未采用小样当作成功模板。
