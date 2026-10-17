@@ -75,8 +75,10 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | --- | --- |
 | 原创或修订任何片型的开场 | [开场吸引力](references/opening-hooks-and-viewer-promises.md) |
 | 写/改故事、参考片改编、多集 | [故事先行与跨集连续](references/story-first-and-series-continuity.md) → [故事剧作](references/story-dramaturgy.md) |
+| 小说/长故事/多集散稿改编 | [原著定位与改编压缩](references/source-adaptation-and-compression.md)；只分析就交分析，沿用现有总纲与正文 |
 | 长篇或多段落 | [长片故事导演](references/long-form-story-direction.md) |
 | 商业短剧选题、比较创意 | [商业短剧选题](references/commercial-short-story-selection.md) |
+| 商业连载短剧的分集、回报与对抗 | [商业连载技法](references/commercial-serial-drama-craft.md)；非所有短视频的默认，不固定集数、字数或卡点比例 |
 | 喜剧结构 / 笑点执行 | [人气喜剧结构](references/popular-comedy-structure.md) / [喜剧导演与节奏](references/comedy-direction-and-timing.md) |
 | 剧本进入两个以上叙事镜头 | [镜头因果](references/director-storytelling-and-shot-causality.md) → [逐秒视听](references/whole-film-second-by-second.md) |
 | 学导演手法、关键场面怎么拍 | [导演手法库](references/director-shot-methods.md) |
@@ -98,6 +100,8 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | R5 授权的动效片头 | [动效片头](references/motion-intros-and-hybrid-composition.md)；内容驱动美术读[定制片头设计](references/bespoke-title-art-direction.md)，实际三维再读[Three.js](references/threejs-spatial-motion-design.md)。Mac可选AFTERGLOW及五套节目片头按该指南核验独立资源，不把知识更新当安装器 |
 | R4 授权的综艺包装 | [综艺包装](references/variety-show-packaging-and-titles.md) → [本地包装库](references/local-variety-packaging-kit.md)；代码定制或任务卡/比分/角标读[可编程 Variety Kit](references/programmable-variety-kit.md)；片头/包装的预览与默认统一在[App包装页](references/app-motion-library.md)，按实际工具与执行资源调用 |
 | 替换素材、局部修改、最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行](references/production-acceptance-and-revision.md) |
+| 已有表演视频更换人物、发型与服装 | 先按下文“H3 Character Swap V1.5”核对目标人物、源视频和角色参考图；这是实验性整帧重绘，不是逐像素遮罩贴回 |
+| 已生成视频的小脸、远景脸或动态脸返修 | 先按下文“H3 FaceRefine”核对目标人物、原片与工作流输入；这是按需后期，不重做原动作 |
 
 ## §3 创作方法要点（按片型与当前阶段使用）
 
@@ -259,7 +263,7 @@ non_diegetic_music: ...
 
 新版 `aid_status` 是紧凑摘要，只返回服务、能力、数量、活动任务和少量最近任务，避免历史素材过多时撑断 Agent 连接。已知任务编号用 `aid_task` 精确查询；提交后查询或下载中断仍按下方恢复规则使用 `aid_resume_task`，不要为了翻历史要求 `aid_status` 返回整库素材，也不要换防重复编号重提。
 
-通过 `aid_save_project` 保存制作方案。`shots` 只传支持的 id、prompt、逐字 dialogue、duration、references；A–G中实际需要的约定、完整故事正文、导演/时间线/任务映射写入项目 `story`，可合并呈现而不必建全套表，保留原故事与已有镜号。任务段号和视觉镜号分开，不能为统一模板擅自重编号。实际生成需要的约束必须进入对应 `prompt`，不能只留在模型收不到的 story 里；不把导演字段塞进生成 API。制作状态以 Partner 保存的项目与任务为准。
+通过 `aid_save_project` 保存制作方案。`shots` 只传支持的 id、prompt、逐字 dialogue、duration、references；A–G中实际需要的约定、完整故事正文、导演/时间线/任务映射写入项目 `story`，可合并呈现而不必建全套表，保留原故事与已有镜号。任务段号和视觉镜号分开，不能为统一模板擅自重编号。实际生成需要的约束必须进入对应 `prompt`，不能只留在模型收不到的 story 里；不把导演字段塞进生成 API。制作状态以 Partner 保存的项目与任务为准。**两个及以上镜头属于同一部片时，必须先保存一次项目；之后每个分镜图、视频和分段配音任务都同时传返回的 `projectId` 与对应 `shotId`。**Partner 会把新任务ID自动写回对应镜头，后续保存项目版本时继续保留关系；同片多任务批次若每条 job 都有 `shotId` 而遗漏批次 `projectId`，新版也会自动建立一个项目，但这不替代先保存完整故事与分镜。任务页据此把整部片显示成一张项目卡片，并按剧本镜号排列轨道。整片旁白或最终合成只传 `projectId`，不虚构镜头归属；历史整理只采用明确项目/镜头ID、真实素材上下游、批次与稳定生产编号，不按相似标题猜测，证据不足的一次性测试保持独立。
 
 处理生产工作区项目且当前MCP明确提供 `aid_update_factory_status` 时，在进入每个真实阶段时调用它，并在完成、暂停或失败后再次更新；按当前集填写 `phase`：读取需求 `reading_requirements`、编写剧本 `writing_script`、导演剧情 `directing_story`、设计分镜 `designing_storyboard`、编写提示词 `writing_prompts`、生成参考图 `generating_references`、资料就绪 `ready`、安排视频 `queueing_video`、生成视频 `generating_video`、下载视频 `downloading_video`、合成成片 `composing`，以及 `completed`、`paused`、`failed`。`detail`只写当前可核验动作，不使用定时空更新伪造活跃状态；工具未暴露时不虚构调用，也不因此阻断普通项目制作。
 
@@ -273,7 +277,7 @@ non_diegetic_music: ...
 
 用户请求“接入验收”时，先读本Skill，再调用 `aid_verify_connection`。当前 MCP 提供 `aid_route_plan` 时 skillCode 传 `aid-partner-routing-v4`；旧版没有该工具时传 `aid-partner-routing-v3`，不要把新版代码传给旧服务。新版验收会验证当前客户端调用、存储并返回 image/video/speech/avatar 的统一路线计划；LongCat Avatar 是仅供 Agent 使用的独立 avatar 服务，不要求出现在桌面生成表单里。验收本身不生成、不扣费。没有本机默认路线不等于验收失败：若返回的共享路线可用，应如实说明可以通过共享通道制作；只有读到返回结果才能报告通过。找不到MCP工具时，明确提示去客户端启用/信任 aid-partner；WorkBuddy可能把外部写入配置视为未信任。不能擅自改用其内置VideoGen或其他付费服务。
 本地调用异常时先重试一次 aid_status；成功后调用 aid_diagnostics 查看当前 PID、运行时长、窗口驻留策略与最近生命周期事件。connection.json 只是本地连接记录，PID 或端口变化只能说明进程被重新启动，不能单独证明“反复崩溃”。Agent 不得循环启动、结束或替换 AID Partner；一次重试仍失败时，提示用户打开桌面端，并检查用户目录 `.aid-partner/desktop.log`。Windows 关闭窗口后服务应驻留系统托盘，必须从托盘菜单明确退出。
-初始化和每次路线未明确的生成前，在当前 MCP 明确提供时调用 `aid_route_plan`。统一优先级：本次明确指定 > 项目 routes > 本机默认 > 唯一兼容本机路线 > 唯一可用共享路线；本机与共享同时存在时默认选本机。返回 `selected` 后按 `selection.executor` 使用 `aid_generate` 或 `aid_channel_generate`；返回 `needs_selection` 时只在多个本机候选或价格/固定规格不同的共享候选间请用户选择一次。若选择本机 API，再调用 `aid_preview_route` 和 `aid_preview_api_request` 核对实际请求。旧版没有 `aid_route_plan` 时，按本次明确指定 > 项目 routes > Partner defaults 预览本机路线；若存在 `aid_channels` 且本机没有可用路线，再读取共享候选，不把缺少本机默认误报为整个 Partner 无法制作。用户已指定或已确认路线后不用反复询问；明确路线、项目绑定、已配置路线失败或任务状态不确定时，不静默切换来源、供应商或防重复编号。`aid_generate` 可传 kind=image/video/speech/avatar，不传 serviceId/workflowId 时由服务端按本机默认路径解析；务必传项目ID（如果有）。
+初始化和每次路线未明确的生成前，在当前 MCP 明确提供时调用 `aid_route_plan`。统一优先级：本次明确指定 > 项目 routes > 本机默认 > 唯一兼容本机路线 > 唯一可用共享路线；本机与共享同时存在时默认选本机。返回 `selected` 后按 `selection.executor` 使用 `aid_generate` 或 `aid_channel_generate`；返回 `needs_selection` 时只在多个本机候选或价格/固定规格不同的共享候选间请用户选择一次。若选择本机 API，再调用 `aid_preview_route` 和 `aid_preview_api_request` 核对实际请求。旧版没有 `aid_route_plan` 时，按本次明确指定 > 项目 routes > Partner defaults 预览本机路线；若存在 `aid_channels` 且本机没有可用路线，再读取共享候选，不把缺少本机默认误报为整个 Partner 无法制作。用户已指定或已确认路线后不用反复询问；明确路线、项目绑定、已配置路线失败或任务状态不确定时，不静默切换来源、供应商或防重复编号。`aid_generate` 可传 kind=image/video/speech/avatar，不传 serviceId/workflowId 时由服务端按本机默认路径解析。单镜测试可不建项目；多镜头作品按上文先建项目，逐镜生成时 `projectId` 与 `shotId` 缺一不可。`aid_submit_batch` 提交同片多镜头时传批次 `projectId`，并为每条 job 传对应 `shotId`。
 语音默认路线支持已实现 /audio/speech 的API及适配好的ComfyUI工作流，voice是供应商音色ID。克隆音色未实现，不能把参考录音自动声称为已克隆。视频原生对白与独立语音是不同能力。
 补充/替换素材：aid_import_asset后，读取项目版本，aid_update_references指定镜头与新旧素材；保留旧版本和已生成成品，不自动重跑。角色录音可通过aid_save_character的voiceAssetId登记。
 API模型列表检查不证明对应媒体协议已实现。通用 OpenAI 风格服务不按模型名称设置白名单；使用供应商提供的准确模型 ID。fal 在0.1.31仅适配 H3 Max 图生视频；新版的 Reference-to-Video 须先按前述能力检查确认，其他 fal 模型仍需各自对应的适配契约。异步生图使用 `/images/generations`，异步生视频使用 `/videos/generations`；二者都会先用 `/uploads/images` 把本地参考图直传用户选择的模型服务，再通过 `/tasks/{task_id}` 轮询和下载结果，不经过其他中转存储。使用对应默认路径正常调用 `aid_generate`，不要因模型名称未知而绕过 Partner。视频可传 `duration`、`size`、`resolution`、`seed`、`generateAudio` 和 `returnLastFrame`，具体范围由所选服务判断；失败时报告服务端实际错误。首尾帧模式只用`assets.first_frame`与`assets.last_frame`；已确认支持的fal多参考模式只用其带媒介名称和连续编号的素材键，不把两种模式混在同一请求。
@@ -347,6 +351,26 @@ LongCat-Video-Avatar-1.5 在新版 Partner 中是与 image/video/speech 平级�
 
 用户完成准备后，用同一 `setupId` 调用 `aid_verify_h3_setup`。只有返回 `ok: true` 且工作流 ID 后，才能说工作流可以使用；否则逐项报告缺少节点或无效模型选项，不盲目重试，也不自行改用名称相近的模型或 LoRA。
 
+### “H3 Character Swap V1.5”视频换角色按需调用
+
+“`H3 Character Swap V1.5·视频换角色·480P`”是把现有表演视频中的指定人物重新生成为参考角色的可选 ComfyUI 工作流，不是默认生视频路线。只有用户明确要求换人物、换角色或迁移人物外观时才从 `aid_workflows` 读取实际 workflowId 和输入映射；不要把名称或旧 ID 写死，也不要自动串接 FaceRefine、X2、超分或包装。
+
+提交前明确目标人物在源视频画面中的位置、衣着或其他可见特征。单次默认只替换一个人物；多人镜头不能只写“替换人物”，提示词必须说明 `<Video 1>` 提供表演、镜头、时序和场景，`<Picture 1>` 提供目标人物的脸、发型、服装和体型，并锁定未选人物、背景与动作。素材使用 `assets.reference_image` 和 `assets.source_video`，其他可选参数以工作流公开映射为准。默认小样可用 480×864、24fps、124帧（约5.17秒）、角色与Turbo强度各1.0；源视频先转为24fps并与帧数匹配，H3帧数使用 `17n+5`。更高分辨率或更长片段未经本机样片验证时不能承诺速度或稳定性。
+
+这条路线是 Ref2VA 整帧重绘，不是逐帧遮罩贴回；身份、源时序、表情、遮挡、剪切和背景都可能漂移。完整场景参考图会把衣服、背景甚至水印一并带入，可能出现首帧先复现参考图再过渡到源视频的问题。优先使用清晰、无水印、主体占比足够、背景简单或与源场景相近的角色图；要求从源视频第一帧严格开始时，必须另有经验证的场景锚定/遮罩预处理能力，不能只靠提示词保证。该工作流生成的是H3新音轨；需要精确保留源声时应另行复用原音轨并验证同步。
+
+完成后至少同时检查开头1秒、目标人物身份与服装、未选人物、动作顺序、遮挡接缝、背景、帧率/帧数和音轨。ComfyUI历史里的 `type: input` 只是上传的源素材，不能作为任务成品；交付只取真实 `output`。在RTX 4090上验证过一次480×864、124帧：ComfyUI约365秒，Partner端到端约375秒；这是单次冷启动样片，不是时效承诺。若人物外观迁移成功但首帧泄漏参考图，应明确记录为部分失败，不得称为完整验收通过。
+
+### “H3 FaceRefine”人物脸部精修只按需调用
+
+“`H3 FaceRefine·人物脸部精修·自动≤768`”是已生成视频的可选 ComfyUI 后期工作流，不是生视频默认路线，也不自动接在 H3、X2、合成或导出之后。只有用户明确要求修复小脸、远景脸、动态脸，或在 Agent 提醒后确认使用，才从 `aid_workflows` 取得它的实际 workflowId 并调用。它不能修复肢体、动作、构图或镜头错误；这些问题应回到原生成任务。
+
+每次只精修一个人物。多人镜头先根据用户指定确认目标；`inputs.subject_selector` 可按当前工作流公开输入使用 `left_most`、`right_most`、`largest_face` 等选择方式。方位指源视频画面，不是人物解剖左右。没有明确目标时不要同时猜两个人；若用户要两个人都修，需要两次顺序处理，并在提交第二次付费/算力任务前确认范围仍在授权内。
+
+把原成片先导入 Partner，只将素材 ID 放到 `assets.video`。`inputs.prompt` 应描述“保留原片”，明确锁定人物身份、头部姿态、表情、动作、摄影机、时间、灯光和声音，不重新设计剧情或招式；可以复用原镜头 prompt，但须改写为返修约束。可选输入以 `aid_workflows` 为准，当前工作流通常公开 `seed`、`subject_selector`、`denoise`、`blend` 和 `feather`。不要传首帧、参考图、画幅、时长或 H3 生视频专用字段冒充返修输入。
+
+`自动≤768`表示脸部裁切画布会按实际脸框选择，并以 768×768 为上限；它不表示最终视频被缩成 768P。输出应保持源视频宽高、帧率、帧数与原音轨，未检测到或长时间遮挡的帧使用渐隐回原像素，避免把另一个人的脸贴上去。自动画布选到 512×512 属于正常优化，不应为了名称强制升到 768。工作流完成后至少核对源/输出规格、遮挡前后关键帧、是否串脸、贴回边缘和时序闪烁；`aid_check_workflow` 通过仍不等于真实视频已经验收。
+
 ### “超分处理”只按需调用（R6）
 
 “超分处理”是工作流列表中的一条普通 ComfyUI 视频后期工作流，不是生视频模型，也不属于默认生成、合成或导出链。先用 `aid_workflows` 找到名称为“超分处理”的 workflowId，并读取它公开的输入映射。只有用户明确说“把这条超分一下”、要求高清增强，或已确认的交付方案明确指定对选定成片做超分时，才可调用；用户没提就不调用，也不能因为感觉画质一般、生成完成或准备导出而自动运行。
@@ -378,6 +402,8 @@ Partner 服务会持续轮询云端并下载成品；Agent 不需要另写 shell
 当前MCP提供查询、恢复和防重复机制；不提供无限自动重试、失败退款判断或自动质量评分。成品不满意属于修改后重新生成，不属于查询恢复。Agent 自身的图片或视频能力可以作为替代路径，但应明确告诉用户实际供应商和额度消耗；切换后生成的素材仍需导入 Partner 才能用于后续工作流。
 
 全局语音路径仅保存服务与生成模型，没有默认音色。每部片子/角色的音色在项目中确定，生成时显式传 voice（Fish Audio 为 reference_id）。未确定音色时先向用户确认本片音色，不要求到全局设置填写，不沿用其他片子的音色。
+
+Fish Audio `drama-3` 复用现有 `/v1/tts` 服务与音色 ID；调用时显式传 `model: drama-3`，不要改变全局默认语音模型。把表演方向、停顿和声音事件直接写入逐字文本，例如 `[克制、像在强忍眼泪]`、`[短暂停顿]`，局部词语可用 `<whisper>`、`<emphasis>`、`<soft>`、`<fast>`、`<slow>`、`<stress>`、`<forceful>` 成对标签。它仍处于 Preview；生成后听检内容、人物声线、语言与指令服从，不因接口成功就宣称表演通过。当前 Partner 的 `voice` 是单个 `reference_id`；多角色同请求只有在当前 MCP 明确暴露音色数组后才能使用，不把多个 ID 拼成字符串。
 
 ## §6 交付前一页自检
 

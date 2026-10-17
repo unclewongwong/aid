@@ -1,3 +1,38 @@
+# 2026.10.17.3（本地候选，未公开发布）
+
+- 增加全库项目整理：已有项目关系、镜头任务ID、真实素材上下游、批次与稳定生产编号依次作为归档证据；不按相似标题猜测，一次性测试可继续独立显示。
+- 新任务带 `projectId` / `shotId` 时，Partner 自动把任务ID写回对应镜头；后续编辑项目不会再丢失这些任务关系。
+- 同片多任务批次若每条 job 都有 `shotId` 而未传 `projectId`，Partner 自动建立一个项目并把各任务放入对应镜头。仍建议 Agent 先 `aid_save_project`，以保存完整故事与分镜语义。
+- 要求 AID Partner 0.4.3；本次只更新本机应用与三端 Agent Skill，不发布公共知识频道。
+
+# 2026.10.17.2（本地候选，未公开发布）
+
+- 两个及以上镜头属于同一部片时，先调用 `aid_save_project`，再为每个分镜图、视频和分段配音任务同时传 `projectId` 与 `shotId`；任务页据此显示成一张项目卡片并按镜号排列。
+- 整片旁白和最终合成只绑定 `projectId`；单镜测试可不建项目。无可靠 ID 的旧任务保持独立，不按相似标题自动合并。
+- `aid_generate` 与 `aid_submit_batch` 新增镜头身份字段，要求 AID Partner 0.4.2；本次只更新本机应用与三端 Agent Skill，不发布公共知识频道。
+
+# 2026.10.17.1（本地候选，未公开发布）
+
+- 新增 H3 Character Swap V1.5 按需换角契约：角色图提供身份/发型/服装，源视频提供表演/镜头/时序；多人镜头必须明确目标且只替换一个人。
+- 记录本机 RTX 4090 的一次 480×864、124帧样片：ComfyUI 约365秒，Partner端到端约375秒，仅作单次实测，不作为时效承诺。
+- 明确 Ref2VA 是整帧重绘而非逐帧遮罩贴回；复杂参考图可能把背景、水印带入并污染首帧，要求源视频首帧严格保持时必须另有场景锚定或遮罩预处理。
+- 任务结果只接收 ComfyUI `type: output`；`type: input` 的上传源片不得进入成品列表。本次仅更新本机 App 与 Agent Skill，不发布公共知识频道。
+
+# 2026.10.15.9（本地候选，未公开发布）
+
+- 新增 Fish Audio Drama 3 调用契约：复用现有 `/v1/tts` 与音色 ID，必须显式传 `model: drama-3`，表演方向、停顿和局部语气标签写入逐字文本。
+- Drama 3 仍为 Preview，生成后要听检内容、人物声线、语言与指令服从；接口成功不等于表演验收通过。
+- 当前 Agent 的 `voice` 仍是单个 `reference_id`，不把多个音色 ID 拼接冒充多角色数组；全局默认语音继续保持 `s2-pro`。
+- English: Adds the Fish Audio Drama 3 single-voice contract and performance-direction syntax while keeping the existing TTS route and `s2-pro` default. Local candidate only.
+
+# 2026.10.15.8（本地候选，未公开发布）
+
+- 新增按需原著分析与改编指南：真实阅读覆盖、来源定位、删线/并角的功能与因果、重排高光的条件补偿，沿用现有故事和分集记录。
+- 融合商业连载短剧的观看承诺、局部回报与压力升级，不照搬固定集数/字数/反派层级/付费比例，不影响其他片型。
+- 增强角色版本、关键事实的相关prompt传播、同源表演交接及获准换呈现时的功能检查；不新增工具、自动索引、审美评分或付费重做。
+- 保留两项目的固定来源和MIT声明；不安装上游套件/脚本，不更改App、路线、默认或既有媒体。最低兼容仍0.1.31。
+- English: Selectively integrates source-grounded adaptation and conditional commercial serial-drama craft, with scoped prompt continuity, shared performance direction and function-preserving revisions. Keeps the existing AIDP workflow and tool contracts; no fixed episode/word quotas or automatic production. Local candidate only.
+
 # 2026.10.15.4
 
 ## 2026.10.15.7 — AID Partner 0.3.6
