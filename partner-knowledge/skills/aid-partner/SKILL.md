@@ -263,13 +263,15 @@ non_diegetic_music: ...
 
 新版 `aid_status` 是紧凑摘要，只返回服务、能力、数量、活动任务和少量最近任务，避免历史素材过多时撑断 Agent 连接。已知任务编号用 `aid_task` 精确查询；提交后查询或下载中断仍按下方恢复规则使用 `aid_resume_task`，不要为了翻历史要求 `aid_status` 返回整库素材，也不要换防重复编号重提。
 
-通过 `aid_save_project` 保存制作方案。`shots` 只传支持的 id、prompt、逐字 dialogue、duration、references；A–G中实际需要的约定、完整故事正文、导演/时间线/任务映射写入项目 `story`，可合并呈现而不必建全套表，保留原故事与已有镜号。任务段号和视觉镜号分开，不能为统一模板擅自重编号。实际生成需要的约束必须进入对应 `prompt`，不能只留在模型收不到的 story 里；不把导演字段塞进生成 API。制作状态以 Partner 保存的项目与任务为准。**两个及以上镜头属于同一部片时，必须先保存一次项目；之后每个分镜图、视频和分段配音任务都同时传返回的 `projectId` 与对应 `shotId`。**Partner 会把新任务ID自动写回对应镜头，后续保存项目版本时继续保留关系；同片多任务批次若每条 job 都有 `shotId` 而遗漏批次 `projectId`，新版也会自动建立一个项目，但这不替代先保存完整故事与分镜。任务页据此把整部片显示成一张项目卡片，并按剧本镜号排列轨道。整片旁白或最终合成只传 `projectId`，不虚构镜头归属；历史整理只采用明确项目/镜头ID、真实素材上下游、批次与稳定生产编号，不按相似标题猜测，证据不足的一次性测试保持独立。
+通过 `aid_save_project` 保存制作方案。`shots` 只传支持的 id、prompt、逐字 dialogue、duration、references；A–G中实际需要的约定、完整故事正文、导演/时间线/任务映射写入项目 `story`，可合并呈现而不必建全套表，保留原故事与已有镜号。任务段号和视觉镜号分开，不能为统一模板擅自重编号。实际生成需要的约束必须进入对应 `prompt`，不能只留在模型收不到的 story 里；不把导演字段塞进生成 API。制作状态以 Partner 保存的项目与任务为准。**两个及以上镜头属于同一部片时，必须先保存一次项目；之后每个分镜图、视频和分段配音任务都同时传返回的 `projectId` 与对应 `shotId`。**同一作品不是一次性批次：以后追加镜头、补配音或重做时，继续复用原 `projectId` 和原/新增 `shotId`，不要另建同名项目。Partner 会把新任务ID自动写回对应镜头，后续保存项目版本时继续保留关系；若 Agent 漏传身份，Partner 只在队列空闲后按唯一稳定生产编号和真实素材上下游补归组，冲突或证据不足时保持独立，这个安全兜底不替代显式传参。同片多任务批次若每条 job 都有 `shotId` 而遗漏批次 `projectId`，新版也会自动建立一个项目，但这不替代先保存完整故事与分镜。任务页据此把整部片显示成一张项目卡片，并按剧本镜号排列轨道。整片旁白或最终合成只传 `projectId`，不虚构镜头归属；历史整理不按相似标题猜测，证据不足的一次性测试保持独立。
 
 处理生产工作区项目且当前MCP明确提供 `aid_update_factory_status` 时，在进入每个真实阶段时调用它，并在完成、暂停或失败后再次更新；按当前集填写 `phase`：读取需求 `reading_requirements`、编写剧本 `writing_script`、导演剧情 `directing_story`、设计分镜 `designing_storyboard`、编写提示词 `writing_prompts`、生成参考图 `generating_references`、资料就绪 `ready`、安排视频 `queueing_video`、生成视频 `generating_video`、下载视频 `downloading_video`、合成成片 `composing`，以及 `completed`、`paused`、`failed`。`detail`只写当前可核验动作，不使用定时空更新伪造活跃状态；工具未暴露时不虚构调用，也不因此阻断普通项目制作。
 
 工作流仅支持声明的输入映射；不要把 H3 的音色、首尾帧或长续接规则用于其他工作流。aid_check_workflow 成功只代表静态依赖检查，不等于已跑过小样。
 
-使用 aid_import_asset 导入用户指定文件。只引用真实素材 ID；输出经 aid_asset_path 取得本地路径并交付。
+使用 aid_import_asset 导入用户指定文件。只引用真实素材 ID；输出经 aid_asset_path 取得本地路径并交付。导入素材本身不会把它登记成某个项目的最终成片。
+
+多片段作品完成后，项目必须有一个可核验的最终交付记录。由 Partner 合成时，调用 `aid_finalize_video` 并传原项目 `projectId`、`delivery=final` 和稳定 `idempotencyKey`。若 Agent 已在本地用 FFmpeg 或其他已核验流程得到最终文件，先用 `aid_import_asset` 导入该文件，再把返回的单个素材 ID 传给 `aid_finalize_video`，同时传同一 `projectId`、`delivery=final`、稳定 `idempotencyKey` 与 `packaging.mode=off`；单素材交付用于登记现有母版，不要再次拼接或改写内容。不能只返回文件路径或只导入素材，否则桌面端项目无法把它显示为“最终成片”并提供下载按钮。用户明确要求综艺包装时仍按 R4 处理，不能强制传 `off`。
 
 内部母版使用 `aid_compose` 时，若工具支持 `delivery` 必须传 `intermediate`（中间不包装）。`aid_compose` 按素材顺序原速合成并保留同期声，无音轨片段补静音，输出比例跟随首片段。最终变速按 R7；包装按 R4，且在最终速度处理之后只做一次，详见[本地综艺包装库](references/local-variety-packaging-kit.md)。
 

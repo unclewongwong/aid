@@ -1,3 +1,21 @@
+## AID Partner 0.4.4 - 2026-10-18
+
+### Projects and delivery
+
+- Keep later shots, voice work, revisions, and imported outputs inside the original project across separate Agent turns by reusing stable project and shot identities. A conservative idle-time repair pass reconnects older records only when their production identity is unambiguous.
+- Register merged compositions as project-level final deliveries, recover verified historical final masters, and expose a prominent final-film download on the project page.
+- Explain exactly why a project needs attention, localize the explanation with the selected language, and keep delete/cleanup notifications readable on the dark UI.
+
+### Private channels
+
+- Record successful shared-channel charges in the host ledger, show the friend, route, task, amount, status, and time in transaction history, and include completed charges in withdrawable points.
+- Keep charges idempotent and auditable: failed tasks refund once, manual balance changes remain separate, and the host's provider configuration and credentials stay private.
+
+### Release
+
+- Publish signed in-app update manifests and verified packages for macOS Apple Silicon, macOS Intel, and Windows x64. Windows continues to use manual ZIP updates in this preview.
+- Publish Partner knowledge 2026.10.18.1 for cross-batch project continuation and explicit final-delivery registration.
+
 ## AID Partner 0.4.3 - 2026-10-17
 
 ### Product

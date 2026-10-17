@@ -7,7 +7,7 @@
 
   **A local, Agent-native production hub for image, video, audio, ComfyUI, dedicated compute, and project delivery.**
 
-  [![Release](https://img.shields.io/badge/release-0.4.3-c78bec?style=for-the-badge)](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.3)
+  [![Release](https://img.shields.io/badge/release-0.4.4-c78bec?style=for-the-badge)](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.4)
   [![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon%20%7C%20Intel-17121c?style=for-the-badge&logo=apple)](#download)
   [![Windows](https://img.shields.io/badge/Windows-x64-17121c?style=for-the-badge&logo=windows11)](#download)
   [![Local first](https://img.shields.io/badge/local--first-keys%20stay%20local-8ee6c0?style=for-the-badge)](#security-boundaries)
@@ -42,7 +42,7 @@ The Agent handles intent, story, shot planning, prompts, references, routing, an
 
 ## Product tour
 
-<img src="docs/readme/desktop-app.jpg" alt="AID Partner 0.4.3 desktop app showing the project-aware task workspace" width="100%" />
+<img src="docs/readme/desktop-app.jpg" alt="AID Partner 0.4.4 desktop app showing the project-aware task workspace" width="100%" />
 
 The desktop workspace is organized around six production surfaces:
 
@@ -55,33 +55,33 @@ The desktop workspace is organized around six production surfaces:
 | **Motion** | Browse intros and motion-packaging systems; packaging is applied only when explicitly requested. |
 | **Learning** | Update production knowledge, model-specific prompting methods, and validated creative references independently of the app binary. |
 
-## What 0.4.3 adds
+## What 0.4.4 adds
 
 <table>
   <tr>
     <td width="33%" valign="top">
-      <h3>One film, one project</h3>
-      Multi-shot work is grouped when tasks are created—not after they finish. Stable <code>projectId</code> and <code>shotId</code> links keep storyboard images, reference assets, video, audio, and delivery order together.
+      <h3>Projects that survive every batch</h3>
+      Follow-up shots, audio, revisions, and imported outputs can reuse the original <code>projectId</code> and <code>shotId</code>. A conservative idle-time repair pass reconnects older records only when their production identity is unambiguous.
     </td>
     <td width="33%" valign="top">
-      <h3>Safe compute switching</h3>
-      A shared cloud GPU can run ComfyUI by default and switch to LongCat Avatar only after local activity and the remote queue are idle. Partner restores ComfyUI after avatar delivery.
+      <h3>Recoverable final films</h3>
+      Final compositions are registered as project deliveries, recovered from verified historical composition records, shown prominently on the project page, and downloadable as the final master rather than hidden among segment tasks.
     </td>
     <td width="33%" valign="top">
-      <h3>More production routes</h3>
-      Direct APIs and ComfyUI workflows are adapted separately, including MiniMax H3 routes, X2 output, face refinement, character swap, Qwen Image 2.1, lip sync, and dedicated Avatar inference.
+      <h3>Auditable private channels</h3>
+      Every successful shared-channel charge is written to the host ledger, appears in transaction history, contributes to withdrawable points, and keeps refunds and manual adjustments distinct.
     </td>
   </tr>
 </table>
 
 Additional improvements:
 
-- Newest-first task ordering and richer project cards.
-- Storyboard images are stored inside their project instead of appearing as unrelated tasks.
-- Failed records can be cleared in one action while source media remains protected.
-- Connection information cannot be edited while an associated task is still active.
-- Task submission is idempotent; uncertain status continues polling the original job instead of silently switching routes or paying twice.
-- A refreshed public website with an AFTERGLOW-inspired hero, 20 visual style studies, English-by-default localization, and a Chinese language switch.
+- Newest-first project activity and stable cross-batch continuation.
+- Storyboards, references, video, audio, and final masters stay attached to the same film.
+- Explicit attention reasons, bilingual UI messages, and visible final-film downloads.
+- Delete and cleanup feedback remains legible on the dark interface.
+- Task submission remains idempotent; uncertain status continues polling the original job instead of silently switching routes or paying twice.
+- Safe ComfyUI/LongCat switching and the full direct API/workflow route library introduced in 0.4.3 remain available.
 
 ## Production capabilities
 
@@ -205,15 +205,15 @@ The Agent can then:
 
 ## Download
 
-### AID Partner 0.4.3 Preview
+### AID Partner 0.4.4 Preview
 
 | Platform | Package | Notes |
 | --- | --- | --- |
-| macOS · Apple Silicon | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-macOS-Apple-Silicon.zip) | M1–M5 · in-app updates require macOS 12+ |
-| macOS · Intel | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-macOS-Intel.zip) | Intel Mac · in-app updates require macOS 12+ |
-| Windows · x64 | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-Windows-x64.zip) | Windows 10/11 · manual ZIP updates in this preview |
+| macOS · Apple Silicon | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.4/AID-Partner-0.4.4-macOS-Apple-Silicon.zip) | M1–M5 · in-app updates require macOS 12+ |
+| macOS · Intel | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.4/AID-Partner-0.4.4-macOS-Intel.zip) | Intel Mac · in-app updates require macOS 12+ |
+| Windows · x64 | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.4/AID-Partner-0.4.4-Windows-x64.zip) | Windows 10/11 · manual ZIP updates in this preview |
 
-[Checksums](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/checksums-0.4.3.txt) · [All release files](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.3) · [Open the website](https://aidp.app/#download)
+[Checksums](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.4/checksums-0.4.4.txt) · [All release files](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.4) · [Open the website](https://aidp.app/#download)
 
 Current installers are not yet Apple-notarized or Windows code-signed, so the operating system may display a security warning on first launch.
 
@@ -229,7 +229,7 @@ No separate Companion, Node.js, or Python installation is required for the packa
 
 ## Repository notes
 
-This repository carries AID's historical web-production source alongside current AID Partner documentation, public showcase assets, knowledge, and release artifacts. The desktop application is distributed through GitHub Releases. The local installed application is the source of truth for current behavior; the website and this README describe the verified 0.4.3 product surface.
+This repository carries AID's historical web-production source alongside current AID Partner documentation, public showcase assets, knowledge, and release artifacts. The desktop application is distributed through GitHub Releases. The local installed application is the source of truth for current behavior; the website and this README describe the verified 0.4.4 product surface.
 
 Public media under `docs/readme/` is included for product demonstration. Third-party models, services, nodes, and their outputs remain subject to their respective terms and upstream licenses.
 
