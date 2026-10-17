@@ -1,3 +1,18 @@
+## AID Partner 0.4.3 - 2026-10-17
+
+### Product
+
+- Present AID Partner as the current Agent-native production hub for image, video, audio, ComfyUI workflows, dedicated inference, and project delivery. The locally installed application is the verified source of truth for current behavior.
+- Keep multi-shot work inside one project from creation onward, including storyboard images, references, generated media, script order, and execution records. Sort task and project activity newest first.
+- Add queue-safe one-click switching between the default ComfyUI runtime and LongCat-Video-Avatar 1.5, with automatic ComfyUI restoration after avatar delivery.
+- Document current routes for MiniMax H3, X2, face refinement, character swap, Qwen Image 2.1, lip sync, Fish Audio, and user-configured services without exposing private endpoints or credentials.
+
+### Website and documentation
+
+- Redesign the public website with an AFTERGLOW-inspired motion hero, left-aligned product message, darker glass surfaces, and improved FAQ contrast.
+- Make English the default language across the site, add a Chinese switch, and remember the visitor's language locally.
+- Replace the repository front page with a complete English product guide, current 0.4.3 screenshots, architecture, security boundaries, download links, and reviewed non-Tang production samples.
+
 ## 0.1.229 - 2026-09-21
 
 - Fix Qwen-Image-2.1 text-to-image prompt validation by always sending the required empty `images` Autogrow container. Encode editing references inside that same native container so zero-reference and multi-reference graphs share the official node contract.

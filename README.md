@@ -1,337 +1,241 @@
 <div align="center">
-  <img src="public/logo.png" alt="AI Video Studio" width="320" height="120">
+  <img src="docs/readme/aid-partner-mark.png" alt="AID Partner mark" width="108" />
 
-  # AI Video Studio
+  # AID Partner
 
-  ### Transform Your Stories into Stunning Videos with AI
+  ### You imagine. Partner runs production.
 
-  [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-  [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-  [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+  **A local, Agent-native production hub for image, video, audio, ComfyUI, dedicated compute, and project delivery.**
 
-  <p align="center">
-    <a href="#features">Features</a> •
-    <a href="#demo">Demo</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#usage">Usage</a> •
-    <a href="#tech-stack">Tech Stack</a>
-  </p>
+  [![Release](https://img.shields.io/badge/release-0.4.3-c78bec?style=for-the-badge)](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.3)
+  [![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon%20%7C%20Intel-17121c?style=for-the-badge&logo=apple)](#download)
+  [![Windows](https://img.shields.io/badge/Windows-x64-17121c?style=for-the-badge&logo=windows11)](#download)
+  [![Local first](https://img.shields.io/badge/local--first-keys%20stay%20local-8ee6c0?style=for-the-badge)](#security-boundaries)
+
+  [Website](https://aidp.app) · [Download](#download) · [Product tour](#product-tour) · [Production samples](#production-samples) · [Architecture](#how-it-works)
 </div>
+
+<br />
+
+<a href="https://aidp.app">
+  <img src="docs/readme/website.jpg" alt="AID Partner website — English default interface" width="100%" />
+</a>
+
+<p align="center"><sub>The public website defaults to English and can be switched to Chinese. Language preference is remembered locally.</sub></p>
 
 ---
 
-## ✨ Features
+## What AID Partner is
+
+AID Partner connects the creative services you already use to an Agent. Configure an image API, video API, speech service, ComfyUI host, or dedicated inference service once; then work through natural-language production requests in Codex, Claude Code, or WorkBuddy.
+
+The Agent handles intent, story, shot planning, prompts, references, routing, and delivery. Partner keeps credentials local, adapts each provider correctly, persists long-running work, and keeps every asset attached to the right project.
 
 <table>
   <tr>
-    <td width="50%">
-      <h3>🎬 Image to Video</h3>
-      <p>Upload images and transform them into professional videos with AI-powered motion generation. Add camera movements, adjust aspect ratios, and create cinematic experiences.</p>
-    </td>
-    <td width="50%">
-      <h3>📖 AI Story Generation</h3>
-      <p>Automatically analyze stories, generate complete storyboards, and produce videos. Perfect for content creators, filmmakers, and storytellers.</p>
-    </td>
+    <td width="25%"><b>Agent-native</b><br /><sub>No duplicate generation form. The Agent prepares and calls production tools directly.</sub></td>
+    <td width="25%"><b>Service-agnostic</b><br /><sub>API services, ComfyUI workflows, dedicated inference, and opt-in private channels.</sub></td>
+    <td width="25%"><b>Project-aware</b><br /><sub>Shots, references, audio, videos, scripts, and execution records stay together.</sub></td>
+    <td width="25%"><b>Local-first</b><br /><sub>Keys, SSH credentials, routes, task state, and local media remain under your control.</sub></td>
   </tr>
+</table>
+
+## Product tour
+
+<img src="docs/readme/desktop-app.jpg" alt="AID Partner 0.4.3 desktop app showing the project-aware task workspace" width="100%" />
+
+The desktop workspace is organized around six production surfaces:
+
+| Surface | Purpose |
+| --- | --- |
+| **Tasks** | Search, inspect, retry, clean up, and deliver image, video, audio, composition, and workflow tasks. |
+| **Production** | Follow real project stages from requirements and script to storyboards, generation, and final composition. |
+| **Connections** | Configure local API services, ComfyUI hosts, dedicated inference, and optional private channels. |
+| **Workflows** | Import ComfyUI API JSON, expose only the intended inputs, and verify nodes, models, mappings, and host reachability. |
+| **Motion** | Browse intros and motion-packaging systems; packaging is applied only when explicitly requested. |
+| **Learning** | Update production knowledge, model-specific prompting methods, and validated creative references independently of the app binary. |
+
+## What 0.4.3 adds
+
+<table>
   <tr>
-    <td width="50%">
-      <h3>🎨 Character Consistency</h3>
-      <p>Upload character reference images and maintain visual consistency across all generated scenes using advanced image-to-image AI technology.</p>
+    <td width="33%" valign="top">
+      <h3>One film, one project</h3>
+      Multi-shot work is grouped when tasks are created—not after they finish. Stable <code>projectId</code> and <code>shotId</code> links keep storyboard images, reference assets, video, audio, and delivery order together.
     </td>
-    <td width="50%">
-      <h3>📱 Mobile Optimized</h3>
-      <p>Fully responsive design with mobile-first approach. Add to home screen for a native app experience on any device.</p>
+    <td width="33%" valign="top">
+      <h3>Safe compute switching</h3>
+      A shared cloud GPU can run ComfyUI by default and switch to LongCat Avatar only after local activity and the remote queue are idle. Partner restores ComfyUI after avatar delivery.
+    </td>
+    <td width="33%" valign="top">
+      <h3>More production routes</h3>
+      Direct APIs and ComfyUI workflows are adapted separately, including MiniMax H3 routes, X2 output, face refinement, character swap, Qwen Image 2.1, lip sync, and dedicated Avatar inference.
     </td>
   </tr>
 </table>
 
-### 🚀 Key Capabilities
+Additional improvements:
 
-- **Multiple Video Models**: Support for Sora 2, Veo 3.1, and more cutting-edge AI video models
-- **Flexible Aspect Ratios**: 16:9 landscape, 9:16 portrait, and 1:1 square formats
-- **Advanced Camera Controls**: Professional camera movements including pan, tilt, zoom, and dolly
-- **Real-time Progress**: Live status updates during image and video generation
-- **Batch Processing**: Generate multiple storyboard scenes simultaneously
-- **Project Management**: Save, load, and export your projects with ease
-- **Screenplay Fidelity**: Registered aliases and casting names share one character identity. Multiline authored shots retain their actions, camera instructions, and exact ordered dialogue during H3 preparation; partial series drafts receive at most one persisted missing-shot recovery in Companion, while explicit provider refusals remain stopped.
-- **Series Studio**: Create anything from a one-episode short to a full season, generate character cards individually, reuse finished cast through the character library, separate automatic prop references from user-specified product images, and download each episode separately. New story shot-count presets use multiples of four and each four shots share one 2×2 storyboard reference sheet; formed screenplays retain their original count and fields. See [连续剧制片说明](docs/series-studio.md).
+- Newest-first task ordering and richer project cards.
+- Storyboard images are stored inside their project instead of appearing as unrelated tasks.
+- Failed records can be cleared in one action while source media remains protected.
+- Connection information cannot be edited while an associated task is still active.
+- Task submission is idempotent; uncertain status continues polling the original job instead of silently switching routes or paying twice.
+- A refreshed public website with an AFTERGLOW-inspired hero, 20 visual style studies, English-by-default localization, and a Chinese language switch.
 
----
+## Production capabilities
 
-## 🎥 Demo
+### Image
 
-### Animated Story Examples
+- OpenAI-compatible image services with provider-specific request adaptation.
+- Text-to-image, reference editing, masks where supported, and ordered multi-image references.
+- Qwen Image 2.1 through a verified ComfyUI workflow: zero references for text-to-image and up to ten ordered references for editing.
+- Route planning that respects explicit model selection, project bindings, local defaults, and compatibility.
 
-<div align="center">
-  <img src="public/sample1.gif" alt="Animated Story Example 1" height="320">
-  <img src="public/sample3.gif" alt="Animated Story Example 2" height="320">
-  <p><em>AI-generated animated storyboard sequences with character consistency</em></p>
-</div>
+### Video
 
-### Realistic Style Examples
+- Direct video APIs and reusable ComfyUI API workflows without forcing every provider through ComfyUI.
+- MiniMax H3 image-to-video, first/last-frame, multi-reference Hybrid, native audio, X2 output, and compatible API routes.
+- Seedance, fal-hosted routes, lip sync, face refinement, character swap, and custom workflows when configured by the user.
+- Exact task persistence, progress polling, local download, and project-aware delivery.
 
-<div align="center">
-  <img src="public/sample2.gif" alt="Realistic Style Example 1" height="320">
-  <img src="public/sample4.gif" alt="Realistic Style Example 2" height="320">
-  <p><em>Photorealistic video generation with cinematic camera movements</em></p>
-</div>
+### Audio and Avatar
 
----
+- Speech generation through configured services such as Fish Audio, with voice references managed by the user.
+- LongCat-Video-Avatar 1.5 as a first-class model service for image-and-audio-driven avatar video.
+- Agent-assisted confirmation before avatar production, followed by automatic, queue-safe compute switching when enabled.
 
-## 🚀 Quick Start
+### Projects and finishing
 
-### Prerequisites
+- Script-order project timelines spanning image, video, audio, and composition tasks.
+- Reference replacement with revision tracking and no forced regeneration of finished shots.
+- Optional intros and motion packaging applied once at film level—not to every generated segment.
+- Batch production through an Agent-readable Excel template with a confirmation gate before generation.
 
-- Node.js 18+ installed
-- APIMart API Key ([Get one here](https://apimart.ai/))
-- Cloudinary account for image hosting ([Sign up](https://cloudinary.com/))
+> Model, node, GPU, and API availability depends on the services you configure. AID Partner adapts, checks, calls, and records them; it does not bundle or host third-party models.
 
-### Installation
+## How it works
 
-```bash
-# Clone the repository
-git clone https://github.com/lupus8023/aid.git
-cd aid
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.local.example .env.local
+```mermaid
+flowchart LR
+    U[Creative brief] --> A[Agent]
+    A --> P[AID Partner]
+    P --> R{Route plan}
+    R --> I[Image API]
+    R --> V[Video API]
+    R --> C[ComfyUI]
+    R --> S[Speech]
+    R --> L[LongCat Avatar]
+    I --> T[Persistent task]
+    V --> T
+    C --> T
+    S --> T
+    L --> T
+    T --> J[Project card]
+    J --> D[Review and delivery]
 ```
 
-### Configuration
+Partner resolves routes in a predictable order:
 
-Edit `.env.local` and add your API keys:
+1. A route explicitly requested for the current job.
+2. A route bound to the project.
+3. The local default for that media type.
+4. A compatible local route.
+5. An available route from an opt-in private/shared channel.
 
-```env
-# APIMart API Key (required)
-APIMART_API_KEY=your_apimart_key_here
+An explicitly selected route never fails over silently. The Agent reports the failure or asks for a new choice.
 
-# Cloudinary Configuration (required for image uploads)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_key
-CLOUDINARY_API_SECRET=your_cloudinary_secret
+## Production samples
+
+Each sample was reviewed before publication. Click a frame to open the original MP4.
+
+<table>
+  <tr>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/h3-x2-martial-1080p.mp4"><img src="docs/readme/h3-x2-martial.jpg" alt="MiniMax H3 X2 martial-arts sample" width="100%" /></a><br />
+      <b>H3 X2 · 1080p action test</b><br />
+      <sub>5.17 s · 1088 × 1920 · native audio</sub><br />
+      <a href="docs/readme/h3-x2-martial-1080p.mp4">Watch MP4 →</a>
+    </td>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/longcat-avatar-720p.mp4"><img src="docs/readme/longcat-avatar.jpg" alt="LongCat Avatar portrait sample" width="100%" /></a><br />
+      <b>LongCat Avatar 1.5</b><br />
+      <sub>9 s · 736 × 1248 · image + audio</sub><br />
+      <a href="docs/readme/longcat-avatar-720p.mp4">Watch MP4 →</a>
+    </td>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/afterglow-intro.mp4"><img src="docs/readme/afterglow-intro.jpg" alt="AID Partner AFTERGLOW motion intro" width="100%" /></a><br />
+      <b>AFTERGLOW motion intro</b><br />
+      <sub>5 s · 960 × 540 · coded motion system</sub><br />
+      <a href="docs/readme/afterglow-intro.mp4">Watch MP4 →</a>
+    </td>
+  </tr>
+</table>
+
+Generation time and output quality vary by GPU, workflow, model, resolution, and provider queue. Sample metadata describes these files only, not a universal performance guarantee.
+
+## Agent experience
+
+After installation and one-click Agent setup, a production request can stay conversational:
+
+```text
+Turn these references into a six-shot short film.
+Keep the two characters consistent, show me the storyboard plan first,
+then generate after I confirm and deliver everything as one project.
 ```
 
-### ComfyUI（可选）
+The Agent can then:
 
-视频生成通道可在 Settings 中切换为 `Cloud ComfyUI · SSH Private Workflow`。该通道沿用 J18IP 的 MiniMax H3 接口链路：
+1. Inspect current capabilities without reading credentials.
+2. Save the project and shot structure.
+3. Match model-specific prompt guidance to the requested work.
+4. Import references and choose a route.
+5. Ask for confirmation when generation or credits are involved.
+6. Submit with a stable idempotency key and follow the same task to completion.
+7. Attach results to the project and return local deliverables.
 
-1. aid 通过 SSH/SFTP 上传首帧、可选尾帧、多图辅助参考，以及可选的角色音色参考；
-2. 单图使用 I2VA 锁定首帧，多图使用 Hybrid 将第一张接入 `first_frame`、其余图片接入 `ref_images`，首尾帧使用 FL2VA；三者统一采用 DaSiWa Hybrid pruned、匹配四步 LoRA、Sage Attention 与 12/3 调度；
-3. 将前端工作流转换为 ComfyUI API prompt，并在提交前校验模型链与实际采样参数，通过 `/prompt` 提交；
-4. 使用 `/history/{prompt_id}` 轮询，完成后从 `/view` 下载并上传到 Cloudinary。
+## Security boundaries
 
-运行 aid 的机器需要安装 `ssh` 和 `scp`，并能以无交互方式登录 ComfyUI 主机。H3 在一次原生音画生成中同步完成画面、口型、台词、环境声和拟音；Fish Audio 文件只作为可选音色参考，不作为成片台词音轨。连接字段既可在 Settings 中填写，也可通过 `.env.local.example` 中的 `COMFYUI_*` 变量配置。若两处都填写，以 Settings 为准。Settings 中的“FL2VA 加速方案”可临时切回旧版远端工作流，但该选项仅用于故障回退。
+- API keys, SSH credentials, service URLs, workflow bindings, and task state are stored by Partner—not exposed to the Agent as raw secrets.
+- The Agent receives capability summaries and purpose-built tools rather than direct access to the credential store.
+- Connection edits are blocked while related work is active.
+- Compute-mode changes check both local tasks and remote queues before stopping or starting a heavyweight service.
+- Private/shared channels expose only their public routes, price, and the current user's balance; the host's provider configuration remains private.
+- Partner never installs third-party models or nodes without the user doing so from their chosen source and license.
 
-`pandais.beauty` 上的 ComfyUI 通道默认通过本机 aid companion 使用 SSH，不把私钥交给 Netlify。先在 aid 项目目录运行 `npm run companion`，保持 `http://127.0.0.1:3018` 可用；网页会把 ComfyUI 的测试、提交和轮询请求发给这个本地服务，由它使用 `~/.ssh`、ssh-agent 和持久控制连接完成 SSH/SFTP。长剧本规划、AI 扩写、MiniMax H3 视频以及 Z-Image-Turbo 图片任务都可通过 Companion 执行；APIMart 图片模型仍走 Netlify。companion 只允许 `pandais.beauty` 与本机 origin 跨域访问。
+## Download
 
-全局图片模型可选择 `ComfyUI · Z-Image-Turbo（本地）`。该分支使用官方 BF16 文生图工作流，支持 Story 四宫格、单分镜、角色草稿、定妆图和场景参考图；官方基础工作流不接受参考图编辑，因此图生图与严格身份参考请切换 APIMart 图片模型。
+### AID Partner 0.4.3 Preview
 
-### fal MiniMax H3 Max（可选）
+| Platform | Package | Notes |
+| --- | --- | --- |
+| macOS · Apple Silicon | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-macOS-Apple-Silicon.zip) | M1–M5 · in-app updates require macOS 12+ |
+| macOS · Intel | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-macOS-Intel.zip) | Intel Mac · in-app updates require macOS 12+ |
+| Windows · x64 | [Download ZIP](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/AID-Partner-0.4.3-Windows-x64.zip) | Windows 10/11 · manual ZIP updates in this preview |
 
-视频生成通道也可在 Settings 中选择 `fal · MiniMax H3 Max`。fal API Key 使用独立的密码输入框并保存在浏览器本地设置中，通过 AID 服务端代理提交和轮询任务；无需安装或更新 Companion。该通道支持 5–15 秒、480P/768P、可选尾帧和原生同步音频。Prompt Expansion 默认关闭，避免供应商扩写逐字台词。
+[Checksums](https://github.com/unclewongwong/aid/releases/download/aid-partner-v0.4.3/checksums-0.4.3.txt) · [All release files](https://github.com/unclewongwong/aid/releases/tag/aid-partner-v0.4.3) · [Open the website](https://aidp.app/#download)
 
-fal 当前的 H3 Max 图生视频接口不接受 Fish Audio 音频参考或 Voice ID。Settings 中的固定 Seed 只用于复现性实验，不能作为跨片段声纹锁；需要严格音色一致性时请继续使用支持 `<Audio>` 音色参考的 ComfyUI H3 通道。
+Current installers are not yet Apple-notarized or Windows code-signed, so the operating system may display a security warning on first launch.
 
-剧本生成通道可在 Settings 中明确选择 `Auto`、`DMX only` 或 `APIMart only`。Auto 模式优先 DMX，可恢复的接口故障会回退 APIMart，并保留失败原因；模型明确拒绝时停止自动切换与重提。仅使用模式不会静默切换供应商。单集剧本普通截断时保留完整镜头、只补缺失部分；明确拒绝会保留原稿并单独提示，不再误报缺少 `shots`。桌面版 Companion 对这两个 API 域名使用独立公网 DNS，避免代理或 VPN 的 Fake-IP 解析导致“授权正常但剧本 API 无法连接”。
+## Setup
 
-Story 长片生成采用分阶段流程：一句话构想也可以先扩写为完整的故事目标、冲突、转折、选择与结局，再锁定全片故事脊柱、场次配额和精确镜头数；随后按场次以最多 6 镜一组建立因果镜头地图，统一完成全片台词稿，再逐镜展开演员可执行的详细剧本，最后生成导演分镜提示词。每个出场角色都会获得逐镜的走位、手势、微表情、视线、呼吸、即时反应、潜台词与逐字台词；这些表演卡会在分镜审核页展示，并继续进入视频提示词。批次之间会传递人物、道具、关系和物理状态；切换场次时允许明确重建时间、空间和光线，避免前后剧情漂移。
+1. Download and open AID Partner for your computer.
+2. Add your image, video, speech, ComfyUI, or dedicated model services.
+3. Import and verify workflows when using ComfyUI.
+4. Use **Connect Agent** for Codex, Claude Code, or WorkBuddy.
+5. Restart and trust the Agent client, then create through chat.
 
-v0.1.192 起，Story 编剧前先由文本模型匹配原稿人物与所选角色卡，按选定人物适配身份、姓名及台词中的称谓。例如原稿贵妃可以适配为所选皇后，而原动作、剧情与其他台词不因此重写。成功匹配会保留原稿、适配稿与对应记录，分镜页可查看对照，后续编剧、导演和音色绑定共用同一人物身份。确实独立的角色才新增，关系有歧义时提示明确；已批准的连续剧合同不重新选角。旧普通 Story 需重新触发编剧才会应用此步骤，不在打开项目时自动改动已有素材。
+No separate Companion, Node.js, or Python installation is required for the packaged desktop application.
 
-v0.1.193 起，Story 四宫格生图明确要求两行两列，每格均为完整且与项目同比例的分镜画面（例如竖屏每格为 9:16）；没有参考图时也保持四宫格流程。既有 2×2 切割不变，不增加图像质检或自动重生成。旧版生成的竖向四张堆叠图不会被自动修改，需要更新后手动重新生成对应批次。
+## Repository notes
 
-点击生成后，故事输入页会按真实任务进度显示“人物适配与故事构思、电影镜头组织、交付检查”三个阶段，并展示当前构思内容、已等待时间与目标镜头数；长任务不再只显示一个无法判断是否卡住的转圈状态。
+This repository carries AID's historical web-production source alongside current AID Partner documentation, public showcase assets, knowledge, and release artifacts. The desktop application is distributed through GitHub Releases. The local installed application is the source of truth for current behavior; the website and this README describe the verified 0.4.3 product surface.
 
-长剧本与导演分镜接口会持续发送保活响应，降低代理层在模型仍工作时返回 HTML 超时页的概率。网页默认要求本机 Companion 执行长任务；若无法连接，请确认 Companion 正在运行，并在浏览器网站权限中允许 `pandais.beauty` 访问“本地网络”。网页不会再把这类长任务静默回退到受时限约束的托管接口。
-
-导演分镜的自动修稿与最终校验共用全剧登记人物、道具名单，已登记的无对白陪衬人物不会被误判成非英文。缺少镜头细化字段时只补字段，格式不合或超出文字预算时只修问题项；修稿无进展会缩小为单字段任务，并反馈具体拒收原因和上次候选句。可兼容常见 JSON 外壳，成功字段即时保存，继续使用原动作、逐字台词和已完成分镜；最多八次尝试，供应商明确拒绝则停止，不靠重复重提绕过拒绝。
-
-视频阶段采用保真与电影剪辑并行的 Hybrid 策略：长镜头、长对白、关键表演特写和终场落点保持为独立 I2VA/FL2VA 片段，锁定真实首帧与人物一致性；只有相邻分镜构成正反打、动作—反应、主镜头—近景推进、细节插入、蒙太奇或明确匹配剪辑时，系统才会在 15 秒与四镜上限内自动组合为一个电影化多镜片段。多镜提示词会指定切点、180 度轴线、视线、银幕方向、动作匹配和景别递进，并把每张参考图视为独立机位，禁止人物融合、画面插值和无动机软转场。用户仍可在片段编辑中手动调整组合边界。
-
-有台词的 Story 片段使用单次 H3 原生音画流程：逐字台词只在官方 `d` 标签中出现一次，并在提交前与剧本逐字比对。相邻同角色短句可以成为一个连续发声块，但程序不再删除、替换或补写原台词标点。角色音频只绑定音色，动作、结果或观众反应不会重复解释台词含义。成片直接采用主 H3 同步音轨，不额外运行 ASR、重混人声或做人声分离；第一句前保留干净场景底噪，最后一句预留完整尾字和自然环境尾音。
-
-v0.1.190 起，Story 和连续剧自动成片也不再执行额外的末镜 ASR 核验，或因其结果重生成末段。旧任务若卡在“末镜转写连接暂时失败”，更新后点击“从断点重试”会复用已完成且输入未改变的视频继续合成；导出仍检查片段齐全及媒体完整性，不把跳过转写标记为核验通过。
-
-成片导出默认启用“智能标准”节奏：情绪特写和关键停顿接近原速，对白轻度提速，常规叙事、过场、蒙太奇与动作镜头采用更紧凑的倍率；同一多分镜 H3 片段也会按内部镜头时间窗分别处理。画面与同期对白通过 FFmpeg 同步变速并保持音高，编辑器同时提供“原速、电影、智能标准、紧凑”四档及全片实际平均倍率。
-
-故事输入页的“改编剧本”会使用当前选择的目标镜头数和预计片长，把梗概、小说片段或既有剧本整理为精确编号的连续剧情节拍；用户明确指定的事实、事件顺序、结局和台词仍保持最高优先级。
-
-普通用户可直接从 AID 首页下载桌面版 Companion。桌面版内置 Node.js 运行环境、FFmpeg/FFprobe 和独立 SSH 客户端，支持 macOS Apple Silicon、macOS Intel 与 Windows x64；启动时会生成仅保存在本机应用数据目录的专属 Ed25519 密钥，并可使用仙宫云 SSH 密码一键完成公钥授权。
-
-Story 视频片段默认以本镜分镜图为首帧；只有在片段面板明确选择“上一段尾帧”且满足同场同地点的相邻接拍条件时才继承前段画面。原始分镜和视频预览分别显示。ComfyUI 的提示词预览及提交均由 Companion 编译，因此相关提示词更新也需要同步 Companion（当前最低 v0.1.100）；旧版自动接续的片段需重生成后再合并。
-
-维护者可创建 `companion-v*` Git tag，或在 GitHub Actions 手动运行 `Release AID Companion`，自动生成三个平台包并发布到 GitHub Releases。首页下载链接始终指向 latest release。
-
-无人值守的纯服务端部署仍可用 `COMFYUI_SSH_PRIVATE_KEY_B64` 作为后备密钥，并用 `COMFYUI_SSH_HOST_FINGERPRINT` 固定远端主机指纹；该模式不是浏览器默认路径。
-
-### Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
----
-
-## 📖 Usage
-
-### Image to Video Mode
-
-v0.1.194 新增可选 **H3 Director 连续长视频（实验）**：在独立图生视频页面选择约 30/60 秒，整理并编辑 3/6 段提示词后提交。仅首段使用原始图片，后段继承音视频上下文，最终输出合并视频。网站与 Companion 均需更新到此版本；首版为 480P 级原生音频，不支持外部音色、多图或尾帧，未完成 30/60 秒 GPU 效果实测。刷新或查询失败时续查原任务，不重复生成。现有短视频模式保持不变。
-
-1. **Upload Images**
-   - Upload your first frame image (required)
-   - Optionally upload a last frame image for controlled motion
-   - Image size must be under 6MB
-
-2. **Configure Settings**
-   - Select aspect ratio (16:9, 9:16, or 1:1)
-   - Choose camera movements (pan, tilt, zoom, dolly, etc.)
-   - Write motion description
-
-3. **Generate Video**
-   - Click "Generate Video" button
-   - Wait for AI processing (typically 1-3 minutes)
-   - Download or regenerate as needed
-
-### AI Story Generation Mode
-
-v0.1.198 makes Series visual redo a full current-pipeline visual pass: after new automatic character, scene and prop masters are ready, it rewrites every GPT-Image-2 storyboard prompt and structured Chinese H3 direction, then regenerates 2×2 storyboard images, video prompts, clips and final assembly. It retains the approved shot count, plot, action, performance, camera plan, exact dialogue, voices and earlier deliveries. Recoverable upstream image tasks now continue polling the same saved task instead of appearing as terminal failures or letting dependent production skip ahead; moderation and confirmed failures still stop for user action. No generated-media QC loop is added.
-
-v0.1.197 keeps product originals in GPT-Image-2 only and sends H3 the integrated storyboard frame. H3 direction is written in concise Chinese while exact dialogue follows the selected language. Series also adds a visual-only one-click redo that preserves screenplay, director storyboards, voices and prior deliveries while regenerating automatic visual masters, storyboard images, videos and assembly. No generated-media QC loop is added.
-
-v0.1.196 adds **MJ visual masters → GPT-Image-2 storyboards**. In Character Design, generate a single master or adopt an original image directly, save it to the character library, and optionally extend it with GPT. New Story projects follow the master by default; explicitly selected image styles, capture modes and independent style references remain effective. MJ uses native sref/sw, while GPT receives a separately labeled style image. Existing H3 sampling and 2×2 cutting remain unchanged. See [image style controls and validation](docs/image-style-controls-validation.md).
-
-v0.1.194 会在编剧及首次新生图前理解已选角色、服装与产品原图，并缓存外观事实。分镜请求完整保留每镜动作和对应参考，不静默丢图；包装、膜体和材质参考分别处理。Story 与连续剧共用此修复，不增加生成后质检，也不自动重做历史图片。详见 [原图引用说明](docs/story-reference-fidelity.md)。
-
-1. **Setup Characters & Objects**
-   - Add character names and upload reference images
-   - Add objects with descriptions (optional)
-   - Upload your story file (Markdown or text)
-
-2. **Generate Outline**
-   - AI analyzes your story structure
-   - Review and edit the generated outline
-   - Proceed to scene breakdown
-
-3. **Create Storyboards**
-   - AI splits story into individual scenes
-   - Each scene includes characters, description, and prompt
-   - Review and edit scene details
-
-4. **Render Images & Videos**
-   - Generate images for all storyboard scenes
-   - Convert images to videos with motion
-   - Download individual scenes or export entire project
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **[Next.js 15](https://nextjs.org/)** - React framework with App Router
-- **[React 18](https://react.dev/)** - UI library
-- **[TypeScript](https://www.typescriptlang.org/)** - Type safety
-- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first styling
-- **[Lucide React](https://lucide.dev/)** - Beautiful icons
-
-### Backend & APIs
-- **[APIMart AI](https://apimart.ai/)** - AI video and image generation
-- **[Cloudinary](https://cloudinary.com/)** - Image hosting and CDN
-- **Next.js API Routes** - Serverless functions
-
-### AI Models
-- **Sora 2** - OpenAI's video generation model
-- **Veo 3.1** - Google's advanced video model
-- **Doubao SeeDream 5.0** - ByteDance's image generation
-- **Gemini 3 Pro** - Google's multimodal AI
-
----
-
-## 📁 Project Structure
-
-```
-aid/
-├── app/
-│   ├── api/                    # API routes
-│   │   ├── analyze/           # Story analysis
-│   │   ├── generate/          # Image generation
-│   │   ├── generate-video/    # Video generation
-│   │   ├── check-image-status/
-│   │   └── check-video-status/
-│   ├── image-to-video/        # Image to video page
-│   ├── story/                 # Story generation page
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx               # Home page
-├── components/                 # React components
-├── lib/                       # Utilities and helpers
-├── types/                     # TypeScript definitions
-└── public/                    # Static assets
-```
-
----
-
-## 💡 Tips & Best Practices
-
-- **Image Quality**: Use high-resolution images (at least 1024px) for best results
-- **Character Consistency**: Upload clear, well-lit reference images with consistent angles
-- **Story Structure**: Write clear, descriptive scenes with specific visual details
-- **Aspect Ratios**: Note that 1:1 square format is not supported by Veo models
-- **Generation Time**: Video generation typically takes 1-3 minutes per scene
-- **API Costs**: Monitor your APIMart usage to manage costs effectively
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [APIMart AI](https://apimart.ai/) for providing powerful AI APIs
-- [Cloudinary](https://cloudinary.com/) for image hosting infrastructure
-- [Next.js](https://nextjs.org/) team for the amazing framework
-- All contributors and users of this project
-
----
-
-## 📧 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/lupus8023/aid/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lupus8023/aid/discussions)
+Public media under `docs/readme/` is included for product demonstration. Third-party models, services, nodes, and their outputs remain subject to their respective terms and upstream licenses.
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by PANDA Skincare</p>
-  <p>
-    <a href="#top">Back to Top ↑</a>
-  </p>
+  <strong>You imagine. AID creates.</strong><br />
+  <sub>Agent-native creative production, connected locally.</sub>
 </div>
