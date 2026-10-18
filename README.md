@@ -44,6 +44,8 @@ The Agent handles intent, story, shot planning, prompts, references, routing, an
 
 <img src="docs/readme/desktop-app.jpg" alt="AID Partner 0.4.4 desktop app showing the project-aware task workspace" width="100%" />
 
+<p align="center"><sub>A real 0.4.4 workspace view: related Mermaid production batches remain distinct, searchable project cards instead of becoming a flat task list.</sub></p>
+
 The desktop workspace is organized around six production surfaces:
 
 | Surface | Purpose |
@@ -147,7 +149,7 @@ An explicitly selected route never fails over silently. The Agent reports the fa
 
 ## Production samples
 
-Each sample was reviewed before publication. Click a frame to open the original MP4.
+Each sample was reviewed before publication. Click a frame to open its MP4 preview.
 
 <table>
   <tr>
@@ -158,16 +160,43 @@ Each sample was reviewed before publication. Click a frame to open the original 
       <a href="docs/readme/h3-x2-martial-1080p.mp4">Watch MP4 →</a>
     </td>
     <td width="33%" valign="top" align="center">
-      <a href="docs/readme/longcat-avatar-720p.mp4"><img src="docs/readme/longcat-avatar.jpg" alt="LongCat Avatar portrait sample" width="100%" /></a><br />
-      <b>LongCat Avatar 1.5</b><br />
-      <sub>9 s · 736 × 1248 · image + audio</sub><br />
-      <a href="docs/readme/longcat-avatar-720p.mp4">Watch MP4 →</a>
+      <a href="docs/readme/longcat-cartoon-presenter.mp4"><img src="docs/readme/longcat-cartoon-presenter.jpg" alt="LongCat Avatar cartoon presenter sample" width="100%" /></a><br />
+      <b>LongCat · cartoon presenter</b><br />
+      <sub>10.2 s · 640 × 608 · image + speech</sub><br />
+      <a href="docs/readme/longcat-cartoon-presenter.mp4">Watch MP4 →</a>
     </td>
     <td width="33%" valign="top" align="center">
       <a href="docs/readme/afterglow-intro.mp4"><img src="docs/readme/afterglow-intro.jpg" alt="AID Partner AFTERGLOW motion intro" width="100%" /></a><br />
       <b>AFTERGLOW motion intro</b><br />
       <sub>5 s · 960 × 540 · coded motion system</sub><br />
       <a href="docs/readme/afterglow-intro.mp4">Watch MP4 →</a>
+    </td>
+  </tr>
+</table>
+
+### Mermaid character continuity
+
+One stylized cast, one underwater world, and three different performance demands—all produced through the same project-aware MiniMax H3 workflow.
+
+<table>
+  <tr>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/mermaid-dialogue.mp4"><img src="docs/readme/mermaid-dialogue.jpg" alt="Cartoon mermaid dialogue sample" width="100%" /></a><br />
+      <b>Dialogue cue</b><br />
+      <sub>5.88 s · 736 × 1280 · native audio</sub><br />
+      <a href="docs/readme/mermaid-dialogue.mp4">Watch MP4 →</a>
+    </td>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/mermaid-ensemble.mp4"><img src="docs/readme/mermaid-ensemble.jpg" alt="Cartoon mermaid ensemble reaction sample" width="100%" /></a><br />
+      <b>Ensemble reaction</b><br />
+      <sub>5.88 s · 736 × 1280 · four-character continuity</sub><br />
+      <a href="docs/readme/mermaid-ensemble.mp4">Watch MP4 →</a>
+    </td>
+    <td width="33%" valign="top" align="center">
+      <a href="docs/readme/mermaid-action.mp4"><img src="docs/readme/mermaid-action.jpg" alt="Cartoon mermaid action sample" width="100%" /></a><br />
+      <b>Action beat</b><br />
+      <sub>5.88 s · 736 × 1280 · character + creature motion</sub><br />
+      <a href="docs/readme/mermaid-action.mp4">Watch MP4 →</a>
     </td>
   </tr>
 </table>
