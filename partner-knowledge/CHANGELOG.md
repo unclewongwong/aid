@@ -1,3 +1,12 @@
+# 2026.10.19.2 — 导演成片方案与20位导演方法库
+
+- 融合情绪终点、观看立场、母题发展、前置剪辑和实际提示词证据；接入既有A–H制作链，不新增强制审批。
+- 新增20位导演的中英索引与独立按需方法卡，覆盖剧本调整、调度表演、摄影、剪辑声音、适用/避用及原创微例；保留原九张场面方法卡和20种视觉画风，两者不混用。
+- 区分获准改写剧本、锁定剧情只改表达、已有素材重剪；允许有明确分工的风格混合，不改锁定对白、指定工作流或自动追加付费生成。
+- 资料来源与AIDP原创应用推导分开，不复制上游20卡或电影资产，不宣称20套成片已实测。通用导演方案试片获得积极反馈，不追认其为某位导演风格或严格单变量实验。
+- 合并本地19.1候选为此公开版，保留旧包不重写；最低应用0.4.4，App/执行器/默认路线/官网不随知识发布改变。
+- English: Adds a finished-film treatment and 20 bilingual, on-demand director method cards spanning script, blocking, performance, camera, editing and sound. Separates rewrite permission from expression-only revision and existing-footage editing. Preserves locked material, route choices and paid-generation boundaries; no new tools, filter presets or claimed validation of twenty finished films.
+
 # 2026.10.18.1 — AID Partner 0.4.4
 
 - 发布跨批次项目续作规则：后续增加镜头、配音或重做必须复用原 `projectId` 和对应 `shotId`；Partner 的空闲自动归组只作为漏参兜底，不按相似标题猜测。

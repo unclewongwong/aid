@@ -82,6 +82,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 喜剧结构 / 笑点执行 | [人气喜剧结构](references/popular-comedy-structure.md) / [喜剧导演与节奏](references/comedy-direction-and-timing.md) |
 | 剧本进入两个以上叙事镜头 | [镜头因果](references/director-storytelling-and-shot-causality.md) → [逐秒视听](references/whole-film-second-by-second.md) |
 | 学导演手法、关键场面怎么拍 | [导演手法库](references/director-shot-methods.md) |
+| 按某位导演调整剧本/成片，或比较导演风格 | [20位导演风格索引](references/directors/index.md)，再按需读选中的卡；不是调色预设，不默认重写或重新生成 |
 | 选运镜 | [运镜决策](references/camera-movement-story-decisions.md) |
 | 影调统一、多镜视觉设定 | [电影感](references/cinematic-visual-direction.md)、[视觉连续](references/film-visual-continuity.md) |
 | 点名画风或用预设 | [视觉风格预设](references/visual-style-presets.md) |
@@ -137,6 +138,10 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 ### D 导演：每一拍先决定观众怎样知道
 
 表达选择、知情分配与连续调度见[镜头因果](references/director-storytelling-and-shot-causality.md)，D的可选记录格式见[成果交接](references/production-handoffs-and-examples.md)，按问题选择具体手法见[导演手法](references/director-shot-methods.md)。
+
+先在现有 `story` 中用一小段写清**本片导演方案**：观众从何种理解走向何种感受，哪次人物选择促成变化；有意义的物件/声音如何随故事改变含义；哪些调度、节奏与声画方法服务这个终点，哪些刻意不用。按本次范围写，全片有全片弧线，授权片段只覆盖该场，不另加审批流程或固定导演预设。具体方法见[成片导演方案](references/director-finished-film-treatment.md)。随后把方案落入下面的逐拍表达、实际参考和生成正文，不能只留一段漂亮阐述。
+
+用户点名导演或要求推荐风格时，用[20位导演方法库](references/directors/index.md)决定本片的叙事、表演、调度和剪辑；先明确是改写剧本、只改表达还是重剪已有素材。未指定时按故事需要导演，不自动给作品冠上某位导演的名字；已锁对白、原片、路线及生成授权保持。
 
 对每个剧情拍依次回答四个问题：
 1. **知情**：事件事实、观众与角色分别知道什么？按本片需要直接观察、延迟揭示、制造悬念或信息差，不强制三选一。
