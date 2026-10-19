@@ -1,3 +1,12 @@
+# 2026.10.20.2 — 摄影真实感、MJ→GPT迁移与认可样稿
+
+- 合并19.5摄影真实感和20.1提示词迁移本地候选；只发布本完整版本，中间草稿不单独进入公共频道。
+- 新增按光源、空间、焦点、材料与成像选择配方的指南；真实不等于粗毛孔、湿亮、暗沉或统一滤镜，导演、视觉预设和摄影条件分别编译进实际prompt。
+- 从24条用户MD提示词与3条追加提炼可迁移方法：保留审美方向，处理机位/景别/光色/动作/平台语法冲突；提供美妆、非性化古装少女、古典舞、复古抓拍留白及建筑五类示范。
+- 收录用户认可改善方向的一次GPT-Image-2、3840×2160电影人像实际提示词，明确它不是锁脸、单变量A/B或四格/视频连续性验证；不保证所有配方效果。
+- 保留20位导演、20画风、按复杂度选择四宫格及4K整板规则；不改API、模型路线、业务逻辑，不公开原始参考图片/整份私人提示词资料，不自动追加付费生成。
+- English: Adds photographic-realism guidance and MJ-to-GPT prompt transfer, retaining aesthetic intent while resolving framing, lighting, motion and platform conflicts. Includes five scoped recipes and the actual prompt for a user-approved 4K cinematic portrait direction test. Preserves identity/reference boundaries, director methods, conditional 4K storyboards and all runtime contracts; no blanket quality guarantees or automatic rerenders. Consolidates local drafts 19.5 and 20.1 into this release.
+
 # 2026.10.19.4 — 连续镜头链、逐镜判断与4K四宫格
 
 - 合并19.3本地修订：先整场连续调度再切镜，逐对承接前因、进入/退出状态与后继，保留必要的接触、反应和余韵；19.3中间包不单独公开。

@@ -85,6 +85,8 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 按某位导演调整剧本/成片，或比较导演风格 | [20位导演风格索引](references/directors/index.md)，再按需读选中的卡；不是调色预设，不默认重写或重新生成 |
 | 选运镜、判断是否需要多状态参考 | [运镜决策](references/camera-movement-story-decisions.md) → 按镜头复杂度选[四宫格](references/four-panel-motion-storyboards.md)，不一律使用 |
 | 影调统一、多镜视觉设定 | [电影感](references/cinematic-visual-direction.md)、[视觉连续](references/film-visual-continuity.md) |
+| 真人实拍、胶片／镜头质感，或反馈蜡脸、油亮、过锐 | [摄影真实感提示词](references/photographic-realism-prompt-design.md)：按场景选光线与成像，区分身份、导演、预设和质感参考，写入实际prompt |
+| 将MJ佳作提示词迁移到GPT，或画面细致却仍不自然 | [MJ→GPT提示词迁移](references/midjourney-to-gpt-image-prompts.md)：保留审美方向，梳理动作、构图和光色；含古装少女、舞蹈与复古留白配方 |
 | 点名画风或用预设 | [视觉风格预设](references/visual-style-presets.md) |
 | 重复人物、四宫格、九宫格 | [角色参考包](references/character-reference-pack.md)、[四宫格](references/four-panel-motion-storyboards.md)、[九宫格](references/nine-panel-editorial-storyboard.md) |
 | 分段、接缝、AI 镜头设计 | [成段生成](references/storyboard-segment-generation.md)、[AI 镜头设计](references/ai-shot-design-and-prompt-engineering.md) |
