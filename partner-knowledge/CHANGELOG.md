@@ -1,3 +1,20 @@
+# 2026.10.19.4 — 连续镜头链、逐镜判断与4K四宫格
+
+- 合并19.3本地修订：先整场连续调度再切镜，逐对承接前因、进入/退出状态与后继，保留必要的接触、反应和余韵；19.3中间包不单独公开。
+- 将“叙事镜头优先四张”细化为按镜头复杂度选参考：简单定机位/轻微推拉用单图或必要首尾帧；复杂运镜、走位、遮挡揭示、多阶段交互优先四宫格。同片可混用，用户明确选择优先。
+- 四宫格默认一次生图直接生成4K整板，横屏3840×2160裁为四张1920×1080；核对实际参数与返回像素，不能只写4K提示词。已有合格素材复用，分辨率不足报告而不自动重复付费、换源或超分。
+- 保留“一镜四状态、三段连续过程”的真实四图绑定；四格不等于四镜、四次调用，不改变角色卡/单图/视频输出规格、模型工作流、包装与生成授权。
+- English: Chooses single-frame, necessary first/last frames or a four-state board per shot. Complex camera/blocking transitions favor a single directly generated 4K 2×2 board; simple locked-off shots do not require one. Checks actual pixels and four-reference bindings without changing video resolution, routes or spending permissions.
+
+# 2026.10.19.3 — 连续镜头链与一镜四状态（本地历史，合入19.4）
+
+- 融合用户更新的film-director/story-shot-prompt方法：先走通整场连续调度，再按观看需要切镜；明确每镜前因、进入/退出事实与后继，不把30镜写成30个独立事件。
+- 修正“相同事实/策略就删”“每镜必须带来独立新状态”的过强措辞；一拍可跨数镜，一镜可含数拍，保留必要接触、反应与余韵，尊重锁定镜号/镜数。
+- 按用户明确做法优先一个镜头四张关键状态图，同镜K01→K02→K03→K04的三段运动、表演、摄影和声音进入同一Shot；四图一起输入须核对真实模式、名额与标签，不用轮播/溶解冒充连续运动。
+- 更新主入口、导演因果、成果模板、逐秒设计、成段生成与H3编译，新增原创八镜场面和四图同镜成稿；区分真切镜、同镜续接、时间省略和交叉剪辑，不继承固定镜数/调用数或一次生成必连续的保证。
+- 保持20位导演卡、锁定剧情/对白、工具契约、默认路线、包装/字幕/声音与计费边界；知识修订不自动重做现有影片，文字验证不等于成片效果验收。
+- English: Integrates scene-first blocking, pairwise shot handoffs and one-shot/four-state storyboards. Four actual references guide three continuous transitions inside one shot, not four cuts or calls. Preserves intentional editing, locked material and provider contracts; no automatic paid rerenders or untested continuity guarantees.
+
 # 2026.10.19.2 — 导演成片方案与20位导演方法库
 
 - 融合情绪终点、观看立场、母题发展、前置剪辑和实际提示词证据；接入既有A–H制作链，不新增强制审批。

@@ -2,13 +2,13 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 最新知识：2026.10.19.2
+## 当前修订：2026.10.19.4
 
-本版本融合导演成片方案，并新增[20位导演方法库](skills/aid-partner/references/directors/index.md)。用户可以指定导演或让Agent推荐，用于调整剧本结构、表演调度、镜头、剪辑和声音；不是20种滤镜，不自动改写已锁剧本或重新生成。未指定时按故事需要导演。既有九张场面方法卡、20种视觉画风、完整制作链和工具契约保留。详细变化见[更新记录](CHANGELOG.md)。
+本版本融合[整场调度与镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)：先写连续行动，再选择切镜点，避免30镜变成30个独立事件。逐镜判断是否需要[四宫格动态分镜](skills/aid-partner/references/four-panel-motion-storyboards.md)：简单定机位或轻微推拉用单图/必要首尾帧，复杂运镜、走位、遮挡揭示或多阶段交互优先四格，同片可混用。选用时默认一次生成4K整板，裁成四张独立图共同指导同一镜头，三段连续过程进入实际prompt；不把图数当镜数或调用数，不改视频输出分辨率。保留[20位导演方法库](skills/aid-partner/references/directors/index.md)、旧九张场面方法卡、20种视觉画风、完整制作链和工具契约。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
 
-**知识更新与运行资源分开。**包内含69个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
+**知识更新与运行资源分开。**包内含70个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
 
-English: This Skill adds a finished-film treatment and 20 on-demand director method cards for script, staging, camera, editing and sound. These are original production adaptations, not endorsed director presets or twenty validated video templates. Knowledge contains guidance and examples only; application/runtime updates remain separate. Requires AID Partner 0.4.4 or later.
+English: This revision adds scene-first blocking and pairwise shot handoffs, then chooses references per shot. Simple locked-off shots or slight camera moves use one frame or necessary endpoints; complex camera/blocking transitions favor a single directly generated 4K 2×2 board, cropped into four actual references for three continuous transitions inside one shot. It does not change video output resolution. All 20 director cards and production contracts are retained. Knowledge contains guidance and examples only; local builds are not publication, and application/runtime updates remain separate. Requires AID Partner 0.4.4 or later.
 
 使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
 
