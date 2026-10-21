@@ -1,3 +1,11 @@
+# 2026.10.22.1 — 真人摄影的光学质感补充
+
+- 收录用户指定的 photographed rather than generated 段落，仅用于目标明确且光线相容的真人／写实摄影，实际进入生图prompt。
+- 明确排除卡通、漫画、动画、皮影、油画、剪纸、粘土；混合媒介不因电影构图或摄影术语被自动真人化。
+- 自然焦点衰减、克制柔光和高光扩散不等于磨皮、全图泛雾或均匀模糊；保留眼神、焦内重点以及用户指定的硬光、深焦与画风。
+- 候车室4K对照获用户反馈“有改善”，后续人物单图方向也获认可；其他样稿另行记录，不把无固定种子的观察当作稳定净增益或锁脸验证。不改业务／接口／模型路线，不自动追加付费生成。
+- English: Adds a scoped optical-photography prompt block for live-action realism, excluding stylized media. Preserves focal detail and scene-specific lighting without forcing haze, blur or identity changes; one positive sample is not a general quality guarantee.
+
 # 2026.10.20.2 — 摄影真实感、MJ→GPT迁移与认可样稿
 
 - 合并19.5摄影真实感和20.1提示词迁移本地候选；只发布本完整版本，中间草稿不单独进入公共频道。

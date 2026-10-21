@@ -56,6 +56,18 @@
 
 **胶片感**：优先处理高光柔和收敛、肤色与环境分离、中间调层次及有重量的暗部，再决定是否加入细而克制的颗粒。颗粒是成像纹理，尘埃是场景物件，不能混用；亮反光边缘的轻微光晕也不是全图白雾。胶片感不强制暖黄、绿色阴影、低饱和或颗粒可见，阳光蓝天和干净肤色同样成立。不宣称提取了原胶片曲线、原LUT或精确复刻器材。
 
+### 真人摄影的光学质感补充段
+
+当目标明确是**真人实拍／写实摄影成像**，且本场光线与成像要求相容时，将下段加入实际生图提示词。先判断媒介，再决定是否加入；不能因为出现人物、电影感、4K或某位导演名字就自动触发。
+
+> The image should feel photographed rather than generated. Preserve the subtle imperfections of real optical photography: natural focus falloff, restrained lens diffusion, imperfect strands of hair, atmospheric light scattering, gentle highlight blooming, and slightly reduced microcontrast. Avoid the polished, hyper-detailed, artificially perfect appearance commonly associated with AI-generated portraits.
+
+**不用于卡通、漫画、动画、皮影、油画、剪纸、粘土等风格。** 这些作品即使描述摄影棚、镜头、灯光或电影构图，也不因此套用本段、改成真人皮肤。混合媒介只对明确要求真人摄影的部分使用，不覆盖其余风格；未要求真人化时保留原媒介。
+
+这里要求的是光学层次，不是统一磨皮或泛雾：眼神、焦内叙事细节和必要材料仍清楚；微反差略减不等于全图变灰，轻微高光扩散不等于HDR光环或全场烟雾，离散发丝不等于强加风吹乱发。原有硬光、直闪、深焦或用户锁定的清晰度优先；有冲突时只保留相容的自然成像要点，不机械追加整段，也不叠加相反的“每处极致锐利”要求。四宫格使用时整板共享这一成像基线，不逐格强化柔化程度。
+
+对照时保存原提示词、真实输入和设置，只追加本段；没有固定种子／身份参考的重新生成仍会改变脸、构图与曝光，单张改善不能证明稳定净增益。不要据此自动批量重生或改动其他画风。
+
 ## 4. 导演、视觉预设、摄影条件分别负责什么
 
 三者共同进入当前图像的**实际prompt**，不是只写在项目故事、风格标签或聊天里：

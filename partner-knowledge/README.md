@@ -2,13 +2,13 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 当前修订：2026.10.20.2
+## 当前修订：2026.10.22.1
 
-本版本新增[摄影真实感](skills/aid-partner/references/photographic-realism-prompt-design.md)与[MJ→GPT提示词迁移](skills/aid-partner/references/midjourney-to-gpt-image-prompts.md)：保留清透美妆、浪漫电影、复古抓拍等审美目标，以动作、构图、光色和材料支撑自然感，不靠粗毛孔或压暗。包含五类迁移示范和一条用户认可的4K电影人像实际提示词；单张方向测试不代表锁脸、全部配方或视频效果验证。保留[连续镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)、[20位导演方法库](skills/aid-partner/references/directors/index.md)、20画风及[按复杂度选择4K四宫格](skills/aid-partner/references/four-panel-motion-storyboards.md)的完整制作规则。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
+本版本在[摄影真实感](skills/aid-partner/references/photographic-realism-prompt-design.md)中增加条件式光学摄影提示词：仅真人／写实摄影且与当前光线相容时使用，强调自然焦点衰减、克制镜头柔化、自然发丝和轻微高光扩散；卡通、漫画、动画、皮影、油画、剪纸、粘土等不套用。保留清楚的眼神和焦内重点，尊重既定硬光、深焦与其他画风，不把自然感变成统一磨皮或全图泛雾。单张方向获认可不代表稳定净增益、锁脸或视频效果验证。原[MJ→GPT迁移](skills/aid-partner/references/midjourney-to-gpt-image-prompts.md)、[连续镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)、[20位导演方法库](skills/aid-partner/references/directors/index.md)、20画风及[按复杂度选择4K四宫格](skills/aid-partner/references/four-panel-motion-storyboards.md)保持。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
 
 **知识更新与运行资源分开。**包内含72个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
 
-English: This revision adds photographic-realism guidance and MJ-to-GPT prompt transfer, preserving aesthetic intent through coherent acting, framing, light, color and materials. It includes five scoped recipes and the actual prompt for a user-approved 4K portrait direction test, not a guarantee of identity or video continuity. All 20 director cards, visual presets, conditional 4K storyboards and production contracts are retained. Knowledge contains guidance and examples only; local builds are not publication, and application/runtime updates remain separate. Requires AID Partner 0.4.4 or later.
+English: This revision adds a conditional optical-photography prompt block for live-action realism, never automatically applying it to cartoons, comics, animation, shadow puppetry, painting, paper cutouts or clay. It favors natural focus falloff, restrained diffusion, imperfect hair and gentle highlight bloom while protecting focal detail, established hard lighting and deep focus. It does not impose beauty smoothing or blanket haze, guarantee identity or authorize automatic rerenders. MJ-to-GPT transfer, all 20 director cards, visual presets, conditional 4K storyboards and production contracts are retained. Local builds are not publication; application/runtime updates remain separate. Requires AID Partner 0.4.4 or later.
 
 使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
 
