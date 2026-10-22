@@ -2,15 +2,17 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 当前修订：2026.10.22.2
+## 当前修订：2026.10.22.3
 
-本版本增加[MG 动态设计](skills/aid-partner/references/mg-motion-design.md)与[15种方法卡](skills/aid-partner/references/mg-style-catalog.md)，用于明确要求的动态图形、解释动画、动态文字、品牌动效或已授权片头；普通剧情片不会自动加包装。融合内容承接、风格专属运动语法、关键画面设计、可复现逐帧制作和授权范围内的声音事件锚点。液态仅作为参考，保留既有排除。上游来源及 MIT 声明见[许可说明](skills/aid-partner/references/mg-styles-notices.md)，未导入案例影片、字体、采样或可执行程序。
+本版本增加[运镜技法与提示词编译](skills/aid-partner/references/camera-movement-prompt-craft.md)和[技法速查](skills/aid-partner/references/camera-movement-vocabulary.md)，融合 Camera Movement AI Prompts 的组织方法，接入已有运镜决策与H3正文。分开主体/相机、位移/旋转/变焦及时间效果，写清触发、路径、速度、构图和落点。按镜头实际复杂度选择单图、首尾帧或四状态，不增加服务、模型参数或自动生成；说明与示范原创编写，未收录网站示例影片。
+
+保留22.2的[MG 动态设计](skills/aid-partner/references/mg-motion-design.md)与[15种方法卡](skills/aid-partner/references/mg-style-catalog.md)，用于明确要求的动态图形、解释动画、动态文字、品牌动效或已授权片头；普通剧情片不会自动加包装。融合内容承接、风格专属运动语法、关键画面设计、可复现逐帧制作和授权范围内的声音事件锚点。液态仅作为参考，保留既有排除。上游来源及 MIT 声明见[许可说明](skills/aid-partner/references/mg-styles-notices.md)，未导入案例影片、字体、采样或可执行程序。
 
 保留22.1[摄影真实感](skills/aid-partner/references/photographic-realism-prompt-design.md)的条件式光学质感、[MJ→GPT迁移](skills/aid-partner/references/midjourney-to-gpt-image-prompts.md)、[连续镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)、[20位导演方法库](skills/aid-partner/references/directors/index.md)、20画风及[按复杂度选择4K四宫格](skills/aid-partner/references/four-panel-motion-storyboards.md)。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
 
-**知识更新与运行资源分开。**包内含75个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
+**知识更新与运行资源分开。**包内含77个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片，运镜文字也不是模型效果保证。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
 
-English: Adds an on-demand motion-design guide and 15 style-method cards adapted from mg-styles-15 with MIT attribution. Covers semantic transitions, distinct motion grammars, deterministic rendering and authorized audio cues; liquid remains reference-only. It does not install renderers or assets, add App presets, automatically decorate narrative films, or claim fifteen rendered styles have passed review. Existing optical-realism, MJ-to-GPT, director, visual-style and conditional 4K storyboard guidance is retained. Local builds are not publication or installation. Requires AID Partner 0.4.4 or later.
+English: Adds scoped camera-movement vocabulary and prompt compilation with original examples and source attribution. Connects camera geometry and readable endpoints to existing continuity, reference selection and H3 prompts. Retains the MG module, optical realism, MJ-to-GPT, director, visual-style and conditional 4K storyboard guidance. It does not install runtime assets, add API controls, switch services or claim generated validation. Local builds are not publication or installation. Requires AID Partner 0.4.4 or later.
 
 使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
 

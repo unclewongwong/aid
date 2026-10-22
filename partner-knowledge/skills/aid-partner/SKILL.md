@@ -83,7 +83,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 剧本进入两个以上叙事镜头、修镜间割裂 | [镜头因果](references/director-storytelling-and-shot-causality.md) → [镜头链](references/scene-to-shot-continuity.md) → [逐秒视听](references/whole-film-second-by-second.md) |
 | 学导演手法、关键场面怎么拍 | [导演手法库](references/director-shot-methods.md) |
 | 按某位导演调整剧本/成片，或比较导演风格 | [20位导演风格索引](references/directors/index.md)，再按需读选中的卡；不是调色预设，不默认重写或重新生成 |
-| 选运镜、判断是否需要多状态参考 | [运镜决策](references/camera-movement-story-decisions.md) → 按镜头复杂度选[四宫格](references/four-panel-motion-storyboards.md)，不一律使用 |
+| 选运镜、写镜头运动提示词、判断多状态参考 | [运镜决策](references/camera-movement-story-decisions.md) → 按需查[运镜技法与编译](references/camera-movement-prompt-craft.md)，再按复杂度选[四宫格](references/four-panel-motion-storyboards.md)，不一律使用 |
 | 影调统一、多镜视觉设定 | [电影感](references/cinematic-visual-direction.md)、[视觉连续](references/film-visual-continuity.md) |
 | 真人实拍、胶片／镜头质感，或反馈蜡脸、油亮、过锐 | [摄影真实感提示词](references/photographic-realism-prompt-design.md)：按场景选光线与成像，将适用的光学质感段写入实际prompt；卡通、漫画、皮影、油画、剪纸、粘土等风格不套用 |
 | 将MJ佳作提示词迁移到GPT，或画面细致却仍不自然 | [MJ→GPT提示词迁移](references/midjourney-to-gpt-image-prompts.md)：保留审美方向，梳理动作、构图和光色；含古装少女、舞蹈与复古留白配方 |

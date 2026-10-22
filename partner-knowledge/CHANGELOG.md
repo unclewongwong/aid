@@ -1,3 +1,11 @@
+# 2026.10.22.3 — 运镜技法与提示词编译
+
+- 将 Camera Movement AI Prompts 的组织方法融合为现有运镜决策下的按需模块，合并方向/速度变体作技法速查；全部说明与场景示范原创编写，保留来源链接，不打包示例影片或整库提示词。
+- 分开主体与相机动作，区分位移、旋转、变焦、焦点与时间/视觉效果；给出参照方向、运动过程、可读落点和后镜交接。
+- 接入原有连续镜头、逐镜参考策略与H3实际正文；复杂过程按需用四状态，简单镜头不强制四格，同镜多阶段不误编成多次切镜。
+- 保留MG、20导演/20画风、真人摄影与4K整板规范，未新增API字段、供应商绑定、自动生成或重试；本次结构与文字核验不等于出片效果验证。
+- English: Adds scoped camera vocabulary and prompt compilation to existing directing guidance. Separates subject motion, camera geometry, optical effects and time; preserves continuity, conditional four-state references and model-specific prompt contracts. Original examples and source attribution, without redistributed footage or generation claims.
+
 # 2026.10.22.2 — MG 动态设计方法
 
 - 将 mg-styles-15 的方法改写为现有 AIDP Skill 的按需模块：15种风格语法、内容驱动的状态承接、制作简报、确定性逐帧制作和已授权声音的事件锚点。
