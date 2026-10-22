@@ -94,6 +94,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
 | 第一次接手、交接混乱、想看具体成果 | [成果交接与实例](references/production-handoffs-and-examples.md)、[端到端示例](references/worked-example-short-film.md) |
 | 解释动画、动态文字 | [解释动画](references/explainer-and-art-animation.md) |
+| 明确要求 MG、动态图形解释片、品牌动效或选型；片头/局部包装仍按 R4/R5 | [MG 动态设计](references/mg-motion-design.md)，按需选读其中 15 种方法卡；是创作与制作知识，不是新增渲染器或 App 预设，普通剧情片不自动触发 |
 | 风格化媒介、声画事件 | [媒介与声画事件](references/medium-native-story-and-cues.md) |
 | 口播、走动讲述 | [人物口播](references/talking-head-and-walk-and-talk.md) |
 | 对白路线、逐字对白 | [对白与声音](references/dialogue-and-generation-quality-gates.md) |

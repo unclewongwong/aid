@@ -1,3 +1,11 @@
+# 2026.10.22.2 — MG 动态设计方法
+
+- 将 mg-styles-15 的方法改写为现有 AIDP Skill 的按需模块：15种风格语法、内容驱动的状态承接、制作简报、确定性逐帧制作和已授权声音的事件锚点。
+- 风格适用范围、实现路线和失败检查分开，不继承上游固定10秒/帧率/BPM、自动评委重做、必加音轨或软件安装行为；液态仅参考，保留原研究排除。
+- 保留固定上游版本、MIT版权与许可，未打包第三方素材、字体、原案例影片或渲染代码。方法卡不是新增15套执行器、MCP工具或App模板。
+- 主Skill只增加一条加载入口，其余既有文件原样保留；不改变模型、包装授权、真人摄影、20画风/导演、4K四宫格、项目及成片登记规则。
+- English: Adds scoped MG design guidance and fifteen method cards with provenance and MIT attribution, without installing runtime resources or claiming rendered validation. Preserves existing creative and production contracts. Update Knowledge in Partner to use the module; the knowledge release does not upgrade the application or install renderers.
+
 # 2026.10.22.1 — 真人摄影的光学质感补充
 
 - 收录用户指定的 photographed rather than generated 段落，仅用于目标明确且光线相容的真人／写实摄影，实际进入生图prompt。
