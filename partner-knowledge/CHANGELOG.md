@@ -1,3 +1,10 @@
+# 2026.10.25.1 — 高强度动作与技能演出
+
+- 从用户认可的神枪动作试片提炼阶段递进、连续招式的起止状态、位移与命中结果、摄影和特效的共同触发；适用于群战、兵器连招与技能爆发。
+- 人物/武器实体与能量余迹分开描述，附原创动作片段；残影减轻方案标为待验证，不将LoRA单组无明显增益、8K/快门文字或后期定格当作模型能力证明。
+- 按需接入主Skill、动作七槽及H3编译；不复制第三方整段提示词、不增加全局高速/震屏默认，不改服务、模型或生成权限。
+- English: Adds scoped action choreography and VFX guidance with causal hit feedback, phase transitions and readable subject silhouettes. Includes an original example; ghosting mitigations remain unverified.
+
 # 2026.10.22.3 — 运镜技法与提示词编译
 
 - 将 Camera Movement AI Prompts 的组织方法融合为现有运镜决策下的按需模块，合并方向/速度变体作技法速查；全部说明与场景示范原创编写，保留来源链接，不打包示例影片或整库提示词。

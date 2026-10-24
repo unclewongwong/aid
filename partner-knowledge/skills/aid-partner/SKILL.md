@@ -92,6 +92,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 分段、接缝、AI 镜头设计 | [成段生成](references/storyboard-segment-generation.md)、[AI 镜头设计](references/ai-shot-design-and-prompt-engineering.md) |
 | 写图片/视频提示词 | [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)、[动作七槽](references/action-seven-slot-precision.md)；静态图再读 [GPT-Image](references/gpt-image-still-prompt-design.md) |
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
+| 群战、兵器连招、技能爆发，或动作残影/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：阶段递进、招式因果、主体/相机/特效分层；残影改写策略仍待验证 |
 | 第一次接手、交接混乱、想看具体成果 | [成果交接与实例](references/production-handoffs-and-examples.md)、[端到端示例](references/worked-example-short-film.md) |
 | 解释动画、动态文字 | [解释动画](references/explainer-and-art-animation.md) |
 | 明确要求 MG、动态图形解释片、品牌动效或选型；片头/局部包装仍按 R4/R5 | [MG 动态设计](references/mg-motion-design.md)，按需选读其中 15 种方法卡；是创作与制作知识，不是新增渲染器或 App 预设，普通剧情片不自动触发 |
