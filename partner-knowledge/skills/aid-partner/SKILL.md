@@ -105,6 +105,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | R5 授权的动效片头 | [动效片头](references/motion-intros-and-hybrid-composition.md)；内容驱动美术读[定制片头设计](references/bespoke-title-art-direction.md)，实际三维再读[Three.js](references/threejs-spatial-motion-design.md)。Mac可选AFTERGLOW及五套节目片头按该指南核验独立资源，不把知识更新当安装器 |
 | R4 授权的综艺包装 | [综艺包装](references/variety-show-packaging-and-titles.md) → [本地包装库](references/local-variety-packaging-kit.md)；代码定制或任务卡/比分/角标读[可编程 Variety Kit](references/programmable-variety-kit.md)；片头/包装的预览与默认统一在[App包装页](references/app-motion-library.md)，按实际工具与执行资源调用 |
 | 替换素材、局部修改、最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行](references/production-acceptance-and-revision.md) |
+| 已有音视频的本地裁切、拼接、抽帧、改画幅、混音或导出 | [本地后期与交付](references/local-media-postproduction.md)：探测真实素材、选择复制或必要重编码、核对修改及交付；使用宿主已有能力，不安装新的执行器 |
 | 已有表演视频更换人物、发型与服装 | 先按下文“H3 Character Swap V1.5”核对目标人物、源视频和角色参考图；这是实验性整帧重绘，不是逐像素遮罩贴回 |
 | 已生成视频的小脸、远景脸或动态脸返修 | 先按下文“H3 FaceRefine”核对目标人物、原片与工作流输入；这是按需后期，不重做原动作 |
 

@@ -1,3 +1,10 @@
+# 2026.10.25.2 — 本地后期与交付方法
+
+- 结合ffmpeg-skill的实际Skill和裁切、拼接、画幅、响度、检查代码，补充已有素材的技术处理决策：显示方向/比例、VFR线索、色彩和音轨，码流复制与精确裁切的取舍、少重编码与实际输出验证。
+- 增加官网封面选帧后检查展示裁切、混音后复测及剪辑边界验证；接入主Skill条件导航和原有制作放行，不叠加全片审美检查或自动评分。
+- 保留上游来源与MIT声明；不分发上游执行器、42个工具、MCP或平台模板，不继承自动交叉淡化、固定变速/字幕/响度规则；已有项目登记和用户锁定内容保持。
+- English: Adds scoped local media postproduction guidance, informed by ffmpeg-skill. Covers measured inputs, copy versus precise cuts, reframing, audio and delivery verification. No new runtime, tool installation or automatic creative changes.
+
 # 2026.10.25.1 — 高强度动作与技能演出
 
 - 从用户认可的神枪动作试片提炼阶段递进、连续招式的起止状态、位移与命中结果、摄影和特效的共同触发；适用于群战、兵器连招与技能爆发。
