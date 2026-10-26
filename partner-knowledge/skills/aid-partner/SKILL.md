@@ -90,6 +90,7 @@ R1–R10用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 点名画风或用预设 | [视觉风格预设](references/visual-style-presets.md) |
 | 重复人物、四宫格、九宫格 | [角色参考包](references/character-reference-pack.md)、[四宫格](references/four-panel-motion-storyboards.md)、[九宫格](references/nine-panel-editorial-storyboard.md) |
 | 分段、接缝、AI 镜头设计 | [成段生成](references/storyboard-segment-generation.md)、[AI 镜头设计](references/ai-shot-design-and-prompt-engineering.md) |
+| H3 Continuum、长镜头分块、连续表演或保留旧段续写 | [Continuum 连续生成与续写](references/h3-continuum-long-form.md)：导演状态交接可迁移，Chunk 路由、固定参考槽与 Take 复用只用于已核实的对应工作流 |
 | 写图片/视频提示词 | [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)、[动作七槽](references/action-seven-slot-precision.md)；静态图再读 [GPT-Image](references/gpt-image-still-prompt-design.md) |
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
 | 群战、兵器连招、技能爆发，或动作残影/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：阶段递进、招式因果、主体/相机/特效分层；残影改写策略仍待验证 |
