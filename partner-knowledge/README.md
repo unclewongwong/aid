@@ -2,9 +2,11 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 当前修订：2026.10.26.2
+## 当前修订：2026.10.27.1
 
-本版本融合[H3 Continuum 连续生成与续写](skills/aid-partner/references/h3-continuum-long-form.md)：身体/摄影机/声音状态接力，Chunk与Shot分层、Timeline完整覆盖、V3.9参考槽位及音频职责，保留已接受旧段再追加或局部重做。接入已有H3编译和成段生成，中文默认与既有制作约定保持；运行节点、缓存复用与GPU效果须按实际工作流核验，知识更新不安装Continuum。来源与MIT声明见[许可说明](skills/aid-partner/references/h3-continuum-notices.md)。
+本版本新增[字体商用许可](skills/aid-partner/references/font-commercial-licensing.md)约束：字幕、标题及包装的实际字体、字重、中西文配对与回退都须具备覆盖本次用途的许可，优先采用已核验的OFL字体。记录来源与适用范围，区分成片像素与字体文件分发；包装现状为开放字体与专有字体混用，知识更新不替换渲染器默认或历史视频。
+
+保留26.2融合的[H3 Continuum 连续生成与续写](skills/aid-partner/references/h3-continuum-long-form.md)：身体/摄影机/声音状态接力，Chunk与Shot分层、Timeline完整覆盖、V3.9参考槽位及音频职责，保留已接受旧段再追加或局部重做。接入已有H3编译和成段生成，中文默认与既有制作约定保持；运行节点、缓存复用与GPU效果须按实际工作流核验，知识更新不安装Continuum。来源与MIT声明见[许可说明](skills/aid-partner/references/h3-continuum-notices.md)。
 
 保留25.2的[本地后期与交付](skills/aid-partner/references/local-media-postproduction.md)：对已有素材按真实规格选择无损或必要重编码、裁切、拼接、画幅/声音处理及最终验证。融合ffmpeg-skill的方法与代码决策，来源及MIT声明见[许可说明](skills/aid-partner/references/local-media-postproduction-notices.md)。不安装上游42个工具、MCP或平台模板；字幕、包装、变速与音轨仍依本片要求，沿用原有技术/内容放行边界。
 
@@ -16,9 +18,9 @@
 
 保留22.1[摄影真实感](skills/aid-partner/references/photographic-realism-prompt-design.md)的条件式光学质感、[MJ→GPT迁移](skills/aid-partner/references/midjourney-to-gpt-image-prompts.md)、[连续镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)、[20位导演方法库](skills/aid-partner/references/directors/index.md)、20画风及[按复杂度选择4K四宫格](skills/aid-partner/references/four-panel-motion-storyboards.md)。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
 
-**知识更新与运行资源分开。**包内含82个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片，运镜文字也不是模型效果保证。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
+**知识更新与运行资源分开。**包内含83个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片，运镜文字也不是模型效果保证。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
 
-English: Adds H3 Continuum authoring guidance for chunk routing, physical-state handoffs, references, audio roles, append-only extension and Take reuse boundaries; no runtime installation or GPU quality claim. Retains scoped local media postproduction decisions and delivery verification without installing a new runtime. Retains high-intensity action and VFX guidance, with user-reviewed H3 observations and explicitly unverified ghosting mitigations. Retains scoped camera-movement vocabulary and prompt compilation with original examples and source attribution. Connects camera geometry and readable endpoints to existing continuity, reference selection and H3 prompts. Retains the MG module, optical realism, MJ-to-GPT, director, visual-style and conditional 4K storyboard guidance. It does not install runtime assets, add API controls, switch services or claim generated validation. Local builds are not publication or installation. Requires AID Partner 0.4.4 or later.
+English: Requires appropriate commercial font licenses for subtitles, titles and packaging, including actual files, weights and fallback glyphs; prefers verified OFL fonts and distinguishes rendered output from font redistribution. Documents mixed licensing in existing packaging without replacing runtime defaults. Retains H3 Continuum authoring guidance for chunk routing, physical-state handoffs, references, audio roles, append-only extension and Take reuse boundaries; no runtime installation or GPU quality claim. Retains scoped local media postproduction decisions and delivery verification without installing a new runtime. Retains high-intensity action and VFX guidance, with user-reviewed H3 observations and explicitly unverified ghosting mitigations. Retains scoped camera-movement vocabulary and prompt compilation with original examples and source attribution. Connects camera geometry and readable endpoints to existing continuity, reference selection and H3 prompts. Retains the MG module, optical realism, MJ-to-GPT, director, visual-style and conditional 4K storyboard guidance. It does not install runtime assets, add API controls, switch services or claim generated validation. Local builds are not publication or installation. Requires AID Partner 0.4.4 or later.
 
 使用者在AID Partner中点击知识/Agent的「一键更新」，更新成功后新开或重载Agent会话即可。知识包不安装新工具或包装资源；LongCat及包装功能是否可用，仍取决于所安装应用实际支持的工具，不能把知识更新当成应用升级。
 

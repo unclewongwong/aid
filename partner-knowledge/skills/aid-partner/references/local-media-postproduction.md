@@ -1,5 +1,7 @@
 # 本地后期与交付：按真实素材选择处理方式
 
+字幕、标题和文字叠层的选字须执行[字体商用许可](font-commercial-licensing.md)：许可覆盖本次商业用途，核对实际文件、字重及回退字体；libass 成功烧录不等于字体授权已通过。
+
 已有音视频需要裁切、拼接、抽帧、改画幅、声音处理或导出时读取。这里补充媒体处理决策；创作意图、逐字对白和已选素材仍来自本片，放行范围沿用[制作放行](production-acceptance-and-revision.md)。单纯写剧本或调用生成模型无需加载本页。
 
 本页融合 ffmpeg-skill 的素材探测、少重编码和结果验证思路；来源与 MIT 声明见[许可说明](local-media-postproduction-notices.md)。这是知识指南，没有安装其 Python 脚本、42个工具、平台模板或 MCP，也没有给 Partner 增加参数。

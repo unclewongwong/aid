@@ -42,6 +42,8 @@
 
 ## 画幅与文字
 
+字幕/标题及备用字形遵守[字体商用许可](font-commercial-licensing.md)。P01–P10 随包六款字体有 OFL 许可；保留许可文件，并核对实际文案字形覆盖，不能把浏览器隐式回退也算作已授权字体。
+
 原片先用 `aid_import_asset` 得到真实 `sourceAssetId`。省略 `aspect`、尺寸、帧率、时长即跟随原片；标准比例为16:9、9:16、1:1。模板按画幅重排宽度、换行与位置，不把横版简单拉伸成竖版。跨比例时 `fit:"preserve"` 默认拒绝；只有明确选择才用 `contain` 完整画面加黑边，或 `cover` 居中裁切填满。没有智能主体追踪，不能说cover保证不裁人脸。
 
 `safeArea` 为 `standard` 或 `social`；后者给竖屏右侧和底部多留空间，不是各平台永久安全区保证。`position` 为 `bottom-left`、`bottom-right`、`top-left`、`top-right`、`center`；结合实际镜头避开脸、已有字幕和重要物件。多事件按顺序叠加，不自动避碰，重叠时调整时间或位置。
