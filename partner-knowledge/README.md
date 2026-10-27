@@ -2,9 +2,11 @@
 
 本目录维护官方 Skill、按需读取的创作技巧与结构化提示词案例。知识内容拥有独立版本，不要求每次修改都重发应用。
 
-## 当前修订：2026.10.27.4
+## 当前修订：2026.10.27.5
 
-本版本补强[观看任务与可读尺度](skills/aid-partner/references/camera-movement-story-decisions.md#观看任务与可读尺度)：先定观众要看清什么，再安排景别、机位、焦点、移动/停留和可见表演。摄影与表演共用时间，保护关键接触与结果的阅读机会；固定镜头仍有效，同一首帧不自动锁定全程机位。实际提交正文须检查这些内容是否匹配，而不只检查是否写了运镜和微表情。补原创局部写法与固定构图的替代方案；未新增自动检查器或重生成影片，效果仍待实拍验证。
+本版本新增[整片视觉简报与分镜板协同](skills/aid-partner/references/whole-film-visual-brief-and-storyboard.md)：以共同主体/产品、光色、环境和场景用途贯穿生图与视频，简单展示保留自然发挥，关键交互/状态仍写足。区分逐字同稿测试与共享简报分别适配，按实际输入选择整板或单格，不强制所有影片拼图。补齐顺序、收口、开合/接触状态检查，并接入既有生图、九宫格、广告、H3和提交预检。来自一次真实整板→全屏多镜头测试：视觉基本统一但镜头重复和带盖饮用失败；修订约束尚未重生成验证，不宣称通用保证。新增原创陶杯结构示意，不复制第三方提示词或品牌素材。
+
+保留27.4的[观看任务与可读尺度](skills/aid-partner/references/camera-movement-story-decisions.md#观看任务与可读尺度)：先定观众要看清什么，再安排景别、机位、焦点、移动/停留和可见表演。摄影与表演共用时间，保护关键接触与结果的阅读机会；固定镜头仍有效，同一首帧不自动锁定全程机位。实际提交正文须检查这些内容是否匹配，而不只检查是否写了运镜和微表情。补原创局部写法与固定构图的替代方案；未新增自动检查器或重生成影片，效果仍待实拍验证。
 
 保留27.3的[完整模型稿与覆盖核对](skills/aid-partner/references/ai-shot-design-and-prompt-engineering.md#6-完整模型稿与覆盖核对)：镜头概述和实际生成执行稿分开，动作阶段、情绪触发与转变、对白前中后、听者反应及声画交接完整进入正文。需要千字级展开时写足，不用百字默认截短，也不以字数代替覆盖检查；仅去重恒定设定。补充既有端到端示例的微表演与持物承接，识别旧检索可能只返回420字符开头的限制。本次为Agent写稿规则，不增加App自动语义拦截或修复检索代码，未重生成影片。
 
@@ -24,7 +26,7 @@
 
 保留22.1[摄影真实感](skills/aid-partner/references/photographic-realism-prompt-design.md)的条件式光学质感、[MJ→GPT迁移](skills/aid-partner/references/midjourney-to-gpt-image-prompts.md)、[连续镜头链](skills/aid-partner/references/scene-to-shot-continuity.md)、[20位导演方法库](skills/aid-partner/references/directors/index.md)、20画风及[按复杂度选择4K四宫格](skills/aid-partner/references/four-panel-motion-storyboards.md)。详细变化见[更新记录](CHANGELOG.md)。本地构建不等于已公开；以官方main频道的版本记录为准。
 
-**知识更新与运行资源分开。**包内含83个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片，运镜文字也不是模型效果保证。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
+**知识更新与运行资源分开。**包内含84个Skill文件和974条基础案例，不包含Python脚本、Three.js运行工程、字体或渲染器。MG方法卡不是新增15个App按钮或已验收成片，运镜文字也不是模型效果保证。Mac可选AFTERGLOW与五套节目片头的说明以宿主实际已安装资源及依赖为前提；没有相应资源时不能仅凭知识已更新就承诺可渲染。Windows跳过这些Mac模块，其他已支持功能不受影响。最低应用0.4.4；本次只更新知识，不重发App或升级执行器。知识的日期版本号不是应用版本。
 
 English: Matches performance to readable framing, focus and camera timing before expanding shot detail. Checks that decisive actions and reactions can actually be seen in the submitted prompt. Preserves static shots and user-locked framing; sharing a first frame does not automatically lock the camera throughout. Adds an original partial writing example, without runtime validation or generated-quality claims. Retains the following guidance: Separates shot summaries from complete generation prompts. Preserves action phases, emotional transitions, dialogue performance, listener responses and audiovisual handoffs; checks coverage in the actual submitted text without fixed word counts. Expands an original worked example and explains truncated retrieval excerpts. No runtime retrieval changes or generated-quality claim. Documents the four Source Han Sans replacements in the separately installed Variety Kit 0.1.1-source-han, including bundled OFL licensing and missing-file behavior; knowledge alone does not install these resources. Requires appropriate commercial font licenses for subtitles, titles and packaging, including actual files, weights and fallback glyphs; prefers verified OFL fonts and distinguishes rendered output from font redistribution. Documents mixed licensing in existing packaging without replacing runtime defaults. Retains H3 Continuum authoring guidance for chunk routing, physical-state handoffs, references, audio roles, append-only extension and Take reuse boundaries; no runtime installation or GPU quality claim. Retains scoped local media postproduction decisions and delivery verification without installing a new runtime. Retains high-intensity action and VFX guidance, with user-reviewed H3 observations and explicitly unverified ghosting mitigations. Retains scoped camera-movement vocabulary and prompt compilation with original examples and source attribution. Connects camera geometry and readable endpoints to existing continuity, reference selection and H3 prompts. Retains the MG module, optical realism, MJ-to-GPT, director, visual-style and conditional 4K storyboard guidance. It does not install runtime assets, add API controls, switch services or claim generated validation. Local builds are not publication or installation. Requires AID Partner 0.4.4 or later.
 

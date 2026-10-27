@@ -104,6 +104,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 旁白主导 | [旁白配画](references/narration-picture-pairing.md) |
 | 按录音/节奏生成 | [音频参考](references/audio-reference-generation.md) |
 | 广告、品牌片、明确要求字幕 | [广告包装与字幕](references/ad-packaging-subtitles-and-graphics.md) |
+| 广告先统一整片视觉、分镜拼图，或同提示词先图后视频 | [整片视觉简报与分镜板协同](references/whole-film-visual-brief-and-storyboard.md)：共同简报贯穿两阶段，按难度展开关键动作；同稿测试与模型适配分别记录，不把整板当可靠时间轴 |
 | R5 授权的动效片头 | [动效片头](references/motion-intros-and-hybrid-composition.md)；内容驱动美术读[定制片头设计](references/bespoke-title-art-direction.md)，实际三维再读[Three.js](references/threejs-spatial-motion-design.md)。Mac可选AFTERGLOW及五套节目片头按该指南核验独立资源，不把知识更新当安装器 |
 | R4 授权的综艺包装 | [综艺包装](references/variety-show-packaging-and-titles.md) → [本地包装库](references/local-variety-packaging-kit.md)；代码定制或任务卡/比分/角标读[可编程 Variety Kit](references/programmable-variety-kit.md)；片头/包装的预览与默认统一在[App包装页](references/app-motion-library.md)，按实际工具与执行资源调用 |
 | 替换素材、局部修改、最终交付 | [镜头依赖](references/shot-dependencies.md)、[制作放行](references/production-acceptance-and-revision.md) |
@@ -215,7 +216,9 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 
 ## §4 提示词：知识库检索与 H3 格式
 
-### 实际生成稿必须展开到镜内过程
+### 按目标完整表达，按难度展开过程
+
+广告、产品感官片或品牌视觉样片，可按[整片视觉简报与分镜板协同](references/whole-film-visual-brief-and-storyboard.md)让共同视觉、场景用途与实际分镜板贯穿图像/视频两阶段。简单展示不机械扩成每秒微表情；关键动作、物体状态、镜头顺序与收口仍须清楚。以下详细执行稿规则用于需要控制的过程，不能把有明确视觉与动态约束的简报当作卡片摘要，也不能用简报替代复杂交互或对白表演。用户锁定同稿测试时保持原文，是否适配模型结构单独记录。
 
 镜头概述只用于浏览；`shot.prompt` 和实际提交的 `prompt/inputs.prompt` 保存完整执行稿。聊天回复的简洁要求不压缩模型正文。按[完整模型稿与覆盖核对](references/ai-shot-design-and-prompt-engineering.md#6-完整模型稿与覆盖核对)写出动作的准备—推进—接触/受力—反应—收势，情绪的触发与可见转变、对白前中后表演、其他角色的响应、相机与声画交接；只展开本镜实际存在的过程。一个主动作可以包含多阶段和并行反应，不能收缩成一句动词。
 
