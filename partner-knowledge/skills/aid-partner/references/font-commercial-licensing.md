@@ -31,10 +31,23 @@
 | --- | --- | --- |
 | P01–P10 经典包装 | 随包 Noto Sans SC、Noto Serif SC、得意黑、Archivo Black、Bebas Neue、Alfa Slab One 各有 OFL 1.1 许可；显式中文回退使用 Noto Sans SC | 可作为优先字体来源；仍检查实际文案缺字与浏览器隐式回退 |
 | 旧版独立包装库 | 随包得意黑有 OFL 1.1 许可 | 不因此切换旧版视觉或自动安装旧引擎 |
-| Variety Kit | 混用思源宋体、阿里普惠体、庞门正道标题体、站酷高端黑、汇文正楷、京華老宋体、系统西文字体与独立安装的 Helvetica Neue LT Std；缺文件会退到 STHeiti | **不是全开源字体栈**。逐一核验实际文件；通过 `fonts` 显式配置已核验字体及 CJK 别名，不照单沿用全部默认。免费商用声明不能代替标准开放许可或具体版本授权 |
+| Variety Kit | 混用思源宋体、阿里普惠体、庞门正道标题体、站酷高端黑、汇文正楷、京華老宋体及系统西文字体；0.1.1-source-han 将下表四个独立 Helvetica 别名替换为随模块附带的思源黑体，其余默认和回退保持原配置 | **不是全开源字体栈**。逐一核验实际文件；通过 `fonts` 显式配置已核验字体及 CJK 别名，不照单沿用全部默认。免费商用声明不能代替标准开放许可或具体版本授权 |
 | AFTERGLOW / Opus 片头 | AFTERGLOW 中文按内容选 Noto Sans SC，西文仍含 Helvetica Neue/Menlo；Opus 多数为 macOS 系统字体 | 中文标题使用开源字体不代表同片英文标签也开源；按实际文件与宿主协议核验 |
 
-Variety Kit 的 `cond_black`、`cond_heavy`、`thin`、`light_w` 优先查找用户字体目录中的 Helvetica Neue LT Std 文件，它们不属于代码所指向的系统字体文件。没有该文件的适用授权依据时，配置已核验替代，不能用 Apple 系统字体协议替它背书。`CJK_PAIR` 及 `_FALLBACK` 同样需审查；`--check` 的文件存在检查不是许可审查。
+### Variety Kit 四个别名的替换（0.1.1-source-han）
+
+2026-10-27 已在本机模块与 App 随附资源验证如下映射。先检查实际模块版本、`vk.py` 和文件；仅有新版知识不代表其他机器已安装此补丁。
+
+| 原别名 | 旧 Helvetica Neue LT Std 字重 | 新字体文件（模块 `assets/fonts/`） |
+| --- | --- | --- |
+| `cond_black` | XBlkCn | `SourceHanSansSC-Heavy.otf` |
+| `cond_heavy` | HvCn | `SourceHanSansSC-Bold.otf` |
+| `thin` | UltLt | `SourceHanSansSC-ExtraLight.otf` |
+| `light_w` | Lt | `SourceHanSansSC-Light.otf` |
+
+四文件来自 [Adobe 思源黑体固定版本](https://github.com/adobe-fonts/source-han-sans/tree/a4f7cf94edfb9d7ffbdfc4841de276358bd7e0f2/OTF/SimplifiedChinese)，未经修改，随附完整 SIL OFL 1.1 许可及 `SOURCE.md` 校验值。更新模块里这四个别名的中英文直接使用同一字重，不再经旧 CJK 配对改用其他字体；缺文件明确报错。`fonts` 自定义覆盖仍须核验其真实文件与许可。思源黑体不是窄体，换字体后按真实文案检查字号、宽度和动画裁边；已实渲染 flash/acid/mono/cinema 的28个组件预览，不等于所有文案都已验收。
+
+旧模块仍可能优先查找用户字体目录中的 Helvetica Neue LT Std，不能用 Apple 系统字体协议替这些独立文件背书；缺少授权依据时显式配置已核验替代。其余别名、`CJK_PAIR` 及 `_FALLBACK` 仍须审查，部分缺文件会退到 STHeiti。`--check` 的文件存在检查不是许可审查。
 
 知识更新只约束 Agent 的选字和验收，**不会修改已安装渲染器的默认字体、补齐许可证、安装字体或自动重渲染预览**。执行器若不能配置已核验字体，选择已有兼容方式；用户锁定该执行器时说明具体缺口，不冒称引擎已强制拦截。
 
