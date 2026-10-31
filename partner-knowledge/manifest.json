@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "2026.10.31.1",
+  "version": "2026.10.31.2",
   "minAppVersion": "0.4.4",
-  "createdAt": "2026-10-31T02:45:23Z",
-  "summary": "补充快速动作一秒多动作、借势连招与可见接触的提示词写法。"
+  "createdAt": "2026-10-31T03:54:36Z",
+  "summary": "补充Pika H3 Flex多参考连续动作的英文分层提示词与逐图动作衔接。"
 }

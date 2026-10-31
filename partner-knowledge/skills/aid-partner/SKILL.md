@@ -93,6 +93,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 分段、接缝、AI 镜头设计 | [成段生成](references/storyboard-segment-generation.md)、[AI 镜头设计](references/ai-shot-design-and-prompt-engineering.md) |
 | H3 Continuum、长镜头分块、连续表演或保留旧段续写 | [Continuum 连续生成与续写](references/h3-continuum-long-form.md)：导演状态交接可迁移，Chunk 路由、固定参考槽与 Take 复用只用于已核实的对应工作流 |
 | 写图片/视频提示词 | [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)、[动作七槽](references/action-seven-slot-precision.md)；静态图再读 [GPT-Image](references/gpt-image-still-prompt-design.md) |
+| Pika H3 Flex 连续动作、多参考视频提示词 | [Pika 分层提示词](references/pika-h3-flex-structured-prompt.md)：英文三段式、实际图片顺序与图间连续动作；先确认运行客户端确有该路线，普通参考不是精确关键帧 |
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
 | 快速追逐、武打连招、群战、技能爆发，或动作不连贯/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：一秒内多个关联动作、身体借势与可见接触、镜头跟随及特效分层；模型实际执行仍需验证 |
 | 第一次接手、交接混乱、想看具体成果 | [成果交接与实例](references/production-handoffs-and-examples.md)、[端到端示例](references/worked-example-short-film.md) |
@@ -268,6 +269,7 @@ non_diegetic_music: ...
 ```
 
 - **语言**：画面、运镜和声音描述默认用中文。用户另有要求，或模型/工作流有已核实的语言要求时，以那个为准。字段名、`[Shot N]`、`<Picture N>` 保持原样；对白、歌词、画面文字保持原语言，逐字不改。
+- **Pika H3 Flex 多参考动作写法**：用户认可英文分层与逐时段动作结构；编写该路线复杂连续动作时，默认依[专项指南](references/pika-h3-flex-structured-prompt.md)写英文画面、声音和参考关系，逐字对白及画面文字仍保留原语言。用户明确指定中文或锁定同稿时优先；其他模型沿用其自身约定。三段标题是同一个 prompt 中的写法，不是新增 API 参数，也不代表普通参考图被精确锁定。
 - **每镜内容**：依次写时间段、景别与构图、主体与环境、可见动作与停顿、运镜、逐字对白及说话人、同期声、镜头衔接。各镜时间之和等于本次目标时长。
 - **声音字段**：`overall_soundscape` 写环境和动作声音，不重复台词。`non_diegetic_music` 写配乐，没有音乐就写"无"。
 - **对白**：同一角色用稳定的 `(S1)`、`(S2)` 标识，逐字台词只在说话人后出现一次，格式为 `<d>[Chinese]逐字锁定台词。</d>` 或 `<d>[English]Exact locked words.</d>`。动作、语气和距离写在标签外。不用斜杠把多人的台词混成一条。安排在实际说得完的时间段里。多人密集接话，优先在授权范围内拆段。语法写对，不等于已核验逐字输出。
