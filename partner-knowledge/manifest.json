@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "2026.10.31.4",
+  "version": "2026.10.31.5",
   "minAppVersion": "0.4.4",
-  "createdAt": "2026-10-31T07:17:17Z",
-  "summary": "电影级制片基础分镜与九宫格可根据云卡状况选择 Qwen 电影感 V1 或 Pika GPT Image 2.5。"
+  "createdAt": "2026-10-31T07:20:57Z",
+  "summary": "普通成片及电影级制片优先规划10–15秒、尽量接近15秒的连续生成段，减少碎片并保留真实接续。"
 }
