@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "2026.10.31.2",
+  "version": "2026.10.31.3",
   "minAppVersion": "0.4.4",
-  "createdAt": "2026-10-31T03:54:36Z",
-  "summary": "补充Pika H3 Flex多参考连续动作的英文分层提示词与逐图动作衔接。"
+  "createdAt": "2026-10-31T06:00:00Z",
+  "summary": "增加用户明确触发的电影级制片流程：Qwen电影感V1基础分镜与九宫格、裁切核验及Pika九参考成段。"
 }
