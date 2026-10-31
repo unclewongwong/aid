@@ -94,7 +94,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | H3 Continuum、长镜头分块、连续表演或保留旧段续写 | [Continuum 连续生成与续写](references/h3-continuum-long-form.md)：导演状态交接可迁移，Chunk 路由、固定参考槽与 Take 复用只用于已核实的对应工作流 |
 | 写图片/视频提示词 | [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)、[动作七槽](references/action-seven-slot-precision.md)；静态图再读 [GPT-Image](references/gpt-image-still-prompt-design.md) |
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
-| 群战、兵器连招、技能爆发，或动作残影/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：阶段递进、招式因果、主体/相机/特效分层；残影改写策略仍待验证 |
+| 快速追逐、武打连招、群战、技能爆发，或动作不连贯/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：一秒内多个关联动作、身体借势与可见接触、镜头跟随及特效分层；模型实际执行仍需验证 |
 | 第一次接手、交接混乱、想看具体成果 | [成果交接与实例](references/production-handoffs-and-examples.md)、[端到端示例](references/worked-example-short-film.md) |
 | 解释动画、动态文字 | [解释动画](references/explainer-and-art-animation.md) |
 | 明确要求 MG、动态图形解释片、品牌动效或选型；片头/局部包装仍按 R4/R5 | [MG 动态设计](references/mg-motion-design.md)，按需选读其中 15 种方法卡；是创作与制作知识，不是新增渲染器或 App 预设，普通剧情片不自动触发 |
@@ -170,6 +170,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 - **逐镜选择参考策略，不默认每镜四宫格**：简单定机位、单一动作或轻微推拉用单图/必要首尾帧；复杂运镜、连续走位、遮挡揭示或多阶段交互，需控制中间状态时优先四宫格。同片可以混用；动机位不必然四格，定机位也可能因复杂动作需要四格。用户明确指定优先，分镜表用一句话记录选择与理由；详见[四宫格动态分镜](references/four-panel-motion-storyboards.md)。
 - 选用四宫格时，默认一次生图请求直接生成**4K整板**，再裁成四张独立参考图（横版3840×2160→每格1920×1080）；真实参数与实际像素都要核验，不改变视频输出分辨率。K01起态→K02推进→K03关键变化→K04末态按剧情取样、不机械四等分；四图共同指导同一镜头，三段连续过渡进入实际prompt，不是四次切镜或四次生成。
 - 每个实际变化的元素（人物、道具、环境、摄影机、声音）都写出起点、触发、过程/速度、落点与时间。人物、生物、机械动作按[动作七槽](references/action-seven-slot-precision.md)写。
+- 快速动作按同一行动目标写连续动作链，一秒内可容纳多个有先后或合理并行关系的动作，甚至多次清晰攻击；写出脚步、重心、身体与武器的借势衔接和可见接触，不把整秒边界写成停顿。`aid_prompt_guide` 提到的“一个主动作”理解为镜头主要观看任务，不限制该目标下的连续动作数量；有多个重要目标时按实际叙事安排，不机械删招。细则与示范见[高强度动作](references/high-intensity-action-and-vfx.md)。
 - 解剖左右与画面左右分开写，道具归属和交接时刻唯一。
 - 内容撑不起镜长就缩短，不用凝视、慢推或无意义的微动作填满。
 - 叙事整片建立有情节差异的 BPM 曲线，每段记录"BPM、每拍秒数 = 60/BPM、关键拍—秒—事件"；整体变速时同时记录交付 BPM = 生成 BPM × 倍率（R7）。
