@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "2026.10.31.3",
+  "version": "2026.10.31.4",
   "minAppVersion": "0.4.4",
-  "createdAt": "2026-10-31T06:00:00Z",
-  "summary": "增加用户明确触发的电影级制片流程：Qwen电影感V1基础分镜与九宫格、裁切核验及Pika九参考成段。"
+  "createdAt": "2026-10-31T07:17:17Z",
+  "summary": "电影级制片基础分镜与九宫格可根据云卡状况选择 Qwen 电影感 V1 或 Pika GPT Image 2.5。"
 }
