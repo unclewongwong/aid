@@ -93,6 +93,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 喜剧结构 / 笑点执行 | [人气喜剧结构](references/popular-comedy-structure.md) / [喜剧导演与节奏](references/comedy-direction-and-timing.md) |
 | 剧本进入两个以上叙事镜头、修镜间割裂 | [镜头因果](references/director-storytelling-and-shot-causality.md) → [镜头链](references/scene-to-shot-continuity.md) → [逐秒视听](references/whole-film-second-by-second.md) |
 | 学导演手法、关键场面怎么拍 | [导演手法库](references/director-shot-methods.md) |
+| 表演目的、对手反应、五维覆盖与模型适配 | [导演、表演与模型稿](references/director-performance-and-model-prompt.md)：先设计目的与策略，再按实际镜头写可见行为、运镜和声音 |
 | 按某位导演调整剧本/成片，或比较导演风格 | [20位导演风格索引](references/directors/index.md)，再按需读选中的卡；不是调色预设，不默认重写或重新生成 |
 | 选运镜、写镜头运动提示词、判断多状态参考 | [运镜决策](references/camera-movement-story-decisions.md) → 按需查[运镜技法与编译](references/camera-movement-prompt-craft.md)，再按复杂度选[四宫格](references/four-panel-motion-storyboards.md)，不一律使用 |
 | 影调统一、多镜视觉设定 | [电影感](references/cinematic-visual-direction.md)、[视觉连续](references/film-visual-continuity.md) |
@@ -167,6 +168,8 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 2. **视点**：这一拍归谁？
 3. **表达**：直接拍行为，还是拍反应、痕迹、画外声或揭示？
 4. **接续**：本拍留下哪项行动、认识、压力或情绪供后续接收？在哪个观看位置继续最清楚，是否根本不需要切镜？不要求每镜提出一个新问题。
+
+表演需要精细控制时，按[导演、表演与模型稿](references/director-performance-and-model-prompt.md)从人物目的、阻碍和策略设计动作、表情、视线与对手反应；按具体景别和剧情保留有意义的静止。以主体动作、表情视线、对手环境、摄影焦点、声音对白五个维度检查实际模型稿，不强制每秒填满或固定变化数。
 
 运镜要求：
 - 写细表演前，先确定每拍让观众看清的对象/关系，再选景别、观看位置、焦点与移动或停留。按实际画内大小和遮挡选择可读动作；不能用固定双人大全景承担决定剧情的细微眉眼变化。摄影与表演共用时间段，关键动作发生时目标须已可辨；具体取舍见[观看任务与可读尺度](references/camera-movement-story-decisions.md#观看任务与可读尺度)。
@@ -282,7 +285,7 @@ overall_soundscape: ...
 non_diegetic_music: ...
 ```
 
-- **语言**：画面、运镜和声音描述默认用中文。用户另有要求，或模型/工作流有已核实的语言要求时，以那个为准。字段名、`[Shot N]`、`<Picture N>` 保持原样；对白、歌词、画面文字保持原语言，逐字不改。
+- **语言**：MiniMax 官方 H3 提示词写作指南建议画面、运镜和声音正文用英文；采用其标准提示词结构时可按此编译。具体接入路线已有约定、用户指定语言或锁定同稿时以其为准；其他路线不自动套用。英文是官方写作建议，不代表中文不可用。字段名、`[Shot N]`、`<Picture N>` 保持原样；对白、歌词、画面文字保持原语言，逐字不改。
 - **Pika H3 Flex 多参考动作写法**：用户认可英文分层与逐时段动作结构；编写该路线复杂连续动作时，默认依[专项指南](references/pika-h3-flex-structured-prompt.md)写英文画面、声音和参考关系，逐字对白及画面文字仍保留原语言。用户明确指定中文或锁定同稿时优先；其他模型沿用其自身约定。三段标题是同一个 prompt 中的写法，不是新增 API 参数，也不代表普通参考图被精确锁定。
 - **每镜内容**：依次写时间段、景别与构图、主体与环境、可见动作与停顿、运镜、逐字对白及说话人、同期声、镜头衔接。各镜时间之和等于本次目标时长。
 - **声音字段**：`overall_soundscape` 写环境和动作声音，不重复台词。`non_diegetic_music` 写配乐，没有音乐就写"无"。
