@@ -96,7 +96,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | 表演目的、对手反应、五维覆盖与模型适配 | [导演、表演与模型稿](references/director-performance-and-model-prompt.md)：先设计目的与策略，再按实际镜头写可见行为、运镜和声音 |
 | 按某位导演调整剧本/成片，或比较导演风格 | [20位导演风格索引](references/directors/index.md)，再按需读选中的卡；不是调色预设，不默认重写或重新生成 |
 | 选运镜、写镜头运动提示词、判断多状态参考 | [运镜决策](references/camera-movement-story-decisions.md) → 按需查[运镜技法与编译](references/camera-movement-prompt-craft.md)，再按复杂度选[四宫格](references/four-panel-motion-storyboards.md)，不一律使用 |
-| 影调统一、多镜视觉设定 | [电影感](references/cinematic-visual-direction.md)、[视觉连续](references/film-visual-continuity.md) |
+| 影调统一、多镜视觉设定、焦点光影与镜头感 | [电影感](references/cinematic-visual-direction.md)：按需选用拉焦、前后景、动态光影、遮挡与留白并写入实际提示词；[视觉连续](references/film-visual-continuity.md) |
 | 真人实拍、胶片／镜头质感，或反馈蜡脸、油亮、过锐 | [摄影真实感提示词](references/photographic-realism-prompt-design.md)：写实照片实际prompt明确实拍与避免CG感；需要胶片感或修正过锐时写明锐度、影调、肤质与按需颗粒光晕；3A/CG、卡通、漫画、皮影、油画、剪纸、粘土等不套用去CG限制 |
 | 将MJ佳作提示词迁移到GPT，或画面细致却仍不自然 | [MJ→GPT提示词迁移](references/midjourney-to-gpt-image-prompts.md)：保留审美方向，梳理动作、构图和光色；含古装少女、舞蹈与复古留白配方 |
 | 点名画风或用预设 | [视觉风格预设](references/visual-style-presets.md) |
@@ -173,7 +173,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 
 运镜要求：
 - 写细表演前，先确定每拍让观众看清的对象/关系，再选景别、观看位置、焦点与移动或停留。按实际画内大小和遮挡选择可读动作；不能用固定双人大全景承担决定剧情的细微眉眼变化。摄影与表演共用时间段，关键动作发生时目标须已可辨；具体取舍见[观看任务与可读尺度](references/camera-movement-story-decisions.md#观看任务与可读尺度)。
-- 摄影机启动、停止或转向应有观看任务和落点：跟行动、读关系、揭示事实，或按作品目标观察空间与感受。不是每次运镜都必须有剧情反转；固定机位也可以让表演、空间和声音完成表达。
+- 摄影机启动、停止或转向应有观看任务和落点：跟行动、读关系、揭示事实，或按作品目标观察空间与感受。不是每次运镜都必须有剧情反转；固定机位也可以让表演、空间和声音完成表达。 按场景需要选用焦点交接、前后景、受光变化、遮挡借位与有功能的留白，并在实际模型稿写清起点、触发和结果；手段、时长与切镜不套固定公式，详见[可选视听手段](references/cinematic-visual-direction.md#可选的视听手段先定观看任务再写进实际提示词)。
 - 先保证故事接力，再找视听接力：景别或视点接力、动作、视线、声音、构图、遮挡、焦点。
 - 能用画面关系自然衔接时，不用特效转场。
 - 不默认手持；需要手持时写"自然、克制的轻微手持晃动"。
