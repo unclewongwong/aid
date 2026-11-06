@@ -118,6 +118,7 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 | H3 Continuum、长镜头分块、连续表演或保留旧段续写 | [Continuum 连续生成与续写](references/h3-continuum-long-form.md)：导演状态交接可迁移，Chunk 路由、固定参考槽与 Take 复用只用于已核实的对应工作流 |
 | 写图片/视频提示词 | [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)、[参数语法](references/prompt-parameterization-grammar.md)、[动作七槽](references/action-seven-slot-precision.md)；静态图再读 [GPT-Image](references/gpt-image-still-prompt-design.md) |
 | Pika H3 Flex 连续动作、多参考视频提示词 | [Pika 分层提示词](references/pika-h3-flex-structured-prompt.md)：英文三段式、实际图片顺序与图间连续动作；先确认运行客户端确有该路线，普通参考不是精确关键帧 |
+| H3 图片、视频或音频参考的职责与保留范围 | [参考职责与编译](references/h3-reference-role-compilation.md)：由当前 Agent 模型理解素材、确定保留/变化范围，再按真实路线写稿；完整参考六节不强套所有工作流 |
 | 提交前预检 | [参考图与提示词预检](references/reference-and-prompt-preflight.md) |
 | 快速追逐、武打连招、群战、技能爆发，或动作不连贯/光效遮挡反馈 | [高强度动作与技能演出](references/high-intensity-action-and-vfx.md)：一秒内多个关联动作、身体借势与可见接触、镜头跟随及特效分层；模型实际执行仍需验证 |
 | 第一次接手、交接混乱、想看具体成果 | [成果交接与实例](references/production-handoffs-and-examples.md)、[端到端示例](references/worked-example-short-film.md) |
@@ -246,6 +247,8 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 
 ## §4 提示词：知识库检索与 H3 格式
 
+描写动作、场景和人物时，可用有明确作用的形容词表达氛围、质感和表演意图，同时用具体描述交代关键动作、对象、空间关系及起止状态；只在能消除歧义或满足镜头要求时补充方向、幅度、时长、色温等[参数](references/prompt-parameterization-grammar.md)，不把形容词机械替换为数字，也不把数值更细当作效果保证。
+
 ### 按目标完整表达，按难度展开过程
 
 广告、产品感官片或品牌视觉样片，可按[整片视觉简报与分镜板协同](references/whole-film-visual-brief-and-storyboard.md)让共同视觉、场景用途与实际分镜板贯穿图像/视频两阶段。简单展示不机械扩成每秒微表情；关键动作、物体状态、镜头顺序与收口仍须清楚。以下详细执行稿规则用于需要控制的过程，不能把有明确视觉与动态约束的简报当作卡片摘要，也不能用简报替代复杂交互或对白表演。用户锁定同稿测试时保持原文，是否适配模型结构单独记录。
@@ -291,6 +294,8 @@ R1–R11用于统一指代规则。专项中必要的就地提醒仍可保留，
 H3 的视觉约束可以抽取单一时刻改写给 SD；SD 的提示词不能直接交给 H3。完整编译流程见 [H3 编译](references/prompt-case-transfer-and-h3-compilation.md)。
 
 ### H3 文本结构
+
+提示词由 Codex、Claude Code、WorkBuddy 当前使用的模型编写，完整版与 Mini 共用 Skill；无需另接提示词重写模型。有参考素材时，按[参考职责与编译](references/h3-reference-role-compilation.md)核对真实来源、保留范围和输入绑定。适用完整参考 Ref2VA 写法的路线采用该指南的六节；常规路线沿用下方三段结构。已有锁定稿不自动重复改写，模式与实际输入能力优先于模板名称。
 
 ```
 integrated_multimodal_description: [Shot 1] ... [Shot 2] At 00:03.000 ...
