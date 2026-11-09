@@ -1,5 +1,7 @@
 # AID Partner 创作知识
 
+2026.11.09.1：选择性吸收用户提供的 `director-mind.zip`，在现有[故事剧作](skills/aid-partner/references/story-dramaturgy.md)、[镜头因果](skills/aid-partner/references/director-storytelling-and-shot-causality.md)、[成片导演方案](skills/aid-partner/references/director-finished-film-treatment.md)和[逐秒视听](skills/aid-partner/references/whole-film-second-by-second.md)中补充灵感开发、可读证据、贯穿物发展、声音立场与分层节奏诊断。完整版和 Mini 共用，保留形容词与具体动作的合理分工；未复制外包 Skill 或示例，未做本次成片对照。
+
 2026.11.06.1：增加[H3 参考职责与编译](skills/aid-partner/references/h3-reference-role-compilation.md)，由 Codex、Claude Code、WorkBuddy 当前模型组织素材来源、保留属性和允许变化，按实际路线写入最终提示词。完整版与 Mini 共用；不部署额外重写模型。保留原稿锁定、真实输入能力与形容词/具体动作的合理分工，未做本次成片对照，不保证模型质量优于专用微调模型。
 
 2026.11.02.2：规范 Agent 的制作执行指令，按时机、依据、动作、结果和异常处理组织已有规则；在实际提交、依赖续接及合成时核对完整正文、真实状态和采用区间。保留内容检查范围与既有授权，不增加工具能力或默认自动评分；尚未生成对照。
